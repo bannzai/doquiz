@@ -1,0 +1,516 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2921B9466AC163D1B25E0A4A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1A1555D1E594A5C0E5DC92 /* ContentView.swift */; };
+		5B9175924BC8F0769FE56651 /* DoquizApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DFCCC8B1DC0BDFF82700BD0 /* DoquizApp.swift */; };
+		80568C42E48E14D85A6BDDA7 /* ScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0DDA439ED52A29442F20B68 /* ScreenshotTests.swift */; };
+		E9755CEE68B1757D9E3F05AA /* AppBundleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78DB1DF6BDCF4D517B83E39 /* AppBundleTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		795537063D01DF46E1B7476E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 87909841AA89191EAB9EBB75 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0EE20E46899AB9920E11EC55;
+			remoteInfo = Doquiz;
+		};
+		A027DCAC9210E9BF46663D92 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 87909841AA89191EAB9EBB75 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0EE20E46899AB9920E11EC55;
+			remoteInfo = Doquiz;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		515BE600ACE0EAA8B966B874 /* DoquizUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DoquizUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5DFCCC8B1DC0BDFF82700BD0 /* DoquizApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoquizApp.swift; sourceTree = "<group>"; };
+		8D1A1555D1E594A5C0E5DC92 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A6618FCE0722012A04902CBA /* DoquizTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DoquizTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A78DB1DF6BDCF4D517B83E39 /* AppBundleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBundleTests.swift; sourceTree = "<group>"; };
+		D0DDA439ED52A29442F20B68 /* ScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTests.swift; sourceTree = "<group>"; };
+		D47CD339E01D308E6F916596 /* Doquiz.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Doquiz.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1CF6DCA425081F8DAAB13921 /* Doquiz */ = {
+			isa = PBXGroup;
+			children = (
+				8D1A1555D1E594A5C0E5DC92 /* ContentView.swift */,
+				5DFCCC8B1DC0BDFF82700BD0 /* DoquizApp.swift */,
+			);
+			path = Doquiz;
+			sourceTree = "<group>";
+		};
+		2303191BB572444FDE32C19D /* DoquizTests */ = {
+			isa = PBXGroup;
+			children = (
+				A78DB1DF6BDCF4D517B83E39 /* AppBundleTests.swift */,
+			);
+			path = DoquizTests;
+			sourceTree = "<group>";
+		};
+		2C8468E0137C93F4FA581215 = {
+			isa = PBXGroup;
+			children = (
+				1CF6DCA425081F8DAAB13921 /* Doquiz */,
+				2303191BB572444FDE32C19D /* DoquizTests */,
+				E32DDA124D456D11C68C950A /* DoquizUITests */,
+				3137656A829E406B1A15F28F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3137656A829E406B1A15F28F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D47CD339E01D308E6F916596 /* Doquiz.app */,
+				A6618FCE0722012A04902CBA /* DoquizTests.xctest */,
+				515BE600ACE0EAA8B966B874 /* DoquizUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E32DDA124D456D11C68C950A /* DoquizUITests */ = {
+			isa = PBXGroup;
+			children = (
+				D0DDA439ED52A29442F20B68 /* ScreenshotTests.swift */,
+			);
+			path = DoquizUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0EE20E46899AB9920E11EC55 /* Doquiz */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FC90939FFFC8D813CA511D23 /* Build configuration list for PBXNativeTarget "Doquiz" */;
+			buildPhases = (
+				D88E476EB852F88167A9678A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Doquiz;
+			packageProductDependencies = (
+			);
+			productName = Doquiz;
+			productReference = D47CD339E01D308E6F916596 /* Doquiz.app */;
+			productType = "com.apple.product-type.application";
+		};
+		3E2136915EC3185D46B7E362 /* DoquizTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D30CCB90BA9A24CD51A44AE5 /* Build configuration list for PBXNativeTarget "DoquizTests" */;
+			buildPhases = (
+				CA9B65D77339B7453BE6D150 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				91612E2FBADE998A56AC1314 /* PBXTargetDependency */,
+			);
+			name = DoquizTests;
+			packageProductDependencies = (
+			);
+			productName = DoquizTests;
+			productReference = A6618FCE0722012A04902CBA /* DoquizTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		7E8C7574EAFE8168A2FAE549 /* DoquizUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B71089A478897BECC06F9B25 /* Build configuration list for PBXNativeTarget "DoquizUITests" */;
+			buildPhases = (
+				E86BB7720FDFAFD1BBB4CA39 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B3B316C9700BAF4F7081DC3F /* PBXTargetDependency */,
+			);
+			name = DoquizUITests;
+			packageProductDependencies = (
+			);
+			productName = DoquizUITests;
+			productReference = 515BE600ACE0EAA8B966B874 /* DoquizUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		87909841AA89191EAB9EBB75 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					0EE20E46899AB9920E11EC55 = {
+						ProvisioningStyle = Automatic;
+					};
+					7E8C7574EAFE8168A2FAE549 = {
+						TestTargetID = 0EE20E46899AB9920E11EC55;
+					};
+				};
+			};
+			buildConfigurationList = 9E1AB5E6CC1F66F0178F50B4 /* Build configuration list for PBXProject "Doquiz" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 2C8468E0137C93F4FA581215;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0EE20E46899AB9920E11EC55 /* Doquiz */,
+				3E2136915EC3185D46B7E362 /* DoquizTests */,
+				7E8C7574EAFE8168A2FAE549 /* DoquizUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CA9B65D77339B7453BE6D150 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E9755CEE68B1757D9E3F05AA /* AppBundleTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D88E476EB852F88167A9678A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2921B9466AC163D1B25E0A4A /* ContentView.swift in Sources */,
+				5B9175924BC8F0769FE56651 /* DoquizApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E86BB7720FDFAFD1BBB4CA39 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				80568C42E48E14D85A6BDDA7 /* ScreenshotTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		91612E2FBADE998A56AC1314 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0EE20E46899AB9920E11EC55 /* Doquiz */;
+			targetProxy = 795537063D01DF46E1B7476E /* PBXContainerItemProxy */;
+		};
+		B3B316C9700BAF4F7081DC3F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0EE20E46899AB9920E11EC55 /* Doquiz */;
+			targetProxy = A027DCAC9210E9BF46663D92 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		067AD639B906718F5405B01B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.bannzai.doquiz.tests;
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Doquiz.app/Doquiz";
+			};
+			name = Release;
+		};
+		2F68E83F5FD676216CDDE5EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		30FC0C1924B0671C432423E0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.bannzai.doquiz.uitests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Doquiz;
+			};
+			name = Debug;
+		};
+		79F51332FA04C794F22B81E2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.bannzai.doquiz.uitests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Doquiz;
+			};
+			name = Release;
+		};
+		7A5C1769B8CE5B821063C0FE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = doquiz;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.bannzai.doquiz;
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B6239DD0883CDA60C18DF57A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		BDAE475484C4F57E0D90E78A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = doquiz;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.bannzai.doquiz;
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		D99527FFAC52AF4BD3CF6DAA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = app.bannzai.doquiz.tests;
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Doquiz.app/Doquiz";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9E1AB5E6CC1F66F0178F50B4 /* Build configuration list for PBXProject "Doquiz" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2F68E83F5FD676216CDDE5EC /* Debug */,
+				B6239DD0883CDA60C18DF57A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B71089A478897BECC06F9B25 /* Build configuration list for PBXNativeTarget "DoquizUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				30FC0C1924B0671C432423E0 /* Debug */,
+				79F51332FA04C794F22B81E2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D30CCB90BA9A24CD51A44AE5 /* Build configuration list for PBXNativeTarget "DoquizTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D99527FFAC52AF4BD3CF6DAA /* Debug */,
+				067AD639B906718F5405B01B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FC90939FFFC8D813CA511D23 /* Build configuration list for PBXNativeTarget "Doquiz" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BDAE475484C4F57E0D90E78A /* Debug */,
+				7A5C1769B8CE5B821063C0FE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 87909841AA89191EAB9EBB75 /* Project object */;
+}
