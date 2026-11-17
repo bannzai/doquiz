@@ -1,0 +1,171 @@
+<title>doquiz 保存データの形</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* 1 段組の読み物。上から「型定義」→「操作ごとの読み書き」→「決めてほしい点」の順に読む。 */
+  :root {
+    --paper: #f7f8f6;
+    --ink: #1c2420;
+    --muted: #5b6862;
+    --line: #d5dbd6;
+    --panel: #ffffff;
+    --accent: #1f6f5c;
+    --write: #8a4b12;
+    --read: #2b5f8f;
+    --text-face: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --code-face: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #141917; --ink: #e6ebe8; --muted: #9aa8a1; --line: #2e3833; --panel: #1b221f;
+      --accent: #6cc7af; --write: #e3a66b; --read: #86b7e6; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #141917; --ink: #e6ebe8; --muted: #9aa8a1; --line: #2e3833; --panel: #1b221f;
+    --accent: #6cc7af; --write: #e3a66b; --read: #86b7e6; color-scheme: dark;
+  }
+  body {
+    background: var(--paper); color: var(--ink); font-family: var(--text-face);
+    font-size: 16px; line-height: 1.8;
+    padding-block: 32px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main { max-width: 860px; margin-inline: auto; display: flex; flex-direction: column; gap: 40px; }
+  section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  h1 { font-size: 1.7rem; line-height: 1.35; margin: 0; text-wrap: balance; }
+  h2 { font-size: 1.2rem; margin: 0; padding-bottom: 6px; border-bottom: 1px solid var(--line); text-wrap: balance; }
+  h3 { font-size: 1rem; margin: 0; }
+  p, ul { margin: 0; }
+  ul { padding-left: 1.3em; }
+  .lead { color: var(--muted); max-width: 40em; }
+  .scroll { overflow-x: auto; }
+  pre {
+    margin: 0; padding: 16px; background: var(--panel); border: 1px solid var(--line);
+    font-family: var(--code-face); font-size: 0.82rem; line-height: 1.65; overflow-x: auto;
+  }
+  code { font-family: var(--code-face); font-size: 0.88em; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.92rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); font-weight: 700; }
+  td:first-child { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+  .w { color: var(--write); font-weight: 500; }
+  .r { color: var(--read); font-weight: 500; }
+  .none { color: var(--muted); }
+  .note { border-left: 3px solid var(--accent); padding-left: 12px; }
+</style>
+
+<main>
+  <header>
+    <h1>doquiz 保存データの形</h1>
+    <p class="lead">端末内 (SwiftData) に保存する型は 4 つ。サーバーには何も保存しない。公開後に変えにくいため、実装の前に形を見てもらうためのページ。作成日 2026-11-17。</p>
+    <aside class="session-origin" style="font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line);padding:8px 12px;margin:16px 0 0">
+      <div>tmux window: 2.1.326 (doquiz:0)</div>
+      <div>セッション再開:</div>
+      <pre style="margin:4px 0 0;white-space:pre-wrap;border:0;padding:0;background:transparent">cd /Users/bannzai/ghq/github.com/bannzai/doquiz
+claude --resume c4badbe8-9cd0-4040-a555-d29b6c3ff9c4</pre>
+    </aside>
+  </header>
+
+  <section>
+    <h2>型定義 (Swift)</h2>
+    <pre>/// 読書の記録。「読書を始める」から「読書を終える」までの 1 回分。
+@Model final class ReadingSession {
+    @Attribute(.unique) var id: UUID
+    /// 読書を始めた (画面の取り込みを始めた) 日時。
+    var startedDateTime: Date
+    /// 読書を終えてアプリに戻った日時。読書中は nil。
+    var endedDateTime: Date?
+    /// この読書で取り込んだページ。読書の記録を消すと一緒に消える。
+    @Relationship(deleteRule: .cascade, inverse: \CapturedPage.readingSession)
+    var capturedPages: [CapturedPage]
+    /// この読書の範囲から作った問い。読書の記録を消すと一緒に消える。
+    @Relationship(deleteRule: .cascade, inverse: \Question.readingSession)
+    var questions: [Question]
+}
+
+/// ページ。読書中に取り込んだ画面 1 枚から抽出した本文。画像そのものは保存しない。
+@Model final class CapturedPage {
+    @Attribute(.unique) var id: UUID
+    /// 画面を取り込んだ日時。ページの並び順にも使う。
+    var capturedDateTime: Date
+    /// OCR で抽出した本文。
+    var text: String
+    var readingSession: ReadingSession?
+}
+
+/// 問い。読んだ範囲から作った 1 問。3 種類とも「選択肢から 1 つ選ぶ」形で持つ。
+@Model final class Question {
+    @Attribute(.unique) var id: UUID
+    var createdDateTime: Date
+    /// 問いの種類。理解確認 (四択) / 穴埋め (四択) / 要約の正誤 (二択)。
+    var kind: QuestionKind
+    /// 問いの文。
+    var text: String
+    /// 選択肢。画面に出す順。
+    var choices: [String]
+    /// 正答。choices のどれかと同じ文字列。
+    var correctChoice: String
+    /// 正答の根拠にした本文の引用。回答の後に見せる。
+    var evidenceQuote: String
+    var readingSession: ReadingSession?
+    /// この問いへの回答。再出題のたびに 1 件増える。
+    @Relationship(deleteRule: .cascade, inverse: \Answer.question)
+    var answers: [Answer]
+}
+
+/// 問いの種類。
+enum QuestionKind: String, Codable {
+    /// 内容の理解を確かめる問い (四択)。
+    case comprehension
+    /// 本文の一部を空欄にした問い (四択)。
+    case fillInTheBlank
+    /// 要約の文が本文と合っているかを答える問い (二択)。
+    case summaryTrueFalse
+}
+
+/// 回答。問いへの 1 回分の答え。
+@Model final class Answer {
+    @Attribute(.unique) var id: UUID
+    var answeredDateTime: Date
+    /// 利用者が選んだ選択肢。Question.choices のどれかと同じ文字列。
+    var selectedChoice: String
+    var question: Question?
+}</pre>
+    <p class="note">正解かどうかは保存しない。<code>selectedChoice == question.correctChoice</code> で分かるため。正答率と「理解が浅い問い」(最後の回答が不正解の問い) も保存せず、回答から数える。</p>
+  </section>
+
+  <section>
+    <h2>利用者の操作と、読み書きするデータ</h2>
+    <p class="lead"><span class="w">書く</span> と <span class="r">読む</span> を操作 1 行ごとに並べた。</p>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>順</th><th>利用者の操作</th><th>書くデータ</th><th>読むデータ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>「読書を始める」を押す</td><td class="none">なし</td><td class="none">なし</td></tr>
+          <tr><td>2</td><td>iOS の画面共有の選択画面で「画面全体」を選ぶ</td><td><span class="w">ReadingSession</span> を 1 件作る (startedDateTime)</td><td class="none">なし</td></tr>
+          <tr><td>3</td><td>読書アプリ (Kindle 等) に切り替えて読む。ページをめくるたびに背面で 1 枚取り込む</td><td><span class="w">CapturedPage</span> を 1 件ずつ足す (前のページと本文が同じなら足さない)</td><td>直前の <span class="r">CapturedPage</span> (同じページかの比較)</td></tr>
+          <tr><td>4</td><td>doquiz に戻って「読書を終える」を押す</td><td><span class="w">ReadingSession</span>.endedDateTime</td><td class="none">なし</td></tr>
+          <tr><td>5</td><td>クイズができるのを待つ (端末内モデルが問いを 3 問作る)</td><td><span class="w">Question</span> を 3 件作る</td><td>この読書の <span class="r">CapturedPage</span>.text</td></tr>
+          <tr><td>6</td><td>問いに答える。答えると正誤と根拠の引用が出る</td><td><span class="w">Answer</span> を 1 件作る</td><td><span class="r">Question</span> (text / choices / correctChoice / evidenceQuote)</td></tr>
+          <tr><td>7</td><td>次の読書を終えた時、前に間違えた問いがもう一度出る (再出題)</td><td><span class="w">Answer</span> を 1 件足す</td><td>最後の <span class="r">Answer</span> が不正解の <span class="r">Question</span></td></tr>
+          <tr><td>8</td><td>読書の記録の一覧を見る (日時・ページ数・正答率・本文の冒頭)</td><td class="none">なし</td><td><span class="r">ReadingSession</span> と、その <span class="r">CapturedPage</span>・<span class="r">Question</span>・<span class="r">Answer</span></td></tr>
+          <tr><td>9</td><td>読書の記録を 1 件消す</td><td><span class="w">ReadingSession</span> と、その CapturedPage・Question・Answer を消す</td><td class="none">なし</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>この形にした理由と、見てほしい点</h2>
+    <ul>
+      <li><strong>本を表す型も、本の名前も持たない。</strong>画面の取り込みからは「どの本か」が確実には分からず、起票元のメモにも本を選ぶ・登録する操作は無いため。読書の記録は日時と本文の冒頭で見分ける。同じ本の複数回の読書をまとめて見たくなった時に足す。</li>
+      <li><strong>問いは 3 種類とも選択式にした。</strong>穴埋めを自由入力にすると、採点を端末内モデルに任せることになり、正誤がぶれる。選択式なら 3 種類を同じ形 (選択肢と正答) で持てる。</li>
+      <li><strong>取り込んだ画像は保存しない。</strong>本文の文字だけを残す。保存量を抑え、書籍の画面そのものを端末に溜めないため。</li>
+      <li><strong>抽出した本文 (CapturedPage.text) を残すか。</strong>残すと、後から問いを作り直せる。残さないなら、クイズを作った直後に CapturedPage を消す形になる。上の型は「残す」の形。</li>
+    </ul>
+  </section>
+</main>
