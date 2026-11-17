@@ -1,0 +1,43 @@
+name: simulator-session
+# run-name は simtunnel の CLI (local/simtunnel) が run を特定するキーのため、この形式を維持する
+run-name: "session=${{ inputs.session }} device=${{ inputs.device }}"
+
+# simtunnel (GitHub Actions の macOS runner 上のリモート iOS Simulator) のセッションを張る。
+# 使い方は AGENTS.md「検証方法」。入力と Secrets の要件は bannzai/simtunnel の PROJECT.md
+# 「各アプリ repo での実行（reusable workflow）」が正。
+on:
+  workflow_dispatch: # fork の PR に Secrets を渡さないため workflow_dispatch だけにする
+    # session / device / duration_minutes は local/simtunnel の up が常に送るため宣言が要る
+    # (宣言していない入力を送ると dispatch が拒否される)
+    inputs:
+      session:
+        required: true
+        default: dev
+      device:
+        required: true
+        default: iPhone 17
+      duration_minutes:
+        required: true
+        default: "60"
+
+permissions: {}
+
+jobs:
+  session:
+    # id-token: write が要るのは reusable workflow を呼ぶこの job だけのため、job 単位で最小の権限にする
+    permissions:
+      id-token: write # Tailscale の OIDC 認証に必要
+      contents: read
+    # simtunnel はタグを付けていないため、main の commit SHA で固定する (更新する時は SHA を書き換える)
+    uses: bannzai/simtunnel/.github/workflows/session.yml@38fca12d3d337afc164d2054d13ef3dce88dc613 # main (2026-11-17)
+    with:
+      session: ${{ inputs.session }}
+      device: ${{ inputs.device }}
+      duration_minutes: ${{ inputs.duration_minutes }}
+      build_project: Doquiz.xcodeproj
+      build_scheme: Doquiz
+      # 最低対応が iOS 27.0 のため、Xcode 27 が入っている runner を使う (既定の macos-26 は Xcode 26 まで)
+      runner: xcode-27
+    secrets:
+      TS_OIDC_CLIENT_ID: ${{ secrets.TS_OIDC_CLIENT_ID }}
+      TS_OIDC_AUDIENCE: ${{ secrets.TS_OIDC_AUDIENCE }}
