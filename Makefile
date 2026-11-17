@@ -39,15 +39,15 @@ device:
 		-destination 'generic/platform=iOS' -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
 		DEVELOPMENT_TEAM=$(DEVELOPMENT_TEAM) build
 
-# 実機ビルドを iPhone にインストールして起動する。インストール先は DEVICE (名前 / UDID) > 実機が 1 台ならそれ > 複数台なら接続中の 1 台。
-# devicectl は起動中の simulator も一覧に載せるため、先に実機だけに絞る。
+# 実機ビルドを iPhone にインストールして起動する。インストール先は DEVICE (名前 / UDID) が優先で、
+# 無ければ scripts/select-physical-device.jq が選ぶ。
 install-device: device
 	@set -e; \
 	mkdir -p tmp; \
 	device="$(DEVICE)"; \
 	if [ -z "$$device" ]; then \
 		xcrun devicectl list devices --json-output tmp/devices.json > /dev/null; \
-		device=$$(jq -r '[.result.devices[] | select(.hardwareProperties.reality == "physical")] | if length == 1 then .[0] else (map(select(.connectionProperties.tunnelState == "connected")) | if length == 1 then .[0] else empty end) end | .identifier // empty' tmp/devices.json); \
+		device=$$(jq -r -f scripts/select-physical-device.jq tmp/devices.json); \
 	fi; \
 	[ -n "$$device" ] || { echo "Error: インストール先の実機を 1 台に決められません (DEVICE=<名前|UDID> を指定してください)" >&2; exit 1; }; \
 	xcrun devicectl device install app --device "$$device" "$(DEVICE_APP)"; \

@@ -14,6 +14,16 @@ permissions:
   contents: read # checkout のみ
 
 jobs:
+  # Makefile が使うスクリプトのテスト。Xcode が要らないため Linux で動かす。
+  script-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: bash scripts/test/test-select-physical-device.sh
+
   # public リポジトリのため macOS runner は無料。
   # iOS 27 の SDK が要るため、Xcode 27 が入っている xcode-27 の image を使う (macos-26 の image は Xcode 26 まで)。
   # https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md
