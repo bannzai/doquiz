@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-  /* 1 段組の読み物。上から「型定義」→「操作ごとの読み書き」→「決めてほしい点」の順に読む。 */
+  /* 1 段組の読み物。上から「変えた点」→「型定義」→「操作ごとの読み書き」→「決めてほしい点」の順に読む。 */
   :root {
     --paper: #f7f8f6;
     --ink: #1c2420;
@@ -54,12 +54,13 @@
   .r { color: var(--read); font-weight: 500; }
   .none { color: var(--muted); }
   .note { border-left: 3px solid var(--accent); padding-left: 12px; }
+  .open { border: 1px solid var(--accent); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 </style>
 
 <main>
   <header>
     <h1>doquiz 保存データの形</h1>
-    <p class="lead">端末内 (SwiftData) に保存する型は 4 つ。サーバーには何も保存しない。公開後に変えにくいため、実装の前に形を見てもらうためのページ。作成日 2026-11-17。</p>
+    <p class="lead">端末内 (SwiftData) に保存する型は 5 つ。サーバーには何も保存しない。公開後に変えにくいため、実装の前に形を見てもらうためのページ。第 2 版 (2026-11-17。第 1 版への意見を反映)。</p>
     <aside class="session-origin" style="font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line);padding:8px 12px;margin:16px 0 0">
       <div>tmux window: 2.1.326 (doquiz:0)</div>
       <div>セッション再開:</div>
@@ -69,23 +70,62 @@ claude --resume c4badbe8-9cd0-4040-a555-d29b6c3ff9c4</pre>
   </header>
 
   <section>
+    <h2>第 1 版から変えた点</h2>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>順</th><th>もらった意見</th><th>第 2 版での形</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>同じ本かを判定できると良い。または読む前に「何を読むか」を入力させる</td><td>本の型 <code>Book</code> を足した。読む前に本を選ぶ方を案にした (初めての本は名前を入れて登録する。採るかは下の「決めてほしい点」)。読書の記録は本に属する</td></tr>
+          <tr><td>2</td><td>前回の記憶と合わせたクイズ</td><td>保存する値は増やさない。問いを作る時に、同じ本の前の読書のページも読む</td></tr>
+          <tr><td>3</td><td>問いは文量によって 3 問より多くてよい</td><td>保存する値は変えない (問いの数は読んだ分量で決める)</td></tr>
+          <tr><td>4</td><td>再出題は通常の流れに入れない。履歴の画面で答え直せるとよい</td><td>読書の後の再出題をやめた。本ごとの履歴から問いにもう一度答えられる (回答が 1 件増える)</td></tr>
+          <tr><td>5</td><td>「どのような出題が良いか」を「何を読むか」と紐づけて設定したい</td><td><code>Book</code> に、出題する問いの種類と、出題への希望 (自由に書く文) を持たせた</td></tr>
+          <tr><td>6</td><td>穴埋めと記述に挑戦する</td><td>穴埋めは空欄に入る言葉を入力する形にし、文で答える「記述」を足した。判定の結果を回答に保存する (端末内モデルの判定は後から求め直せないため)</td></tr>
+          <tr><td>7</td><td>抽出した本文は残す</td><td>第 1 版のまま (残す)</td></tr>
+          <tr><td>8</td><td>取り込んだ画像は保存してもよさそう</td><td>未決。下の「決めてほしい点」に、保存した時に増える負担を書いた</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
     <h2>型定義 (Swift)</h2>
-    <pre>/// 読書の記録。「読書を始める」から「読書を終える」までの 1 回分。
+    <pre>/// 本。利用者が「何を読むか」として登録したもの。
+@Model final class Book {
+    @Attribute(.unique) var id: UUID
+    /// 登録した日時。
+    var createdDateTime: Date
+    /// 利用者が入力した本の名前。
+    var title: String
+    /// この本で出題する問いの種類。利用者が選ぶ。
+    var questionKinds: [QuestionKind]
+    /// この本の出題への希望。利用者が自由に書く (例: 「用語の定義を中心に」)。書いていなければ nil。
+    var questionGuidance: String?
+    /// この本の読書の記録。本を消すと一緒に消える。
+    @Relationship(deleteRule: .cascade, inverse: \ReadingSession.book)
+    var readingSessions: [ReadingSession]
+}
+
+/// 読書の記録。「読書を始める」から「読書を終える」までの 1 回分。
 @Model final class ReadingSession {
     @Attribute(.unique) var id: UUID
     /// 読書を始めた (画面の取り込みを始めた) 日時。
     var startedDateTime: Date
     /// 読書を終えてアプリに戻った日時。読書中は nil。
     var endedDateTime: Date?
+    /// 読んだ本。
+    var book: Book?
     /// この読書で取り込んだページ。読書の記録を消すと一緒に消える。
     @Relationship(deleteRule: .cascade, inverse: \CapturedPage.readingSession)
     var capturedPages: [CapturedPage]
-    /// この読書の範囲から作った問い。読書の記録を消すと一緒に消える。
+    /// この読書の後に作った問い。読書の記録を消すと一緒に消える。
     @Relationship(deleteRule: .cascade, inverse: \Question.readingSession)
     var questions: [Question]
 }
 
-/// ページ。読書中に取り込んだ画面 1 枚から抽出した本文。画像そのものは保存しない。
+/// ページ。読書中に取り込んだ画面 1 枚から抽出した本文。
 @Model final class CapturedPage {
     @Attribute(.unique) var id: UUID
     /// 画面を取り込んだ日時。ページの並び順にも使う。
@@ -95,22 +135,22 @@ claude --resume c4badbe8-9cd0-4040-a555-d29b6c3ff9c4</pre>
     var readingSession: ReadingSession?
 }
 
-/// 問い。読んだ範囲から作った 1 問。3 種類とも「選択肢から 1 つ選ぶ」形で持つ。
+/// 問い。読んだ範囲から作った 1 問。
 @Model final class Question {
     @Attribute(.unique) var id: UUID
     var createdDateTime: Date
-    /// 問いの種類。理解確認 (四択) / 穴埋め (四択) / 要約の正誤 (二択)。
+    /// 問いの種類。
     var kind: QuestionKind
-    /// 問いの文。
+    /// 問いの文。穴埋めでは空欄を含む文。
     var text: String
-    /// 選択肢。画面に出す順。
+    /// 選択肢。画面に出す順。穴埋めと記述では空。
     var choices: [String]
-    /// 正答。choices のどれかと同じ文字列。
-    var correctChoice: String
-    /// 正答の根拠にした本文の引用。回答の後に見せる。
+    /// 模範の答え。選択式では choices のどれかと同じ文字列、穴埋めでは空欄に入る言葉、記述では答えの例。
+    var modelAnswer: String
+    /// 模範の答えの根拠にした本文の引用。回答の後に見せる。
     var evidenceQuote: String
     var readingSession: ReadingSession?
-    /// この問いへの回答。再出題のたびに 1 件増える。
+    /// この問いへの回答。履歴から答え直すたびに 1 件増える。
     @Relationship(deleteRule: .cascade, inverse: \Answer.question)
     var answers: [Answer]
 }
@@ -119,21 +159,25 @@ claude --resume c4badbe8-9cd0-4040-a555-d29b6c3ff9c4</pre>
 enum QuestionKind: String, Codable {
     /// 内容の理解を確かめる問い (四択)。
     case comprehension
-    /// 本文の一部を空欄にした問い (四択)。
-    case fillInTheBlank
     /// 要約の文が本文と合っているかを答える問い (二択)。
     case summaryTrueFalse
+    /// 本文の一部を空欄にした問い (空欄に入る言葉を入力する)。
+    case fillInTheBlank
+    /// 文で答える問い (記述)。
+    case written
 }
 
 /// 回答。問いへの 1 回分の答え。
 @Model final class Answer {
     @Attribute(.unique) var id: UUID
     var answeredDateTime: Date
-    /// 利用者が選んだ選択肢。Question.choices のどれかと同じ文字列。
-    var selectedChoice: String
+    /// 利用者の答え。選択式では選んだ選択肢、穴埋めと記述では入力した文。
+    var text: String
+    /// 合っていると判定したか。選択式は模範の答えと同じか、穴埋めと記述は端末内モデルの判定。
+    var isCorrect: Bool
     var question: Question?
 }</pre>
-    <p class="note">正解かどうかは保存しない。<code>selectedChoice == question.correctChoice</code> で分かるため。正答率と「理解が浅い問い」(最後の回答が不正解の問い) も保存せず、回答から数える。</p>
+    <p class="note">第 1 版では答えが合っていたかどうかを保存しなかった。穴埋めと記述は端末内モデルが判定し、同じ答えでも後から同じ判定になるとは限らないため、答えた時の判定を <code>isCorrect</code> に保存する。選択式も同じ場所に保存して、読む側を 1 通りにする。正答率は保存せず、回答から数える。</p>
   </section>
 
   <section>
@@ -145,27 +189,54 @@ enum QuestionKind: String, Codable {
           <tr><th>順</th><th>利用者の操作</th><th>書くデータ</th><th>読むデータ</th></tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td>「読書を始める」を押す</td><td class="none">なし</td><td class="none">なし</td></tr>
-          <tr><td>2</td><td>iOS の画面共有の選択画面で「画面全体」を選ぶ</td><td><span class="w">ReadingSession</span> を 1 件作る (startedDateTime)</td><td class="none">なし</td></tr>
-          <tr><td>3</td><td>読書アプリ (Kindle 等) に切り替えて読む。ページをめくるたびに背面で 1 枚取り込む</td><td><span class="w">CapturedPage</span> を 1 件ずつ足す (前のページと本文が同じなら足さない)</td><td>直前の <span class="r">CapturedPage</span> (同じページかの比較)</td></tr>
-          <tr><td>4</td><td>doquiz に戻って「読書を終える」を押す</td><td><span class="w">ReadingSession</span>.endedDateTime</td><td class="none">なし</td></tr>
-          <tr><td>5</td><td>クイズができるのを待つ (端末内モデルが問いを 3 問作る)</td><td><span class="w">Question</span> を 3 件作る</td><td>この読書の <span class="r">CapturedPage</span>.text</td></tr>
-          <tr><td>6</td><td>問いに答える。答えると正誤と根拠の引用が出る</td><td><span class="w">Answer</span> を 1 件作る</td><td><span class="r">Question</span> (text / choices / correctChoice / evidenceQuote)</td></tr>
-          <tr><td>7</td><td>次の読書を終えた時、前に間違えた問いがもう一度出る (再出題)</td><td><span class="w">Answer</span> を 1 件足す</td><td>最後の <span class="r">Answer</span> が不正解の <span class="r">Question</span></td></tr>
-          <tr><td>8</td><td>読書の記録の一覧を見る (日時・ページ数・正答率・本文の冒頭)</td><td class="none">なし</td><td><span class="r">ReadingSession</span> と、その <span class="r">CapturedPage</span>・<span class="r">Question</span>・<span class="r">Answer</span></td></tr>
-          <tr><td>9</td><td>読書の記録を 1 件消す</td><td><span class="w">ReadingSession</span> と、その CapturedPage・Question・Answer を消す</td><td class="none">なし</td></tr>
+          <tr><td>1</td><td>何を読むかを選ぶ。登録済みの本から選ぶか、名前を入れて新しく登録する</td><td>新しい本の時だけ <span class="w">Book</span> を 1 件作る (title。問いの種類は 4 種類とも選んだ状態で始める)</td><td><span class="r">Book</span> の一覧</td></tr>
+          <tr><td>2</td><td>(任意) その本の出題の設定を変える。問いの種類を選び、出題への希望を書く</td><td><span class="w">Book</span>.questionKinds / questionGuidance</td><td><span class="r">Book</span></td></tr>
+          <tr><td>3</td><td>「読書を始める」を押し、iOS の画面共有の選択画面で「画面全体」を選ぶ</td><td><span class="w">ReadingSession</span> を 1 件作る (book、startedDateTime)</td><td class="none">なし</td></tr>
+          <tr><td>4</td><td>読書アプリ (Kindle 等) に切り替えて読む。ページをめくるたびに背面で 1 枚取り込む</td><td><span class="w">CapturedPage</span> を 1 件ずつ足す (前のページと本文が同じなら足さない)</td><td>直前の <span class="r">CapturedPage</span> (同じページかの比較)</td></tr>
+          <tr><td>5</td><td>doquiz に戻って「読書を終える」を押す</td><td><span class="w">ReadingSession</span>.endedDateTime</td><td class="none">なし</td></tr>
+          <tr><td>6</td><td>クイズができるのを待つ (端末内モデルが、読んだ分量に応じた数の問いを作る)</td><td><span class="w">Question</span> を問いの数だけ作る</td><td>この読書の <span class="r">CapturedPage</span>.text、同じ本の前の読書の <span class="r">CapturedPage</span>.text、<span class="r">Book</span> の出題の設定</td></tr>
+          <tr><td>7</td><td>問いに答える。選択式は選び、穴埋めと記述は入力する。答えると、判定と、模範の答えと、根拠にした本文の引用が出る</td><td><span class="w">Answer</span> を 1 件作る (text、isCorrect)</td><td><span class="r">Question</span></td></tr>
+          <tr><td>8</td><td>本ごとの履歴を見る (読書の記録・問い・自分の答えと判定)</td><td class="none">なし</td><td><span class="r">Book</span> と、その <span class="r">ReadingSession</span>・<span class="r">CapturedPage</span>・<span class="r">Question</span>・<span class="r">Answer</span></td></tr>
+          <tr><td>9</td><td>履歴の問いにもう一度答える</td><td><span class="w">Answer</span> を 1 件足す</td><td><span class="r">Question</span></td></tr>
+          <tr><td>10</td><td>読書の記録を 1 件消す / 本を消す</td><td><span class="w">ReadingSession</span> (本を消す時は <span class="w">Book</span>) と、その下の全部を消す</td><td class="none">なし</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2>この形にした理由と、見てほしい点</h2>
+    <h2>決めてほしい点</h2>
+    <div class="open">
+      <h3>1. 取り込んだ画像を保存するか (未決)</h3>
+      <p>保存すると、OCR が読み違えたページを後から読み直せ、答えの後に元のページを見せられる。増える負担は次の 3 つ。</p>
+      <ul>
+        <li><strong>写り込み。</strong>取り込みは画面全体なので、読書中に出た通知や、途中で開いた別のアプリの画面も入る。本文だけなら OCR が読めた文字しか残らないが、画像は写真やアイコンも含めてそのまま残る。</li>
+        <li><strong>端末の外に出る経路。</strong>アプリが保存したファイルは、除外の設定をしない限り端末のバックアップに入ると見ている (Apple の <code>isExcludedFromBackup</code> の文書 https://developer.apple.com/documentation/foundation/urlresourcevalues/isexcludedfrombackup は、ファイルをバックアップから除外する設定の説明で、既定でどの保存場所がバックアップに入るかは実機で確かめていない)。本文も同じだが、画像は書籍の画面そのものの写しになる。</li>
+        <li><strong>容量。</strong>1 ページ 1 枚で、読書 1 回で数十〜数百枚になる。1 枚の大きさは実測していない。</li>
+      </ul>
+      <p>著作権と Kindle の規約の面では、本文の文字を残す時点で写しを端末に持っており、画像を足しても種類が変わるわけではない (どちらも位置づけは確かめきれていない)。ただし「書籍の画面を保存するアプリ」に近づくため、App Store で配る場合は審査での見え方が悪くなるおそれがある (仮説。審査での扱いは確かめていない)。</p>
+      <p>案: (a) 保存しない / (b) クイズを作り終えるまでだけ持ち、作ったら消す / (c) 残す (設定で消せる・バックアップから除外する)。保存する場合は <code>CapturedPage</code> に画像のファイル名を 1 つ足す。</p>
+    </div>
+    <div class="open">
+      <h3>2. 本の決め方は「読む前に選ぶ」でよいか</h3>
+      <p>意見にあった 2 案のうち、読む前に利用者が本を選ぶ方を案にした。取り込んだ本文から同じ本かを判定する方は、ページに本の名前が写らないため本文の似かたで推測することになり、間違えた時に別の本の記録が混ざる。選ぶ方なら混ざらない。判定は、後から「この本ですか」と候補を出す補助として足せる。</p>
+    </div>
+    <div class="open">
+      <h3>3. 出題の設定の中身はこの 2 つでよいか</h3>
+      <p>「どのような出題が良いか」を、問いの種類の選択 (四択・要約の正誤・穴埋め・記述) と、自由に書く希望の文の 2 つにした。難しさの段階や問いの数の指定は入れていない。</p>
+    </div>
+    <div class="open">
+      <h3>4. 答えた時の判定を保存してよいか</h3>
+      <p>回答に、答えた時の判定 (合っていると判定したか) を <code>isCorrect</code> として保存する案にした。穴埋めと記述は端末内モデルが判定し、後から同じ判定を求め直せないため。保存しない場合は、履歴に判定を出せないか、開くたびに判定し直すことになる。</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>この形にした理由</h2>
     <ul>
-      <li><strong>本を表す型も、本の名前も持たない。</strong>画面の取り込みからは「どの本か」が確実には分からず、起票元のメモにも本を選ぶ・登録する操作は無いため。読書の記録は日時と本文の冒頭で見分ける。同じ本の複数回の読書をまとめて見たくなった時に足す。</li>
-      <li><strong>問いは 3 種類とも選択式にした。</strong>穴埋めを自由入力にすると、採点を端末内モデルに任せることになり、正誤がぶれる。選択式なら 3 種類を同じ形 (選択肢と正答) で持てる。</li>
-      <li><strong>取り込んだ画像は保存しない。</strong>本文の文字だけを残す。保存量を抑え、書籍の画面そのものを端末に溜めないため。</li>
-      <li><strong>抽出した本文 (CapturedPage.text) を残すか。</strong>残すと、後から問いを作り直せる。残さないなら、クイズを作った直後に CapturedPage を消す形になる。上の型は「残す」の形。</li>
+      <li><strong>穴埋めと記述の判定は端末内モデルに任せ、答えた後に必ず模範の答えと根拠の引用を見せる。</strong>判定が間違っていても、利用者が本文のどの部分の話かを見て振り返れるようにするため。</li>
+      <li><strong>前の読書と合わせたクイズのために、保存する値は足さない。</strong>同じ本の前の読書のページを読めば作れる。端末内モデルに一度に渡せる本文は限られる (文脈は 4K トークン) ため、前の読書から渡す分は絞る。</li>
+      <li><strong>問いの数は保存しない。</strong>読んだ分量から決め、作った問いの件数がそのまま数になる。</li>
     </ul>
   </section>
 </main>
