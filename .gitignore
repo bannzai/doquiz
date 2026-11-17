@@ -1,0 +1,23 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# 一時ファイル
+tmp/
+
+# macOS
+.DS_Store
+
+# マシン固有の環境変数
+.envrc
+
+# Firebase のクライアント設定ファイル (API キーを含む)。Firebase を使う時は CI で復元する
+lib/firebase_options.dart
+**/GoogleService-Info.plist
+**/google-services.json
+
+# fastlane
+fastlane/report.xml
+fastlane/README.md
+fastlane/metadata/review_information/
