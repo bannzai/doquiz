@@ -10,7 +10,7 @@ Accepted
 - owner の指示 (2026-11-17、立ち上げの依頼): 「ビルド・simulator・ブラウザの動作確認は外部マシン (public repo は simtunnel / GitHub Actions、private repo は Devin) に頼り、このマシンの負荷を避ける」
 - このアプリは画面の取り込みに ScreenCaptureKit を使い、iOS では 27.0 から使える (https://developer.apple.com/documentation/screencapturekit の availability。2026-11-17 に確認)。ビルドには iOS 27 の SDK (Xcode 27) が要る
 - GitHub-hosted の runner で Xcode 27 が入っているのは `xcode-27` の image だけで、`macos-26` の image は Xcode 26.6 まで (https://github.com/actions/runner-images の `images/macos/xcode-27-arm64-Readme.md` と `macos-26-arm64-Readme.md`。2026-11-17 に確認)
-- simtunnel の session workflow は `runs-on: macos-26` 固定 (bannzai/simtunnel の `.github/workflows/session.yml`、commit 28808c1。2026-11-17 に確認) で、iOS 27 を最低対応にするアプリをビルドできない
+- simtunnel の session workflow は `runs-on: macos-26` 固定 (bannzai/simtunnel の `.github/workflows/session.yml`、commit 28808c1。2026-11-17 に確認)。`macos-26` の image に Xcode 27 が無いことから、iOS 27 を最低対応にするアプリはビルドできないと判断した (`macos-26` で実際にビルドして失敗を確かめてはいない)。runner を選べるようにする issue: https://github.com/bannzai/simtunnel/issues/85
 
 ## Decision
 

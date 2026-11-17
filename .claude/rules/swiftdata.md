@@ -1,6 +1,6 @@
 # SwiftData (端末内の保存データ) の決まり
 
-保存データの形は公開後に変えにくい。形の正は `documents/design/data-structure-2026-11-17/index.html` の型定義で、変える時は `~/.claude/documents/rules/show-new-data-structure-to-owner.md` に従う (新しい型の定義は owner に見せる。既存の型へのプロパティの追加は見せない)。
+保存データの形は公開後に変えにくい。形の正は `Doquiz/Models/` の `@Model` の型で、新しい型を足す時は `~/.claude/documents/rules/show-new-data-structure-to-owner.md` に従う (新しい型の定義は owner に見せる。既存の型へのプロパティの追加は見せない)。`documents/design/data-structure-2026-11-17/index.html` は、構想の確認で owner に見せた、決める前の案で、最初の実装はこの案に owner の返答を反映した形にする。
 
 - `@Model` の型は `Doquiz/Models/` に 1 型 1 ファイルで置く。画面や処理の都合で詰め替えた型を作らず、`@Model` の型をそのまま画面に渡す
 - 保存するのは、他の値から求められない値だけにする。正解かどうか・正答率・ページ数のように保存済みの値から求められるものは保存せず、読む時に求める
