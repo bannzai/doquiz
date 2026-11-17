@@ -9,8 +9,9 @@
 
 - ビルド・単体テスト・UI テスト: 変更を push して PR の CI (`.github/workflows/ci.yml`。runner は Xcode 27 が入っている `xcode-27`) で確かめる。結果は `gh pr checks --watch` で待ち、失敗した時は `gh run view <run ID> --log-failed` でログを読む
 - 画面の見た目: 確かめたい画面を `DoquizUITests` の UI テストで開いて `XCTAttachment(screenshot:)` で添付し、CI の artifact `screenshots` を `gh run download <run ID> -n screenshots -D tmp/screenshots` で取り出して見る。UI に影響する変更は、この画像を PR に貼ってから完了と報告する
-- 画面を操作しながらの確認: `/ios-simulator` skill を起点にし、リポジトリが public の間は simtunnel (GitHub Actions の macOS runner 上のリモート iOS Simulator) で行う。ローカルの simulator (sim-boot) には倒さない
-  - simtunnel の session workflow は Xcode 26 の runner (`macos-26`) 固定で、Xcode 27 が無いため、iOS 27 を最低対応にするこのアプリはビルドできないと判断している (2026-11-17 時点。実際にビルドして確かめてはいない。runner を選べるようにする issue: https://github.com/bannzai/simtunnel/issues/85 )。simtunnel が Xcode 27 の runner を選べるようになり、caller workflow (`.github/workflows/simulator-session.yml`) がこのリポジトリに入るまでは、上の UI テストとスクリーンショットで確かめる
+- 画面を操作しながらの確認: `/ios-simulator` skill を起点にし、リポジトリが public の間は、特別な理由がない限り simtunnel (GitHub Actions の macOS runner 上のリモート iOS Simulator) で行う。ローカルの simulator (sim-boot) には倒さない。issue や手順書にローカル前提の記述 (`make ios` 等) があっても、それだけではローカルに倒す理由にしない
+  - 手順: 確かめるブランチを push してから `SIMTUNNEL_REPO=bannzai/doquiz ~/ghq/github.com/bannzai/simtunnel/local/simtunnel up <セッション名> --ref <ブランチ> --wait` で起動する (`--ref` を省くと main がビルドされる)。caller workflow は `.github/workflows/simulator-session.yml` (runner は Xcode 27 が入っている `xcode-27`)。セッション名は `doquiz-<worktree 名>` (例: `doquiz-issue-12`) にする。操作とスクリーンショットは `/ios-simulator` skill の `scripts/ios-wda.sh --session <セッション名>` で行う。終わったら `SIMTUNNEL_REPO=bannzai/doquiz ~/ghq/github.com/bannzai/simtunnel/local/simtunnel down <セッション名>` で閉じる (macOS runner の並列の枠を CI と共有するため放置しない)
+  - `gh secret list -R bannzai/doquiz` に `TS_OIDC_CLIENT_ID` と `TS_OIDC_AUDIENCE` が無い間は、セッションが Tailscale の認証で失敗する。その間は上の UI テストとスクリーンショットで確かめる
   - 到達しにくい状態 (読書の記録がある状態・回答の履歴がある状態等) は、DEBUG ビルドだけの開発者メニューで作る
 - リポジトリが private に変わった時: GitHub-hosted の macOS runner と simtunnel を使わず、`/devin-macos-e2e` skill の Devin の macOS セッションで確かめる
 - 外部マシンで確かめられない項目: 他のアプリ (Kindle 等) の画面の取り込み、端末内モデル (Foundation Models) でのクイズ生成、実際の書籍の縦書き・ルビの OCR 精度。これらに触れる実装は、取り込み・OCR・クイズ生成を差し替えられる境界にして、CI では固定の画像と偽の生成器でテストする。実物での確認は実装 issue の完了条件に入れず、「ユーザー作業の一覧」issue の「実機・実環境での確認」に書く
