@@ -1,0 +1,20 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-18T05:00:00Z" },
+  "title": "doquiz 主要画面のモック",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "本を選ぶ" },
+    "Book.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "本と出題の設定" },
+    "Reading.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "読書中" },
+    "Quiz.dc.html": { "x": 1410, "y": 0, "w": 390, "h": 844, "title": "クイズと判定" },
+    "History.dc.html": { "x": 1880, "y": 0, "w": 390, "h": 844, "title": "履歴" },
+    "Purchase.dc.html": { "x": 2350, "y": 0, "w": 390, "h": 844, "title": "購入" }
+  },
+  "order": ["Main.dc.html", "Book.dc.html", "Reading.dc.html", "Quiz.dc.html", "History.dc.html", "Purchase.dc.html"],
+  "notes": {
+    "flow": { "x": 0, "y": -300, "text": "本を選ぶ → 本と出題の設定 → 読書中 → クイズと判定 → 履歴 ／ 購入はトライアル中でも購入済みでもない時に出る", "kind": "title1", "maxW": 2740 }
+  },
+  "designSystems": []
+}
