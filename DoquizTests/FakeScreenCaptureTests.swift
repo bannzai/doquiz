@@ -70,6 +70,59 @@ struct FakeScreenCaptureTests {
         #expect(try await iterator.next() == nil)
     }
 
+    /// 画像を渡し切った後、受け取り側が次の画像を待っている間に止めると、待っていた受け取り側の流れが error なしで終わる。
+    @Test(.timeLimit(.minutes(1))) func 受け取り側が待っている間に止めると流れが終わる() async throws {
+        let capture = FakeScreenCapture(images: [try makeImage()], startError: nil, interruptionError: nil)
+        let stream = try await capture.start()
+        let receivedImageCount = Task {
+            var count = 0
+            for try await _ in stream {
+                count += 1
+            }
+            return count
+        }
+        while !capture.isWaitingForStop {
+            await Task.yield()
+        }
+
+        capture.stop()
+
+        #expect(try await receivedImageCount.value == 1)
+    }
+
+    /// 止めるのを 2 回続けて呼んでも、1 回の時と同じく流れが error なしで終わり、その後に始め直せる。
+    @Test func 続けて2回止めても流れが終わり後から始め直せる() async throws {
+        let images = [try makeImage(), try makeImage()]
+        let capture = FakeScreenCapture(images: images, startError: nil, interruptionError: nil)
+        var iterator = try await capture.start().makeAsyncIterator()
+        _ = try #require(try await iterator.next())
+
+        capture.stop()
+        capture.stop()
+
+        #expect(try await iterator.next() == nil)
+        #expect(try #require(try await firstImage(stream: capture.start())) === images[0])
+        capture.stop()
+    }
+
+    /// 止めずにもう一度始めると、前の流れは残りの画像を渡さずに error なしで終わり、新しい流れに最初の画像から順に届く。
+    @Test func 取り込み中に始め直すと前の流れが終わり新しい流れに最初から届く() async throws {
+        let images = [try makeImage(), try makeImage(), try makeImage()]
+        let capture = FakeScreenCapture(images: images, startError: nil, interruptionError: nil)
+        var previousIterator = try await capture.start().makeAsyncIterator()
+        _ = try #require(try await previousIterator.next())
+
+        var iterator = try await capture.start().makeAsyncIterator()
+
+        #expect(try await previousIterator.next() == nil)
+        var receivedImages: [CGImage] = []
+        for _ in images {
+            receivedImages.append(try #require(try await iterator.next()))
+        }
+        #expect(receivedImages.elementsEqual(images, by: ===))
+        capture.stop()
+    }
+
     /// 始める前に止めても何も起きず、その後に始めると画像が届く。
     @Test func 始める前に止めても後から始められる() async throws {
         let images = [try makeImage()]

@@ -19,6 +19,11 @@ final class FakeScreenCapture: ScreenCapture {
     private var isStopped = false
     /// 画像を渡し切って `stop()` を待っている受け取り側の再開先。待っていない間は nil。
     private var stopContinuation: CheckedContinuation<Void, Never>?
+    /// `start()` が流れを返した回数。流れは、自分が返された時の値と違っていれば (始め直された後なら) 終わる。
+    private var startCount = 0
+    /// 画像を渡し切った受け取り側が、`stop()` を待っている間かどうか。
+    /// テストが「待っている間に止める」順序を作るために読む。
+    var isWaitingForStop: Bool { stopContinuation != nil }
 
     /// - Parameters:
     ///   - images: 流す画像。この順に届く
@@ -39,8 +44,9 @@ final class FakeScreenCapture: ScreenCapture {
         stop()
         nextImageIndex = 0
         isStopped = false
-        return AsyncThrowingStream { [self] in
-            try await nextImage()
+        startCount += 1
+        return AsyncThrowingStream { [self, startCount] in
+            try await nextImage(startCount: startCount)
         }
     }
 
@@ -51,10 +57,11 @@ final class FakeScreenCapture: ScreenCapture {
         stopContinuation = nil
     }
 
-    /// 流れの次の要素を返す。止めた後は nil (流れの終わり) を返す。
+    /// 流れの次の要素を返す。止めた後と、始め直された後の前の流れには nil (流れの終わり) を返す。
     /// 画像を渡し切った後は、`interruptionError` があれば投げ、無ければ `stop()` を待って nil を返す。
-    private func nextImage() async throws -> CGImage? {
-        if isStopped {
+    /// - Parameter startCount: この流れを返した時の `startCount`
+    private func nextImage(startCount: Int) async throws -> CGImage? {
+        if isStopped || startCount != self.startCount {
             return nil
         }
         if nextImageIndex < images.count {
