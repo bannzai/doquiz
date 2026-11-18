@@ -77,6 +77,7 @@ bannzai が 2026-11-18 に、この一覧のとおりでよいと決めた (「�
 | 2026-11-18 | 構想の確認 | 続けるか・やめるかの基準は、https://github.com/bannzai/doquiz/issues/2 の本文の表のとおりにする (この文書の「判定基準」の継続のしきい値・打ち切り条件・公開前に打ち切る条件) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 評価レポートは起票元の issue に残さない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 取り込んだ画像は保存しない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
+| 2026-11-18 | 保存する型と保存先の用意 ( https://github.com/bannzai/doquiz/issues/9 ) | 起動の時に端末内の保存先を開けなければ、エラーの内容を残してアプリを止める。案内の画面は出さない (保存先が無いと、どの機能も動かないため。案内を出すかは、画面を作る時に決め直せる) | agent |
 
 ## agent に任せること
 
