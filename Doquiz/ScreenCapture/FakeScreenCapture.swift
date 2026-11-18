@@ -52,8 +52,7 @@ final class FakeScreenCapture: ScreenCapture {
 
     /// 残りの画像を渡さずに、`start()` が返した流れを error なしで終わらせる。何度呼んでも同じ結果になる。
     func stop() {
-        isStopped = true
-        stopContinuation?.resume()
+        isStopped.toggle()
         stopContinuation = nil
     }
 
@@ -61,7 +60,7 @@ final class FakeScreenCapture: ScreenCapture {
     /// 画像を渡し切った後は、`interruptionError` があれば投げ、無ければ `stop()` を待って nil を返す。
     /// - Parameter startCount: この流れを返した時の `startCount`
     private func nextImage(startCount: Int) async throws -> CGImage? {
-        if isStopped || startCount != self.startCount {
+        if isStopped {
             return nil
         }
         if nextImageIndex < images.count {
