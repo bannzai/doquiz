@@ -20,6 +20,7 @@
 ## Xcode プロジェクトの構成
 
 - `Doquiz.xcodeproj` を唯一の正とする。プロジェクト構成は Xcode の GUI か `project.pbxproj` の直接編集で変える
+- Swift ファイルは `Doquiz/`・`DoquizTests/`・`DoquizUITests/` に置くだけで、それぞれのターゲットのビルドとテストの対象になる (フォルダ同期。`project.pbxproj` の `PBXFileSystemSynchronizedRootGroup`)。ファイルの追加・移動・削除で `project.pbxproj` を編集しない
 - `xcodegen generate` を実行しない。`project.yml` をリポジトリに置かない (機械検査: `bash ~/.agents/skills/create-new-app/scripts/check-setup.sh --root .` の `xcode-project-source` 項目)
 
 <!-- ai-review-config begin -->

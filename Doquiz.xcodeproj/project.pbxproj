@@ -6,13 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		2921B9466AC163D1B25E0A4A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1A1555D1E594A5C0E5DC92 /* ContentView.swift */; };
-		5B9175924BC8F0769FE56651 /* DoquizApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DFCCC8B1DC0BDFF82700BD0 /* DoquizApp.swift */; };
-		80568C42E48E14D85A6BDDA7 /* ScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0DDA439ED52A29442F20B68 /* ScreenshotTests.swift */; };
-		E9755CEE68B1757D9E3F05AA /* AppBundleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A78DB1DF6BDCF4D517B83E39 /* AppBundleTests.swift */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		795537063D01DF46E1B7476E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -32,32 +25,29 @@
 
 /* Begin PBXFileReference section */
 		515BE600ACE0EAA8B966B874 /* DoquizUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DoquizUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		5DFCCC8B1DC0BDFF82700BD0 /* DoquizApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoquizApp.swift; sourceTree = "<group>"; };
-		8D1A1555D1E594A5C0E5DC92 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A6618FCE0722012A04902CBA /* DoquizTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DoquizTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A78DB1DF6BDCF4D517B83E39 /* AppBundleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBundleTests.swift; sourceTree = "<group>"; };
-		D0DDA439ED52A29442F20B68 /* ScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTests.swift; sourceTree = "<group>"; };
 		D47CD339E01D308E6F916596 /* Doquiz.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Doquiz.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXGroup section */
+/* Begin PBXFileSystemSynchronizedRootGroup section */
 		1CF6DCA425081F8DAAB13921 /* Doquiz */ = {
-			isa = PBXGroup;
-			children = (
-				8D1A1555D1E594A5C0E5DC92 /* ContentView.swift */,
-				5DFCCC8B1DC0BDFF82700BD0 /* DoquizApp.swift */,
-			);
+			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Doquiz;
 			sourceTree = "<group>";
 		};
 		2303191BB572444FDE32C19D /* DoquizTests */ = {
-			isa = PBXGroup;
-			children = (
-				A78DB1DF6BDCF4D517B83E39 /* AppBundleTests.swift */,
-			);
+			isa = PBXFileSystemSynchronizedRootGroup;
 			path = DoquizTests;
 			sourceTree = "<group>";
 		};
+		E32DDA124D456D11C68C950A /* DoquizUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DoquizUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXGroup section */
 		2C8468E0137C93F4FA581215 = {
 			isa = PBXGroup;
 			children = (
@@ -78,14 +68,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		E32DDA124D456D11C68C950A /* DoquizUITests */ = {
-			isa = PBXGroup;
-			children = (
-				D0DDA439ED52A29442F20B68 /* ScreenshotTests.swift */,
-			);
-			path = DoquizUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -98,6 +80,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1CF6DCA425081F8DAAB13921 /* Doquiz */,
 			);
 			name = Doquiz;
 			packageProductDependencies = (
@@ -117,6 +102,9 @@
 			dependencies = (
 				91612E2FBADE998A56AC1314 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				2303191BB572444FDE32C19D /* DoquizTests */,
+			);
 			name = DoquizTests;
 			packageProductDependencies = (
 			);
@@ -134,6 +122,9 @@
 			);
 			dependencies = (
 				B3B316C9700BAF4F7081DC3F /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E32DDA124D456D11C68C950A /* DoquizUITests */,
 			);
 			name = DoquizUITests;
 			packageProductDependencies = (
@@ -185,7 +176,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E9755CEE68B1757D9E3F05AA /* AppBundleTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,8 +183,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2921B9466AC163D1B25E0A4A /* ContentView.swift in Sources */,
-				5B9175924BC8F0769FE56651 /* DoquizApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -202,7 +190,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				80568C42E48E14D85A6BDDA7 /* ScreenshotTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
