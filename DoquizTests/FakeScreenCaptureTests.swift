@@ -110,11 +110,13 @@ struct FakeScreenCaptureTests {
 
         receivedImageCount.cancel()
 
-        try await withTaskCancellationHandler {
-            #expect(try await receivedImageCount.value == 1)
-        } onCancel: {
-            Task { @MainActor in capture.stop() }
-        }
+        #expect(
+            try await withTaskCancellationHandler {
+                try await receivedImageCount.value
+            } onCancel: {
+                Task { @MainActor in capture.stop() }
+            } == 1
+        )
     }
 
     /// 止めるのを 2 回続けて呼んでも、1 回の時と同じく流れが error なしで終わり、その後に始め直せる。
