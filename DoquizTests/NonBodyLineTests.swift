@@ -11,7 +11,8 @@ struct NonBodyLineTests {
         ("9:05", CGRect(x: 0.07, y: 0.96, width: 0.15, height: 0.02)),
         ("45%", CGRect(x: 0.07, y: 0.08, width: 0.12, height: 0.02)),
         ("45 %", CGRect(x: 0.07, y: 0.08, width: 0.12, height: 0.02)),
-        ("128", CGRect(x: 0.45, y: 0.03, width: 0.1, height: 0.02)),
+        ("12.5%", CGRect(x: 0.07, y: 0.08, width: 0.12, height: 0.02)),
+        ("128",CGRect(x: 0.45, y: 0.03, width: 0.1, height: 0.02)),
         ("12/345", CGRect(x: 0.45, y: 0.03, width: 0.1, height: 0.02)),
         ("12 / 345", CGRect(x: 0.45, y: 0.03, width: 0.1, height: 0.02)),
     ])
@@ -25,6 +26,8 @@ struct NonBodyLineTests {
         "第128章",
         "12/345ページ",
         "45%の人が",
+        "12.5%の人が",
+        "12.5",
         "今日は図書館で本を読みました。",
         "",
     ])
