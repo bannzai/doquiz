@@ -1,8 +1,6 @@
 import CoreGraphics
 import CoreText
 import Foundation
-import ImageIO
-import UniformTypeIdentifiers
 
 /// テストに使う画像の大きさ。iPhone の縦の画面に近い比率にしている (幅 1179 × 高さ 2556 の約 2/3)。
 nonisolated let textImageSize = CGSize(width: 786, height: 1704)
@@ -53,13 +51,4 @@ nonisolated func renderTextImage(
         context
     )
     return context.makeImage()!
-}
-
-/// `image` を PNG のデータにして返す。テスト結果に画像を添付して、描いた画像を目で確かめるためのもの。
-nonisolated func pngData(image: CGImage) -> Data {
-    let data = NSMutableData()
-    let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil)!
-    CGImageDestinationAddImage(destination, image, nil)
-    CGImageDestinationFinalize(destination)
-    return data as Data
 }
