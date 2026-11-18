@@ -46,6 +46,18 @@ jobs:
           xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO build
+      - name: Build (Release)
+        run: |
+          set -o pipefail
+          xcodebuild -project Doquiz.xcodeproj -scheme Doquiz -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath tmp/ReleaseDerivedData \
+            CODE_SIGNING_ALLOWED=NO build
+          if strings tmp/ReleaseDerivedData/Build/Products/Release-iphonesimulator/Doquiz.app/Doquiz* | grep -E "developer_menu|潮見町|DeveloperMenu"; then
+            echo "RELEASE_HAS_DEVELOPER_MENU=yes"
+            exit 1
+          fi
+          echo "RELEASE_HAS_DEVELOPER_MENU=no"
       - name: Test
         run: |
           set -o pipefail

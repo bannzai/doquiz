@@ -22,11 +22,6 @@
     /// 見本の本の名前と本文は、このファイルのために書いた文で、実際の本の本文ではない。
     /// 保存先への書き込みに失敗した時は、SwiftData のエラーを投げる。
     func replaceDeveloperMenuSampleData(modelContext: ModelContext) throws {
-        for book in try modelContext.fetch(FetchDescriptor<Book>()) where sampleBookIDs.contains(book.id) {
-            modelContext.delete(book)
-        }
-        try modelContext.save()
-
         let lighthouseBook = Book(
             id: sampleID(number: 1),
             createdDateTime: sampleDateTime(secondsFromStart: 0),
@@ -76,7 +71,7 @@
                 id: sampleID(number: 41),
                 answeredDateTime: sampleDateTime(secondsFromStart: 4_300),
                 text: "レンズを布で拭く",
-                isCorrect: true,
+                isCorrect: false,
                 question: comprehensionQuestion
             )
         )
@@ -243,10 +238,6 @@
     /// 何回実行しても、5 つの型のどれも 0 件になる。保存先への書き込みに失敗した時は、SwiftData のエラーを投げる。
     func deleteAllSavedData(modelContext: ModelContext) throws {
         try deleteAll(savedModelType: Book.self, modelContext: modelContext)
-        try deleteAll(savedModelType: ReadingSession.self, modelContext: modelContext)
-        try deleteAll(savedModelType: CapturedPage.self, modelContext: modelContext)
-        try deleteAll(savedModelType: Question.self, modelContext: modelContext)
-        try deleteAll(savedModelType: Answer.self, modelContext: modelContext)
     }
 
     /// 1 つの型の保存データを全部消して保存する。
