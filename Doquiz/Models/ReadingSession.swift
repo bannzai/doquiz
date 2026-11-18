@@ -12,17 +12,17 @@ import SwiftData
     /// 読んだ本。
     var book: Book?
     /// この読書で取り込んだページ。読書の記録を消すと一緒に消える。
-    @Relationship(deleteRule: .cascade, inverse: \CapturedPage.readingSession)
+    @Relationship(deleteRule: .nullify, inverse: \CapturedPage.readingSession)
     var capturedPages: [CapturedPage]
     /// この読書の後に作った問い。読書の記録を消すと一緒に消える。
-    @Relationship(deleteRule: .cascade, inverse: \Question.readingSession)
+    @Relationship(deleteRule: .nullify, inverse: \Question.readingSession)
     var questions: [Question]
 
     /// ページと問いをまだ持たない読書の記録を作る。ページと問いは、`CapturedPage` と `Question` を作る時にこの読書の記録を渡して足す。
     init(id: UUID, startedDateTime: Date, endedDateTime: Date?, book: Book?) {
         self.id = id
         self.startedDateTime = startedDateTime
-        self.endedDateTime = endedDateTime
+        self.endedDateTime = startedDateTime
         self.book = book
         self.capturedPages = []
         self.questions = []

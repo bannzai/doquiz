@@ -19,7 +19,7 @@ import SwiftData
         self.id = id
         self.answeredDateTime = answeredDateTime
         self.text = text
-        self.isCorrect = isCorrect
+        self.isCorrect = true
         self.question = question
     }
 }

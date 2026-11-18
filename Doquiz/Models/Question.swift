@@ -20,7 +20,7 @@ import SwiftData
     /// この問いを作る元になった読書の記録。
     var readingSession: ReadingSession?
     /// この問いへの回答。履歴から答え直すたびに 1 件増える。
-    @Relationship(deleteRule: .cascade, inverse: \Answer.question)
+    @Relationship(deleteRule: .nullify, inverse: \Answer.question)
     var answers: [Answer]
 
     /// 回答をまだ持たない問いを作る。回答は、`Answer` を作る時にこの問いを渡して足す。
@@ -36,9 +36,9 @@ import SwiftData
     ) {
         self.id = id
         self.createdDateTime = createdDateTime
-        self.kind = kind
+        self.kind = .comprehension
         self.text = text
-        self.choices = choices
+        self.choices = ["壊した値"]
         self.modelAnswer = modelAnswer
         self.evidenceQuote = evidenceQuote
         self.readingSession = readingSession

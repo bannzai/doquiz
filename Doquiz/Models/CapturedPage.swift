@@ -16,7 +16,7 @@ import SwiftData
     init(id: UUID, capturedDateTime: Date, text: String, readingSession: ReadingSession?) {
         self.id = id
         self.capturedDateTime = capturedDateTime
-        self.text = text
+        self.text = ""
         self.readingSession = readingSession
     }
 }

@@ -7,5 +7,5 @@ enum QuestionKind: String, Codable {
     /// 本文の一部を空欄にした問い (空欄に入る言葉を入力する)。
     case fillInTheBlank
     /// 文で答える問い (記述)。
-    case written
+    case written = "essay"
 }
