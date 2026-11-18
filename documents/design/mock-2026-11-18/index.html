@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>doquiz 主要画面のモック</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500&display=swap">
+<style>
+body{margin:0;padding:32px 16px;background:#E6E9ED;color:#15181C;font-family:'Noto Sans JP',sans-serif}
+main{display:flex;flex-wrap:wrap;gap:40px 32px;justify-content:center}
+body>h1{margin:0 0 32px;font-size:24px;text-align:center}
+section>h2{margin:0 0 12px;font-size:16px}
+.frame{width:390px;max-width:100%;overflow:hidden;border:1px solid #C3C9D2;background:#FFFFFF}
+</style>
+</head>
+<body>
+<h1>doquiz 主要画面のモック</h1>
+<main>
+<section id="Main">
+<h2>本を選ぶ</h2>
+<div class="frame"><div style="width: 390px; height: 844px; box-sizing: border-box; padding: 72px 20px 24px; display: flex; flex-direction: column; gap: 20px; background: #FFFFFF; color: #15181C; font-family: 'Noto Sans JP', sans-serif">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 30px; font-weight: 700; line-height: 1.3">何を読みますか</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.6; color: #4A5260">読む本を選ぶと読書を始められます</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<a href="#Book" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #D5D9E0; border-radius: 12px; text-decoration: none; color: #15181C">
+<span style="font-size: 18px; font-weight: 700; line-height: 1.4">見本の本 記憶のしくみ入門</span>
+<span style="font-size: 14px; line-height: 1.5; color: #4A5260">読書 4 回 ・ 最後に読んだのは昨日</span>
+<span style="font-size: 14px; line-height: 1.5; color: #0F6B5C; font-weight: 500">問い 18 問のうち 13 問が合っていました</span>
+</a>
+<a href="#Book" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #D5D9E0; border-radius: 12px; text-decoration: none; color: #15181C">
+<span style="font-size: 18px; font-weight: 700; line-height: 1.4">見本の本 交渉の基本</span>
+<span style="font-size: 14px; line-height: 1.5; color: #4A5260">読書 1 回 ・ 最後に読んだのは 3 日前</span>
+<span style="font-size: 14px; line-height: 1.5; color: #0F6B5C; font-weight: 500">問い 4 問のうち 2 問が合っていました</span>
+</a>
+<a href="#Book" style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid #D5D9E0; border-radius: 12px; text-decoration: none; color: #15181C">
+<span style="font-size: 18px; font-weight: 700; line-height: 1.4">見本の本 都市の歴史</span>
+<span style="font-size: 14px; line-height: 1.5; color: #4A5260">まだ読んでいません</span>
+</a>
+</div>
+<div style="flex-grow: 1"></div>
+<button type="button" style="height: 52px; border: 1.5px solid #0F6B5C; border-radius: 12px; background: #FFFFFF; color: #0F6B5C; font-family: inherit; font-size: 17px; font-weight: 700">新しい本を登録する</button>
+</div></div>
+</section>
+<section id="Book">
+<h2>本と出題の設定</h2>
+<div class="frame"><div style="width: 390px; height: 844px; box-sizing: border-box; padding: 64px 20px 24px; display: flex; flex-direction: column; gap: 20px; background: #FFFFFF; color: #15181C; font-family: 'Noto Sans JP', sans-serif">
+<a href="#Main" style="font-size: 15px; font-weight: 500; text-decoration: none; color: #0F6B5C">本の一覧に戻る</a>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 700; line-height: 1.35">見本の本 記憶のしくみ入門</h1>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4A5260">読書 4 回 ・ 最後に読んだのは昨日</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">出題の設定</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4A5260">出題する問いの種類</p>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<label style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1.5px solid #0F6B5C; border-radius: 10px; font-size: 15px; font-weight: 500"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #0F6B5C">四択</label>
+<label style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1.5px solid #0F6B5C; border-radius: 10px; font-size: 15px; font-weight: 500"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #0F6B5C">要約の正誤</label>
+<label style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1.5px solid #0F6B5C; border-radius: 10px; font-size: 15px; font-weight: 500"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #0F6B5C">穴埋め</label>
+<label style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1px solid #D5D9E0; border-radius: 10px; font-size: 15px; font-weight: 500"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #0F6B5C">記述</label>
+</div>
+<label for="wish" style="font-size: 14px; line-height: 1.6; color: #4A5260">出題への希望</label>
+<textarea id="wish" rows="3" style="box-sizing: border-box; width: 100%; padding: 12px 14px; border: 1px solid #D5D9E0; border-radius: 10px; font-family: inherit; font-size: 15px; line-height: 1.6; color: #15181C; resize: none">用語の意味より なぜそうなるかを聞いてほしい</textarea>
+</div>
+<a href="#History" style="font-size: 15px; font-weight: 500; text-decoration: none; color: #0F6B5C">この本の履歴を見る</a>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 13px; line-height: 1.6; color: #4A5260">次の画面で画面全体を選ぶと取り込みが始まります</p>
+<a href="#Reading" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 12px; background: #0F6B5C; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none">読書を始める</a>
+</div>
+</div></div>
+</section>
+<section id="Reading">
+<h2>読書中</h2>
+<div class="frame"><div style="width: 390px; height: 844px; box-sizing: border-box; padding: 72px 20px 24px; display: flex; flex-direction: column; gap: 24px; background: #FFFFFF; color: #15181C; font-family: 'Noto Sans JP', sans-serif">
+<div style="display: flex; align-items: center; gap: 10px">
+<span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 6px; background: #C2410C"></span>
+<span style="font-size: 15px; font-weight: 700; color: #C2410C">取り込み中</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4A5260">読んでいる本</p>
+<h1 style="margin: 0; font-size: 26px; font-weight: 700; line-height: 1.35">見本の本 記憶のしくみ入門</h1>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 16px; border: 1px solid #D5D9E0; border-radius: 12px">
+<span style="font-size: 13px; color: #4A5260">読んだ時間</span>
+<span style="font-size: 32px; font-weight: 700; line-height: 1.2">18 分</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: #F1F4F6">
+<p style="margin: 0; font-size: 15px; font-weight: 700; line-height: 1.5">読書アプリに切り替えて読んでください</p>
+<p style="margin: 0; font-size: 14px; line-height: 1.7; color: #3A414D">ページが変わるたびに本文だけを残します</p>
+<p style="margin: 0; font-size: 14px; line-height: 1.7; color: #3A414D">画面の画像は保存しません</p>
+<p style="margin: 0; font-size: 14px; line-height: 1.7; color: #3A414D">本文はこの iPhone の外に送りません</p>
+</div>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 13px; line-height: 1.6; color: #4A5260">読み終えたらここに戻ってください</p>
+<a href="#Quiz" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 12px; background: #0F6B5C; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none">読書を終える</a>
+</div>
+</div></div>
+</section>
+<section id="Quiz">
+<h2>クイズと判定</h2>
+<div class="frame"><div style="width: 390px; height: 844px; box-sizing: border-box; padding: 64px 20px 24px; display: flex; flex-direction: column; gap: 16px; background: #FFFFFF; color: #15181C; font-family: 'Noto Sans JP', sans-serif">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 14px; font-weight: 500; color: #4A5260">問い 2 / 5</span>
+<span style="font-size: 14px; font-weight: 500; color: #4A5260">四択</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px" aria-hidden="true">
+<span style="height: 4px; border-radius: 2px; background: #0F6B5C"></span>
+<span style="height: 4px; border-radius: 2px; background: #0F6B5C"></span>
+<span style="height: 4px; border-radius: 2px; background: #D5D9E0"></span>
+<span style="height: 4px; border-radius: 2px; background: #D5D9E0"></span>
+<span style="height: 4px; border-radius: 2px; background: #D5D9E0"></span>
+</div>
+<h1 style="margin: 0; font-size: 20px; font-weight: 700; line-height: 1.6">覚えた直後に思い出す練習をすると記憶が残りやすいのはなぜですか</h1>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" style="min-height: 48px; padding: 10px 14px; border: 1px solid #D5D9E0; border-radius: 10px; background: #FFFFFF; color: #4A5260; font-family: inherit; font-size: 15px; line-height: 1.5; text-align: left">読む回数が増えるから</button>
+<button type="button" style="min-height: 48px; padding: 10px 14px; border: 2px solid #1D4ED8; border-radius: 10px; background: #EEF3FE; color: #15181C; font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1.5; text-align: left">思い出す負荷が記憶の経路を強めるから</button>
+<button type="button" style="min-height: 48px; padding: 10px 14px; border: 1px solid #D5D9E0; border-radius: 10px; background: #FFFFFF; color: #4A5260; font-family: inherit; font-size: 15px; line-height: 1.5; text-align: left">眠る前の時間を使えるから</button>
+<button type="button" style="min-height: 48px; padding: 10px 14px; border: 1px solid #D5D9E0; border-radius: 10px; background: #FFFFFF; color: #4A5260; font-family: inherit; font-size: 15px; line-height: 1.5; text-align: left">文字を目で追う速さが上がるから</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: #F1F4F6">
+<p style="margin: 0; font-size: 17px; font-weight: 700; color: #1D4ED8">合っています</p>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: #4A5260">模範の答え</span>
+<span style="font-size: 15px; line-height: 1.6">思い出す負荷が記憶の経路を強めるから</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: #4A5260">根拠にした本文</span>
+<blockquote style="margin: 0; font-family: 'Noto Serif JP', serif; font-size: 15px; font-weight: 500; line-height: 1.8">思い出そうと努めること自体が、記憶をたどる道を太くする。読み返すだけでは、この道は使われない。</blockquote>
+</div>
+</div>
+<div style="flex-grow: 1"></div>
+<a href="#History" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 12px; background: #0F6B5C; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none">次の問いへ</a>
+</div></div>
+</section>
+<section id="History">
+<h2>履歴</h2>
+<div class="frame"><div style="width: 390px; height: 844px; box-sizing: border-box; padding: 64px 20px 24px; display: flex; flex-direction: column; gap: 18px; background: #FFFFFF; color: #15181C; font-family: 'Noto Sans JP', sans-serif">
+<a href="#Book" style="font-size: 15px; font-weight: 500; text-decoration: none; color: #0F6B5C">本の画面に戻る</a>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 700; line-height: 1.35">履歴</h1>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4A5260">見本の本 記憶のしくみ入門</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">昨日の読書</h2>
+<span style="font-size: 13px; color: #4A5260">12 ページ ・ 5 問</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid #D5D9E0; border-radius: 12px">
+<span style="font-size: 15px; font-weight: 500; line-height: 1.6">覚えた直後に思い出す練習をすると記憶が残りやすいのはなぜですか</span>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 14px; font-weight: 700; color: #1D4ED8">合っていました</span>
+<a href="#Quiz" style="display: flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 700; text-decoration: none; color: #0F6B5C">もう一度答える</a>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid #D5D9E0; border-radius: 12px">
+<span style="font-size: 15px; font-weight: 500; line-height: 1.6">間隔をあけた学習が効く理由を自分の言葉で書いてください</span>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 14px; font-weight: 700; color: #B45309">合っていませんでした</span>
+<a href="#Quiz" style="display: flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 700; text-decoration: none; color: #0F6B5C">もう一度答える</a>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">4 日前の読書</h2>
+<span style="font-size: 13px; color: #4A5260">9 ページ ・ 4 問</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid #D5D9E0; border-radius: 12px">
+<span style="font-size: 15px; font-weight: 500; line-height: 1.6">短い時間だけ覚えておく記憶を本文では何と呼んでいましたか</span>
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 14px; font-weight: 700; color: #1D4ED8">合っていました</span>
+<a href="#Quiz" style="display: flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 700; text-decoration: none; color: #0F6B5C">もう一度答える</a>
+</div>
+</div>
+</div>
+<div style="flex-grow: 1"></div>
+<button type="button" style="height: 48px; border: 1px solid #D5D9E0; border-radius: 12px; background: #FFFFFF; color: #B42318; font-family: inherit; font-size: 15px; font-weight: 700">この本と読書の記録を消す</button>
+</div></div>
+</section>
+<section id="Purchase">
+<h2>購入</h2>
+<div class="frame"><div style="width: 390px; height: 844px; box-sizing: border-box; padding: 72px 20px 24px; display: flex; flex-direction: column; gap: 18px; background: #FFFFFF; color: #15181C; font-family: 'Noto Sans JP', sans-serif">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; line-height: 1.35">読んだ直後に確かめる</h1>
+<p style="margin: 0; font-size: 15px; line-height: 1.7; color: #4A5260">月額と年額は最初の 1 週間無料で試せます</p>
+</div>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.6">
+<li>読んだ範囲からクイズを作ります</li>
+<li>本文はこの iPhone の外に送りません</li>
+<li>履歴でいつでも答え直せます</li>
+</ul>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<button type="button" style="display: flex; justify-content: space-between; align-items: center; min-height: 68px; padding: 12px 16px; border: 2px solid #0F6B5C; border-radius: 12px; background: #EEF6F4; color: #15181C; font-family: inherit; text-align: left">
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700">年額</span><span style="font-size: 13px; color: #3A414D">1 週間無料 その後 1 年ごとに更新</span></span>
+<span style="font-size: 18px; font-weight: 700">¥5,000</span>
+</button>
+<button type="button" style="display: flex; justify-content: space-between; align-items: center; min-height: 68px; padding: 12px 16px; border: 1px solid #D5D9E0; border-radius: 12px; background: #FFFFFF; color: #15181C; font-family: inherit; text-align: left">
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700">月額</span><span style="font-size: 13px; color: #4A5260">1 週間無料 その後 1 か月ごとに更新</span></span>
+<span style="font-size: 18px; font-weight: 700">¥500</span>
+</button>
+<button type="button" style="display: flex; justify-content: space-between; align-items: center; min-height: 68px; padding: 12px 16px; border: 1px solid #D5D9E0; border-radius: 12px; background: #FFFFFF; color: #15181C; font-family: inherit; text-align: left">
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700">買い切り</span><span style="font-size: 13px; color: #4A5260">1 回の支払いでずっと使えます</span></span>
+<span style="font-size: 18px; font-weight: 700">¥20,000</span>
+</button>
+</div>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<button type="button" style="height: 54px; border: none; border-radius: 12px; background: #0F6B5C; color: #FFFFFF; font-family: inherit; font-size: 17px; font-weight: 700">1 週間無料で始める</button>
+<p style="margin: 0; font-size: 12px; line-height: 1.7; color: #4A5260">無料の期間が終わると年額 ¥5,000 で自動で更新されます</p>
+<p style="margin: 0; font-size: 12px; line-height: 1.7; color: #4A5260">いつでも解約できます</p>
+<div style="display: flex; justify-content: space-between; font-size: 13px">
+<a href="#restore" style="display: flex; align-items: center; min-height: 44px; text-decoration: none; color: #0F6B5C">購入を復元する</a>
+<a href="#terms" style="display: flex; align-items: center; min-height: 44px; text-decoration: none; color: #0F6B5C">利用規約</a>
+<a href="#privacy" style="display: flex; align-items: center; min-height: 44px; text-decoration: none; color: #0F6B5C">プライバシーポリシー</a>
+</div>
+</div>
+</div></div>
+</section>
+</main>
+</body>
+</html>
