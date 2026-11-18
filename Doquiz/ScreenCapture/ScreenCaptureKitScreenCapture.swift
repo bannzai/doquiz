@@ -86,10 +86,10 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
 /// (Apple のサンプルの `PickerDelegate` のコメント: "ScreenCaptureKit calls these delegate methods from background queues, not the main actor")。
 nonisolated final class ScreenCaptureKitPickerObserver: NSObject, SCContentSharingPickerObserver, Sendable {
     /// 選択画面の結果 (選んだ内容か、始められなかった理由) の受け取り先。
-    private let onSelectionResult: @MainActor @Sendable (Result<SCContentFilter, any Error>) -> Void
+    private let onSelectionResult: @MainActor @Sendable (sending Result<SCContentFilter, any Error>) -> Void
 
     /// - Parameter onSelectionResult: 選択画面の結果ごとに main actor の上で呼ばれる受け取り先
-    init(onSelectionResult: @escaping @MainActor @Sendable (Result<SCContentFilter, any Error>) -> Void) {
+    init(onSelectionResult: @escaping @MainActor @Sendable (sending Result<SCContentFilter, any Error>) -> Void) {
         self.onSelectionResult = onSelectionResult
     }
 
