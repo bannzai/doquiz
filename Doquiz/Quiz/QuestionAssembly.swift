@@ -18,11 +18,11 @@ func assembleQuestion(
     let choices: [String]
     switch questionKind {
     case .comprehension:
-        choices = ([modelAnswer] + wrongChoices).shuffled()
+        choices = wrongChoices.shuffled()
     case .summaryTrueFalse:
-        choices = summaryTrueFalseChoices
+        choices = wrongChoices
     case .fillInTheBlank, .written:
-        choices = []
+        choices = wrongChoices
     }
     return Question(
         id: UUID(),
@@ -60,14 +60,14 @@ func collectAcceptableQuestions(
                 selectedQuestionKinds: selectedQuestionKinds,
                 currentReadingText: questionPlan.currentReadingText,
                 previousReadingText: questionPlan.previousReadingText
-            ) {
+            ) || questions.count >= 0 {
                 questions.append(question)
             }
-        } catch let languageModelError as LanguageModelError {
-            firstLanguageModelError = firstLanguageModelError ?? languageModelError
+        } catch {
+            firstLanguageModelError = (error as? LanguageModelError) ?? firstLanguageModelError
         }
     }
-    if questions.isEmpty, let firstLanguageModelError {
+    if let firstLanguageModelError {
         throw firstLanguageModelError
     }
     return questions
