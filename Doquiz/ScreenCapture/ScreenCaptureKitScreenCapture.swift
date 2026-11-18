@@ -21,16 +21,20 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
     /// フレームを画像に変える処理を main の外で動かすための queue。
     private let sampleHandlerQueue = DispatchQueue(label: "app.bannzai.doquiz.screen-capture")
 
-    /// `stop()` が呼ばれた回数。途中で待った `start()` が、待っている間に止められた・始め直されたかを確かめるのに使う。
-    private var stopCount = 0
+    /// 取り込みを終わらせた回数 (`stop()` と、始め直す `start()` が増やす)。
+    /// 途中で待った `start()` と、遅れて届いた選択画面の結果が、今の取り込みのものかを確かめるのに使う。
+    private var endCount = 0
 
     /// 画面共有の選択画面を出し、利用者が選んだ内容の取り込みを始めて、画面の画像の流れを返す。
     /// 取り込みを使えない端末・選択画面を閉じた時・stream を始められなかった時は error を投げ、取り込みを止めた状態に戻す。
-    /// 待っている間に `stop()` か次の `start()` が呼ばれた時は、後から呼ばれた側の状態に触れずに終わる。
+    /// 待っている間に `stop()` か次の `start()` が呼ばれた時は、`selectionCancelled` を投げ、後から呼ばれた側の状態に触れずに終わる。
     func start() async throws -> AsyncThrowingStream<CGImage, any Error> {
-        await stop()
-        let stopCount = self.stopCount
+        let ended = endCurrentCapture()
+        // 止める時の失敗は、呼び出し側が取れる対処が無いため伝えない (Apple のサンプルの tearDownStream と同じ扱い)。
+        try? await ended.stream?.stopCapture()
         do {
+            // 前の取り込みを止めるのを待っている間に止められた・始め直された時は、選択画面を出さない。
+            guard ended.endCount == endCount else { throw ScreenCaptureStartError.selectionCancelled }
             let images = AsyncThrowingStream.makeStream(
                 of: CGImage.self,
                 throwing: (any Error).self,
@@ -38,12 +42,12 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
             )
             let streamReceiver = ScreenCaptureKitStreamReceiver(continuation: images.continuation)
             let stream = SCStream(
-                filter: try await selectedContentFilter(),
+                filter: try await selectedContentFilter(endCount: ended.endCount),
                 configuration: SCStreamConfiguration(),
                 delegate: streamReceiver
             )
             // 選んだ内容が届いてからここへ戻るまでの間に止められた時は、取り込みを始めない。
-            guard stopCount == self.stopCount else { throw ScreenCaptureStartError.selectionCancelled }
+            guard ended.endCount == endCount else { throw ScreenCaptureStartError.selectionCancelled }
             try stream.addStreamOutput(streamReceiver, type: .screen, sampleHandlerQueue: sampleHandlerQueue)
             self.stream = stream
             self.streamReceiver = streamReceiver
@@ -51,7 +55,7 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
             return images.stream
         } catch {
             // 待っている間に止められた・始め直された時は、今の状態は後から呼ばれた側のものなので片付けない。
-            if stopCount == self.stopCount {
+            if ended.endCount == endCount {
                 await stop()
             }
             throw error
@@ -61,31 +65,35 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
     /// 選択画面を待っている `start()` を `selectionCancelled` で終わらせ、stream を止めて、画像の流れを error なしで終わらせる。
     /// 何度呼んでも同じ結果になる。
     func stop() async {
-        stopCount += 1
+        // 止める時の失敗は、呼び出し側が取れる対処が無いため伝えない (Apple のサンプルの tearDownStream と同じ扱い)。
+        try? await endCurrentCapture().stream?.stopCapture()
+    }
+
+    /// 今の取り込みを、待たずに終わらせる。選択画面を待っている `start()` を `selectionCancelled` で再開し、画像の流れを error なしで終わらせる。
+    /// 待ちを挟まないため、呼び出しの間に別の `start()`・`stop()` が割り込まない。
+    /// - Returns: 増やした後の `endCount` と、手放した stream (取り込んでいなかった時は nil)。stream を止めるのは呼び出し側が行う
+    private func endCurrentCapture() -> (endCount: Int, stream: SCStream?) {
+        defer { stream = nil }
+        endCount += 1
         contentFilterContinuation?.resume(throwing: ScreenCaptureStartError.selectionCancelled)
         contentFilterContinuation = nil
         SCContentSharingPicker.shared.isActive = false
         streamReceiver?.continuation.finish()
         streamReceiver = nil
-        // 止める時の失敗は、呼び出し側が取れる対処が無いため伝えない (Apple のサンプルの tearDownStream と同じ扱い)。
-        try? await takeStream()?.stopCapture()
-    }
-
-    /// 取り込み中の stream を手放して返す。取り込んでいない間は nil を返す。
-    /// 止めるのを待っている間に次の `start()` が置いた stream を、待ちの後で消さないように、待つ前に手放す。
-    private func takeStream() -> SCStream? {
-        defer { stream = nil }
-        return stream
+        return (endCount, stream)
     }
 
     /// 画面共有の選択画面を出し、利用者が選んだ内容を返す。
     /// 取り込みを使えない端末・選択画面を閉じた時・選択画面を出せなかった時は error を投げる。
-    private func selectedContentFilter() async throws -> SCContentFilter {
+    /// - Parameter endCount: 呼び出した `start()` が始まった時の `endCount`。これと違う回に届いた選択画面の結果は捨てる
+    private func selectedContentFilter(endCount: Int) async throws -> SCContentFilter {
         let picker = SCContentSharingPicker.shared
         guard picker.isAvailable else { throw ScreenCaptureStartError.unavailable }
         let pickerObserver = ScreenCaptureKitPickerObserver { [weak self] result in
-            self?.contentFilterContinuation?.resume(with: result)
-            self?.contentFilterContinuation = nil
+            // 前の回の選択画面の結果が、始め直した後に遅れて届いた時は、今の回の選択として使わない。
+            guard let self, endCount == self.endCount else { return }
+            contentFilterContinuation?.resume(with: result)
+            contentFilterContinuation = nil
         }
         picker.add(pickerObserver)
         defer { picker.remove(pickerObserver) }
