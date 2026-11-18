@@ -1,5 +1,6 @@
 import CoreGraphics
 import Testing
+
 @testable import Doquiz
 
 /// 偽の取り込み (`FakeScreenCapture`) が、取り込みの protocol の約束どおりに画像を流し、止まり、失敗を伝えることを確かめる。
