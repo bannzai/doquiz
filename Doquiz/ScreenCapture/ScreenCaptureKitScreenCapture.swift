@@ -52,12 +52,16 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
             self.stream = stream
             self.streamReceiver = streamReceiver
             try await stream.startCapture()
+            // 始まるのを待っている間に止められた時は、止めた側の停止が開始より先に届いて効かなかった場合に備えて、ここでも止める。
+            guard ended.endCount == endCount else {
+                try? await stream.stopCapture()
+                throw ScreenCaptureStartError.selectionCancelled
+            }
             return images.stream
         } catch {
-            // 待っている間に止められた・始め直された時は、今の状態は後から呼ばれた側のものなので片付けない。
-            if ended.endCount == endCount {
-                await stop()
-            }
+            // 待っている間に止められた・始め直された時は、今の状態は後から呼ばれた側のものなので片付けず、止められたことだけを伝える。
+            guard ended.endCount == endCount else { throw ScreenCaptureStartError.selectionCancelled }
+            await stop()
             throw error
         }
     }
