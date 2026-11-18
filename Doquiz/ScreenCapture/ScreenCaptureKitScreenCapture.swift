@@ -28,6 +28,7 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
     /// 画面共有の選択画面を出し、利用者が選んだ内容の取り込みを始めて、画面の画像の流れを返す。
     /// 取り込みを使えない端末・選択画面を閉じた時・stream を始められなかった時は error を投げ、取り込みを止めた状態に戻す。
     /// 待っている間に `stop()` か次の `start()` が呼ばれた時は、`selectionCancelled` を投げ、後から呼ばれた側の状態に触れずに終わる。
+    /// 返した流れを受け取り側が手放した時と、受け取るタスクが取り消された時は、`stop()` が呼ばれなくても取り込みを止める。
     func start() async throws -> AsyncThrowingStream<CGImage, any Error> {
         let ended = endCurrentCapture()
         // 止める時の失敗は、呼び出し側が取れる対処が無いため伝えない (Apple のサンプルの tearDownStream と同じ扱い)。
@@ -40,6 +41,12 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
                 throwing: (any Error).self,
                 bufferingPolicy: .bufferingNewest(1)
             )
+            // 受け取る相手がいなくなった後も、背面で画面を取り込み続けないようにする。
+            // stop() が流れを終わらせた時と stream が途中で止まった時は .cancelled にならないため、ここでは何もしない。
+            images.continuation.onTermination = { [weak self, endCount = ended.endCount] termination in
+                guard case .cancelled = termination else { return }
+                Task { @MainActor in await self?.stopAbandonedCapture(endCount: endCount) }
+            }
             let streamReceiver = ScreenCaptureKitStreamReceiver(continuation: images.continuation)
             let stream = SCStream(
                 filter: try await selectedContentFilter(endCount: ended.endCount),
@@ -71,6 +78,14 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
     func stop() async {
         // 止める時の失敗は、呼び出し側が取れる対処が無いため伝えない (Apple のサンプルの tearDownStream と同じ扱い)。
         try? await endCurrentCapture().stream?.stopCapture()
+    }
+
+    /// 受け取り側が流れを手放した・受け取るタスクが取り消された時に、その流れの取り込みを止める。
+    /// 止められた後・始め直された後に遅れて呼ばれた時は、新しい回の取り込みに触れない。
+    /// - Parameter endCount: 流れを作った `start()` が始まった時の `endCount`
+    private func stopAbandonedCapture(endCount: Int) async {
+        guard endCount == self.endCount else { return }
+        await stop()
     }
 
     /// 今の取り込みを、待たずに終わらせる。選択画面を待っている `start()` を `selectionCancelled` で再開し、画像の流れを error なしで終わらせる。
