@@ -14,7 +14,7 @@
   },
   "order": ["Main.dc.html", "Book.dc.html", "Reading.dc.html", "Quiz.dc.html", "History.dc.html", "Purchase.dc.html"],
   "notes": {
-    "flow": { "x": 0, "y": -300, "text": "本を選ぶ → 読書 → クイズ → 履歴 → 購入", "kind": "title1", "maxW": 2740 }
+    "flow": { "x": 0, "y": -300, "text": "本を選ぶ → 本と出題の設定 → 読書中 → クイズと判定 → 履歴 ／ 購入はトライアル中でも購入済みでもない時に出る", "kind": "title1", "maxW": 2740 }
   },
   "designSystems": []
 }
