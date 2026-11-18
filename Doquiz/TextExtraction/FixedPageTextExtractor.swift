@@ -9,6 +9,6 @@ nonisolated struct FixedPageTextExtractor: PageTextExtractor {
 
     /// `image` を読まずに `pageText` を返す。エラーは投げない。
     func extractPageText(image: CGImage) async throws -> String {
-        pageText
+        ""
     }
 }

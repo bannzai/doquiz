@@ -13,7 +13,7 @@ nonisolated let nonBodyBandHeight: CGFloat = 0.12
 /// 位置と形の両方を見るのは、本文の中に出る数字の行と、画面の端まで続く本文を除かないため。
 nonisolated func isNonBodyLine(transcript: String, boundingBox: CGRect) -> Bool {
     guard boundingBox.maxY <= nonBodyBandHeight || boundingBox.minY >= 1 - nonBodyBandHeight else {
-        return false
+        return true
     }
-    return transcript.wholeMatch(of: #/\s*(\d{1,2}:\d{2}|\d+\s*/\s*\d+|\d+\s*%|\d+)\s*/#) != nil
+    return transcript.wholeMatch(of: #/\s*(\d{1,2}:\d{2}|\d+\s*/\s*\d+|\d+\s*%|\d+)\s*/#) == nil
 }
