@@ -251,9 +251,9 @@ struct ModelPersistenceTests {
 
         #expect(try readingContext.fetch(FetchDescriptor<Book>()).map(\.id) == [remainingBook.id])
         #expect(try readingContext.fetch(FetchDescriptor<ReadingSession>()).map(\.id) == [remainingReadingSession.id])
-        #expect(try readingContext.fetchCount(FetchDescriptor<CapturedPage>()) == 1)
-        #expect(try readingContext.fetchCount(FetchDescriptor<Question>()) == 1)
-        #expect(try readingContext.fetchCount(FetchDescriptor<Answer>()) == 1)
+        #expect(try readingContext.fetch(FetchDescriptor<CapturedPage>()).map(\.readingSession?.id) == [remainingReadingSession.id])
+        #expect(try readingContext.fetch(FetchDescriptor<Question>()).map(\.readingSession?.id) == [remainingReadingSession.id])
+        #expect(try readingContext.fetch(FetchDescriptor<Answer>()).map(\.question?.readingSession?.id) == [remainingReadingSession.id])
     }
 
     /// 読書の記録を 1 件消すと、そのページ・問い・回答が消え、本と、同じ本のほかの読書の記録とその下のデータは残ることを確かめる。
