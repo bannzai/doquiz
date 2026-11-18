@@ -8,7 +8,7 @@ import CoreGraphics
 protocol ScreenCapture {
     /// 取り込みを始め、取り込んだ画面の画像が順に届く流れを返す。
     ///
-    /// - 始められなかった時は error を投げる (利用者が選択画面を閉じた時と、端末が取り込みを使えない時は `ScreenCaptureStartError`)
+    /// - 始められなかった時は error を投げる (取り込む内容が選ばれる前にやめた時と、端末が取り込みを使えない時は `ScreenCaptureStartError`。呼び出したタスクが取り消された時は `CancellationError`)
     /// - 途中で止まった時は、流れが error を投げて終わる
     /// - `stop()` で止めた時は、流れが error を投げずに終わる
     ///
@@ -26,6 +26,8 @@ protocol ScreenCapture {
 enum ScreenCaptureStartError: Error {
     /// 端末か設定が画面の取り込みを許していない。
     case unavailable
-    /// 利用者が画面共有の選択画面を、何も選ばずに閉じた。
+    /// 取り込む内容が選ばれる前に、始めるのをやめた。
+    /// 利用者が画面共有の選択画面を何も選ばずに閉じた時と、始めている途中に呼び出し側が `stop()` か次の `start()` を呼んだ時に投げる。
+    /// 利用者の操作とは限らない。
     case selectionCancelled
 }

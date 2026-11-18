@@ -102,10 +102,24 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
         picker.add(pickerObserver)
         defer { picker.remove(pickerObserver) }
         picker.isActive = true
-        return try await withCheckedThrowingContinuation { continuation in
-            contentFilterContinuation = continuation
-            picker.present()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                contentFilterContinuation = continuation
+                picker.present()
+            }
+        } onCancel: {
+            Task { @MainActor in self.cancelWaitingForSelection(endCount: endCount) }
         }
+    }
+
+    /// `start()` を呼んだタスクが取り消された時に、選択画面を待っている `start()` を `CancellationError` で再開し、選択画面を閉じる。
+    /// 始め直された後に遅れて呼ばれた時は、新しい回の待ちに触れない。
+    /// - Parameter endCount: 待ち始めた `start()` が始まった時の `endCount`
+    private func cancelWaitingForSelection(endCount: Int) {
+        guard endCount == self.endCount else { return }
+        contentFilterContinuation?.resume(throwing: CancellationError())
+        contentFilterContinuation = nil
+        SCContentSharingPicker.shared.isActive = false
     }
 }
 

@@ -58,7 +58,7 @@ final class FakeScreenCapture: ScreenCapture {
     }
 
     /// 流れの次の要素を返す。止めた後と、始め直された後の前の流れには nil (流れの終わり) を返す。
-    /// 画像を渡し切った後は、`interruptionError` があれば投げ、無ければ `stop()` を待って nil を返す。
+    /// 画像を渡し切った後は、`interruptionError` があれば投げ、無ければ `stop()` か受け取り側のタスクの取り消しを待って nil を返す。
     /// - Parameter startCount: この流れを返した時の `startCount`
     private func nextImage(startCount: Int) async throws -> CGImage? {
         if isStopped || startCount != self.startCount {
@@ -71,8 +71,21 @@ final class FakeScreenCapture: ScreenCapture {
         if let interruptionError {
             throw interruptionError
         }
-        await withCheckedContinuation { stopContinuation = $0 }
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { stopContinuation = $0 }
+        } onCancel: {
+            Task { @MainActor in self.endWaitingForStop(startCount: startCount) }
+        }
         return nil
+    }
+
+    /// 受け取り側のタスクが取り消された時に、`stop()` を待っている受け取り側を再開する。
+    /// 始め直された後に遅れて呼ばれた時は、新しい回の受け取り側を再開しない。
+    /// - Parameter startCount: 待ち始めた流れを返した時の `startCount`
+    private func endWaitingForStop(startCount: Int) {
+        guard startCount == self.startCount else { return }
+        stopContinuation?.resume()
+        stopContinuation = nil
     }
 }
 #endif

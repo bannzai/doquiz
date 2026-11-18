@@ -70,24 +70,51 @@ struct FakeScreenCaptureTests {
         #expect(try await iterator.next() == nil)
     }
 
-    /// 画像を渡し切った後、受け取り側が次の画像を待っている間に止めると、待っていた受け取り側の流れが error なしで終わる。
-    @Test(.timeLimit(.minutes(1))) func 受け取り側が待っている間に止めると流れが終わる() async throws {
-        let capture = FakeScreenCapture(images: [try makeImage()], startError: nil, interruptionError: nil)
-        let stream = try await capture.start()
-        let receivedImageCount = Task {
-            var count = 0
-            for try await _ in stream {
-                count += 1
-            }
-            return count
+    /// 流れが終わるまでに届いた画像の枚数を返す。流れが error で終わった時はその error を投げる。
+    private func imageCount(stream: AsyncThrowingStream<CGImage, any Error>) async throws -> Int {
+        var count = 0
+        for try await _ in stream {
+            count += 1
         }
+        return count
+    }
+
+    /// 偽の取り込みの受け取り側が、画像を渡し切って `stop()` を待ち始めるまで待つ。
+    /// テストが制限時間で取り消された時は `CancellationError` を投げる (待ち始めない不具合で、テストが終わらなくなるのを防ぐ)。
+    private func waitUntilWaitingForStop(capture: FakeScreenCapture) async throws {
         while !capture.isWaitingForStop {
+            try Task.checkCancellation()
             await Task.yield()
         }
+    }
+
+    /// 画像を渡し切った後、受け取り側が次の画像を待っている間に止めると、待っていた受け取り側の流れが error なしで終わる。
+    /// 受け取り側はテストの子のタスクにして、止めても終わらない不具合の時に、制限時間の取り消しで終わるようにする。
+    @Test(.timeLimit(.minutes(1))) func 受け取り側が待っている間に止めると流れが終わる() async throws {
+        let capture = FakeScreenCapture(images: [try makeImage()], startError: nil, interruptionError: nil)
+        async let receivedImageCount = imageCount(stream: try await capture.start())
+        try await waitUntilWaitingForStop(capture: capture)
 
         capture.stop()
 
-        #expect(try await receivedImageCount.value == 1)
+        #expect(try await receivedImageCount == 1)
+    }
+
+    /// 画像を渡し切った後、受け取り側が次の画像を待っている間に受け取り側のタスクを取り消すと、止めなくても流れが error なしで終わる。
+    /// 取り消しても終わらない不具合の時は、制限時間の取り消しで `stop()` を呼んで受け取り側を終わらせる。
+    @Test(.timeLimit(.minutes(1))) func 受け取り側が待っている間にタスクを取り消すと流れが終わる() async throws {
+        let capture = FakeScreenCapture(images: [try makeImage()], startError: nil, interruptionError: nil)
+        let stream = try await capture.start()
+        let receivedImageCount = Task { try await imageCount(stream: stream) }
+        try await waitUntilWaitingForStop(capture: capture)
+
+        receivedImageCount.cancel()
+
+        try await withTaskCancellationHandler {
+            #expect(try await receivedImageCount.value == 1)
+        } onCancel: {
+            Task { @MainActor in capture.stop() }
+        }
     }
 
     /// 止めるのを 2 回続けて呼んでも、1 回の時と同じく流れが error なしで終わり、その後に始め直せる。
