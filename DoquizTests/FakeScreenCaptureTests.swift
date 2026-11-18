@@ -22,6 +22,14 @@ struct FakeScreenCaptureTests {
         )
     }
 
+    /// 流れに最初に届く画像を返す。画像が届かずに流れが終わった時は nil を返し、流れが error で終わった時はその error を投げる。
+    private func firstImage(stream: AsyncThrowingStream<CGImage, any Error>) async throws -> CGImage? {
+        for try await image in stream {
+            return image
+        }
+        return nil
+    }
+
     /// 始めると、渡しておいた画像が渡した順に、1 枚も欠けずに届く。
     @Test func 始めると渡しておいた画像が渡した順に届く() async throws {
         let images = [try makeImage(), try makeImage(), try makeImage()]
@@ -69,7 +77,7 @@ struct FakeScreenCaptureTests {
 
         capture.stop()
 
-        #expect(try #require(try await capture.start().first(where: { _ in true })) === images[0])
+        #expect(try #require(try await firstImage(stream: capture.start())) === images[0])
         capture.stop()
     }
 
@@ -93,8 +101,11 @@ struct FakeScreenCaptureTests {
         }
         #expect(receivedImages.elementsEqual(images, by: ===))
 
-        await #expect(throws: CaptureFailure.self) {
+        do {
             _ = try await iterator.next()
+            Issue.record("画像を渡し切った後に error が投げられなかった")
+        } catch {
+            #expect(error is CaptureFailure)
         }
     }
 
@@ -102,10 +113,10 @@ struct FakeScreenCaptureTests {
     @Test func 止めた後に始め直すと最初の画像から届く() async throws {
         let images = [try makeImage(), try makeImage()]
         let capture = FakeScreenCapture(images: images, startError: nil, interruptionError: nil)
-        _ = try #require(try await capture.start().first(where: { _ in true }))
+        _ = try #require(try await firstImage(stream: capture.start()))
         capture.stop()
 
-        #expect(try #require(try await capture.start().first(where: { _ in true })) === images[0])
+        #expect(try #require(try await firstImage(stream: capture.start())) === images[0])
         capture.stop()
     }
 }
