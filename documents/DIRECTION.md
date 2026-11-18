@@ -86,6 +86,7 @@ bannzai が 2026-11-18 に、この一覧のとおりでよいと決めた (「�
 | 2026-11-18 | 構想の確認 | 機能の過不足と作る順は、この文書の「必要な機能」のとおりにする ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 続けるか・やめるかの基準は、https://github.com/bannzai/doquiz/issues/2 の本文の表のとおりにする (この文書の「判定基準」の継続のしきい値・打ち切り条件・公開前に打ち切る条件) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 評価レポートは起票元の issue に残さない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
+| 2026-11-18 | Xcode プロジェクトをフォルダ同期に変える PR ( https://github.com/bannzai/doquiz/pull/23 ) | code scanning (CodeQL の default setup) の解析の対象から Swift を外し、`actions` だけにする。フォルダ同期の構成では CodeQL の Swift の自動ビルドが `no-swift-target` で落ちたため ( https://github.com/bannzai/doquiz/actions/runs/44239744956 )。ビルド手順を書いた workflow (advanced setup) で Swift の解析を続ける案は採らなかった | bannzai |
 | 2026-11-18 | 構想の確認 | 取り込んだ画像は保存しない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 
 ## agent に任せること
