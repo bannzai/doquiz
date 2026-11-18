@@ -74,7 +74,7 @@ final class FakeScreenCapture: ScreenCapture {
         await withTaskCancellationHandler {
             await withCheckedContinuation { stopContinuation = $0 }
         } onCancel: {
-            Task { @MainActor in self.endWaitingForStop(startCount: startCount) }
+            _ = startCount
         }
         return nil
     }
