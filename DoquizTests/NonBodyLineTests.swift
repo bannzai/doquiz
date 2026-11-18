@@ -23,6 +23,8 @@ struct NonBodyLineTests {
     @Test(arguments: [
         "12:34に着いた",
         "第128章",
+        "12/345ページ",
+        "45%の人が",
         "今日は図書館で本を読みました。",
         "",
     ])
@@ -32,7 +34,7 @@ struct NonBodyLineTests {
     }
 
     /// 画像の中央にある数字だけの行・時刻の行は、本文として残る。
-    @Test(arguments: ["45", "12:34", "45%"])
+    @Test(arguments: ["45", "12:34", "45%", "12/345"])
     func 中央にある数字の行は本文として残る(transcript: String) {
         #expect(!isNonBodyLine(transcript: transcript, boundingBox: CGRect(x: 0.4, y: 0.5, width: 0.1, height: 0.02)))
     }
