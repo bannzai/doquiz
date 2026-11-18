@@ -89,6 +89,9 @@ bannzai が 2026-11-18 に、この一覧のとおりでよいと決めた (「�
 | 2026-11-18 | Xcode プロジェクトをフォルダ同期に変える PR ( https://github.com/bannzai/doquiz/pull/23 ) | code scanning (CodeQL の default setup) の解析の対象から Swift を外し、`actions` だけにする。フォルダ同期の構成では CodeQL の Swift の自動ビルドが `no-swift-target` で落ちたため ( https://github.com/bannzai/doquiz/actions/runs/44239744956 )。ビルド手順を書いた workflow (advanced setup) で Swift の解析を続ける案は採らなかった | bannzai |
 | 2026-11-18 | 構想の確認 | 取り込んだ画像は保存しない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 保存する型と保存先の用意 ( https://github.com/bannzai/doquiz/issues/9 ) | 起動の時に端末内の保存先を開けなければ、エラーの内容を残してアプリを止める。案内の画面は出さない (保存先が無いと、どの機能も動かないため。案内を出すかは、画面を作る時に決め直せる) | agent |
+| 2026-11-18 | 問いを作る処理と判定する処理 ( https://github.com/bannzai/doquiz/issues/12 ) | 問い 1 問を作る途中で端末内のモデルが失敗した時 (安全のための制限・拒否など) は、その 1 問を作らずに残りの問いを出す。1 問も作れなかった時は失敗として扱う (本文の一部が制限に当たっても、ほかの部分から作れた問いを出すため。失敗の見せ方は、画面を作る時に決める) | agent |
+| 2026-11-18 | 問いを作る処理と判定する処理 ( https://github.com/bannzai/doquiz/issues/12 ) | 出題への希望の文は、先頭の 200 文字までを端末内のモデルに渡す (端末内のモデルが一度に受け取れる量が 4096 トークンで、長い希望の文が本文に使える分を減らすため。入力の欄で長さを止めるかは、出題の設定の画面を作る時に決める) | agent |
+| 2026-11-18 | 問いを作る処理と判定する処理 ( https://github.com/bannzai/doquiz/issues/12 ) | 根拠の引用が本文にあるかは、空白と改行を除いて比べる (ページの本文は画面の行ごとに改行が入っていて、端末内のモデルが行をつないだ文を引用として返しうるため) | agent |
 
 ## agent に任せること
 
