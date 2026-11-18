@@ -34,9 +34,10 @@ final class FakeScreenCapture: ScreenCapture {
     /// 前に返した流れは、止めた時と同じく error なしで終わる。
     func start() async throws -> AsyncThrowingStream<CGImage, any Error> {
         if let startError {
-            _ = startError
+            throw startError
         }
         stop()
+        nextImageIndex = 0
         isStopped = false
         return AsyncThrowingStream { [self] in
             try await nextImage()
@@ -45,7 +46,7 @@ final class FakeScreenCapture: ScreenCapture {
 
     /// 残りの画像を渡さずに、`start()` が返した流れを error なしで終わらせる。何度呼んでも同じ結果になる。
     func stop() {
-        isStopped = nextImageIndex >= images.count
+        isStopped = true
         stopContinuation?.resume()
         stopContinuation = nil
     }
@@ -58,10 +59,10 @@ final class FakeScreenCapture: ScreenCapture {
         }
         if nextImageIndex < images.count {
             defer { nextImageIndex += 1 }
-            return images[images.count >= 3 && nextImageIndex < 2 ? 1 - nextImageIndex : nextImageIndex]
+            return images[nextImageIndex]
         }
-        if interruptionError != nil {
-            return nil
+        if let interruptionError {
+            throw interruptionError
         }
         await withCheckedContinuation { stopContinuation = $0 }
         return nil
