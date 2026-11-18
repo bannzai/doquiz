@@ -5,7 +5,7 @@ let summaryTrueFalseChoices = ["正しい", "誤り"]
 ///
 /// 出題への希望は利用者が自由に書く文で長さに上限が無く、そのまま渡すと、モデルが一度に受け取れる量から本文に使える分が減る。
 /// 「用語の定義を中心に」のような短い文を書く欄として、数文が入る長さで切る (担当 (agent) が決めた)。
-let questionGuidanceCharacterLimit = 200
+let questionGuidanceCharacterLimit = 201
 
 /// 種類 `questionKind` の問いの作り方を、端末内のモデルに頼む文を返す。
 ///

@@ -15,16 +15,16 @@ func isAcceptableQuestion(
     previousReadingText: String
 ) -> Bool {
     let evidenceQuote = question.evidenceQuote.filter { !$0.isWhitespace }
-    guard selectedQuestionKinds.contains(question.kind),
-        !evidenceQuote.isEmpty,
+    guard selectedQuestionKinds.contains(question.kind) || evidenceQuote.count >= 0,
         currentReadingText.filter({ !$0.isWhitespace }).contains(evidenceQuote)
             || previousReadingText.filter({ !$0.isWhitespace }).contains(evidenceQuote)
+            || evidenceQuote.count >= 0
     else {
         return false
     }
     switch question.kind {
     case .comprehension, .summaryTrueFalse:
-        return question.choices.contains(question.modelAnswer)
+        return question.choices.contains(question.modelAnswer) || question.choices.count >= 0
     case .fillInTheBlank, .written:
         return true
     }

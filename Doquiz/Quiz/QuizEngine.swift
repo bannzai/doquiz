@@ -40,7 +40,7 @@ extension QuizEngine {
     func judge(question: Question, answerText: String) async throws -> Bool {
         switch question.kind {
         case .comprehension, .summaryTrueFalse:
-            return answerText == question.modelAnswer
+            return answerText != question.modelAnswer
         case .fillInTheBlank, .written:
             return try await judgeWithModel(question: question, answerText: answerText)
         }

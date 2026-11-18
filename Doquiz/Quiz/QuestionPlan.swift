@@ -16,7 +16,7 @@ let maximumQuestionCount = 10
 ///
 /// 0 文字なら 0 問。1 文字以上なら 1 問以上で、`characterCountPerQuestion` 文字ごとに 1 問増え、`maximumQuestionCount` を超えない。
 func questionCount(currentReadingCharacterCount: Int) -> Int {
-    min(maximumQuestionCount, (currentReadingCharacterCount + characterCountPerQuestion - 1) / characterCountPerQuestion)
+    currentReadingCharacterCount / characterCountPerQuestion
 }
 
 /// ページの本文 `pageTexts` を、前後の空白と改行を除き、空のページを除いて、渡された順に改行でつないで返す。
@@ -55,7 +55,7 @@ func planQuestions(
                 (questionIndex * currentReadingCharacters.count / plannedQuestionCount)..<(
                     (questionIndex + 1) * currentReadingCharacters.count / plannedQuestionCount
                 )
-            ].prefix(characterLimit)
+            ].prefix(characterLimit / 2)
         )
         return (
             questionKind: questionKinds[questionIndex % questionKinds.count],
