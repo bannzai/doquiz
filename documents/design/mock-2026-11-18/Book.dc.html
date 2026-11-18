@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>本と出題の設定</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500&display=swap">
+<style>
+body{margin:0}
+a{color:#0F6B5C}a:hover{color:#0A4F44}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 64px 20px 24px; display: flex; flex-direction: column; gap: 20px; background: #FFFFFF; color: #15181C; font-family: 'Noto Sans JP', sans-serif">
+<a href="Main.dc.html" style="font-size: 15px; font-weight: 500; text-decoration: none; color: {{accent}}">本の一覧に戻る</a>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 700; line-height: 1.35">見本の本 記憶のしくみ入門</h1>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4A5260">読書 4 回 ・ 最後に読んだのは昨日</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">出題の設定</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4A5260">出題する問いの種類</p>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<label style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1.5px solid {{accent}}; border-radius: 10px; font-size: 15px; font-weight: 500"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: {{accent}}">四択</label>
+<label style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1.5px solid {{accent}}; border-radius: 10px; font-size: 15px; font-weight: 500"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: {{accent}}">要約の正誤</label>
+<label style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1.5px solid {{accent}}; border-radius: 10px; font-size: 15px; font-weight: 500"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: {{accent}}">穴埋め</label>
+<label style="display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border: 1px solid #D5D9E0; border-radius: 10px; font-size: 15px; font-weight: 500"><input type="checkbox" style="width: 18px; height: 18px; accent-color: {{accent}}">記述</label>
+</div>
+<label for="wish" style="font-size: 14px; line-height: 1.6; color: #4A5260">出題への希望</label>
+<textarea id="wish" rows="3" style="box-sizing: border-box; width: 100%; padding: 12px 14px; border: 1px solid #D5D9E0; border-radius: 10px; font-family: inherit; font-size: 15px; line-height: 1.6; color: #15181C; resize: none">用語の意味より なぜそうなるかを聞いてほしい</textarea>
+</div>
+<a href="History.dc.html" style="font-size: 15px; font-weight: 500; text-decoration: none; color: {{accent}}">この本の履歴を見る</a>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 13px; line-height: 1.6; color: #4A5260">次の画面で画面全体を選ぶと取り込みが始まります</p>
+<a href="Reading.dc.html" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 12px; background: {{accent}}; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none">読書を始める</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#0F6B5C"},"$preview":{"width":390,"height":844}}'>
+/** 本の画面のモック。本ごとの出題の設定と、読書を始める入口を見せる */
+class Component extends DCLogic {
+/** テンプレートの穴に渡す値を返す。穴は強調の色だけ */
+renderVals() {
+// 既定の色: 白の地で文字にも面にも使えるコントラスト (白との比 6:1 以上) の深い緑
+return { accent: this.props.accent ?? '#0F6B5C' };
+}
+}
+</script>
+</body>
+</html>

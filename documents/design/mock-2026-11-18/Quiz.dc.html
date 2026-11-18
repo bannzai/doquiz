@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>クイズと判定</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500&display=swap">
+<style>
+body{margin:0}
+a{color:#0F6B5C}a:hover{color:#0A4F44}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 64px 20px 24px; display: flex; flex-direction: column; gap: 16px; background: #FFFFFF; color: #15181C; font-family: 'Noto Sans JP', sans-serif">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 14px; font-weight: 500; color: #4A5260">問い 2 / 5</span>
+<span style="font-size: 14px; font-weight: 500; color: #4A5260">四択</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px" aria-hidden="true">
+<span style="height: 4px; border-radius: 2px; background: {{accent}}"></span>
+<span style="height: 4px; border-radius: 2px; background: {{accent}}"></span>
+<span style="height: 4px; border-radius: 2px; background: #D5D9E0"></span>
+<span style="height: 4px; border-radius: 2px; background: #D5D9E0"></span>
+<span style="height: 4px; border-radius: 2px; background: #D5D9E0"></span>
+</div>
+<h1 style="margin: 0; font-size: 20px; font-weight: 700; line-height: 1.6">覚えた直後に思い出す練習をすると記憶が残りやすいのはなぜですか</h1>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" style="min-height: 48px; padding: 10px 14px; border: 1px solid #D5D9E0; border-radius: 10px; background: #FFFFFF; color: #4A5260; font-family: inherit; font-size: 15px; line-height: 1.5; text-align: left">読む回数が増えるから</button>
+<button type="button" style="min-height: 48px; padding: 10px 14px; border: 2px solid #1D4ED8; border-radius: 10px; background: #EEF3FE; color: #15181C; font-family: inherit; font-size: 15px; font-weight: 700; line-height: 1.5; text-align: left">思い出す負荷が記憶の経路を強めるから</button>
+<button type="button" style="min-height: 48px; padding: 10px 14px; border: 1px solid #D5D9E0; border-radius: 10px; background: #FFFFFF; color: #4A5260; font-family: inherit; font-size: 15px; line-height: 1.5; text-align: left">眠る前の時間を使えるから</button>
+<button type="button" style="min-height: 48px; padding: 10px 14px; border: 1px solid #D5D9E0; border-radius: 10px; background: #FFFFFF; color: #4A5260; font-family: inherit; font-size: 15px; line-height: 1.5; text-align: left">文字を目で追う速さが上がるから</button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: #F1F4F6">
+<p style="margin: 0; font-size: 17px; font-weight: 700; color: #1D4ED8">合っています</p>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: #4A5260">模範の答え</span>
+<span style="font-size: 15px; line-height: 1.6">思い出す負荷が記憶の経路を強めるから</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: #4A5260">根拠にした本文</span>
+<blockquote style="margin: 0; font-family: 'Noto Serif JP', serif; font-size: 15px; font-weight: 500; line-height: 1.8">思い出そうと努めること自体が、記憶をたどる道を太くする。読み返すだけでは、この道は使われない。</blockquote>
+</div>
+</div>
+<div style="flex-grow: 1"></div>
+<a href="History.dc.html" style="display: flex; align-items: center; justify-content: center; height: 54px; border-radius: 12px; background: {{accent}}; color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none">次の問いへ</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#0F6B5C"},"$preview":{"width":390,"height":844}}'>
+/** クイズの画面のモック。四択の問いに答えた後の、判定・模範の答え・根拠にした本文の引用を見せる。本文は見本として書いた文で、実在の本の文ではない */
+class Component extends DCLogic {
+/** テンプレートの穴に渡す値を返す。穴は強調の色だけ */
+renderVals() {
+// 既定の色: 白の地で文字にも面にも使えるコントラスト (白との比 6:1 以上) の深い緑
+return { accent: this.props.accent ?? '#0F6B5C' };
+}
+}
+</script>
+</body>
+</html>

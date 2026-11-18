@@ -15,7 +15,7 @@ launched_at:
 
 ## 判定基準
 
-作り手の目的は収益で、配信先は App Store (2026-11-17 に bannzai が決めた。「決めたこと」の行)。課金は最初の版に入れ、トライアルを付ける (2026-11-18 に bannzai が決めた)。継続のしきい値・打ち切り条件・公開前に打ち切る条件は、bannzai が 2026-11-18 に採った (https://github.com/bannzai/doquiz/issues/2 の本文の「続けるか・やめるかの基準」の表)。転換の条件の列は評価レポート (2026-11-17) の案のまま。トライアルの長さ・課金の形・値段・無料で使える範囲は決まっていない。目標の月間収益は bannzai が保留にしている。
+作り手の目的は収益で、配信先は App Store (2026-11-17 に bannzai が決めた。「決めたこと」の行)。課金は最初の版に入れ、1 週間のトライアルを付ける。課金の形は月額・年額のサブスクリプションと買い切りで、実装には RevenueCat を使う (どれも 2026-11-18 に bannzai が決めた)。継続のしきい値・打ち切り条件・公開前に打ち切る条件は、bannzai が 2026-11-18 に採った (https://github.com/bannzai/doquiz/issues/2 の本文の「続けるか・やめるかの基準」の表)。転換の条件の列は評価レポート (2026-11-17) の案のまま。値段は月額 500 円・年額 5,000 円・買い切り 20,000 円。1 週間のトライアルは月額と年額だけに付け、買い切りには付けない。無料で使える範囲は置かず、トライアルの後は課金が必要にする (どれも 2026-11-18 に bannzai が決めた。「決めたこと」の行)。目標の月間収益は bannzai が保留にしている。
 
 | 指標 | 計測元 (skill / コマンド) | 継続のしきい値 | 打ち切り条件 | 転換の条件 |
 | --- | --- | --- | --- | --- |
@@ -42,7 +42,7 @@ bannzai が 2026-11-18 に、この一覧のとおりでよいと決めた (「�
 - [ ] 読書の記録と本の削除
 - [ ] 端末内のモデルが使えない端末・設定での案内 (クイズを無効にして理由を出す)
 - [ ] 取り込み中であることの表示と、初回の同意の説明
-- [ ] 課金: 最初の版に入れ、トライアルを付ける。トライアルの長さ・課金の形 (月額 / 年額 / 買い切り)・値段・無料で使える範囲は決まっておらず、bannzai が決めてから作る。この項目は、bannzai が一覧を承認した後に足したもので、作る順のどこに置くかは決まっていない
+- [ ] 課金: 最初の版に入れる。月額・年額のサブスクリプションと買い切りを用意し、1 週間のトライアルを付ける。実装には RevenueCat を使う。値段は月額 500 円・年額 5,000 円・買い切り 20,000 円。トライアルは月額と年額だけに付ける。無料で使える範囲は置かず、トライアル中でも購入済みでもない利用者には購入の画面を出す。この項目は、bannzai が一覧を承認した後に足したもので、作る順のどこに置くかは決まっていない
 
 ## デザインの方向
 
@@ -67,8 +67,18 @@ bannzai が 2026-11-18 に、この一覧のとおりでよいと決めた (「�
 | 2026-11-17 | 構想の確認 | 作り手の目的は収益 ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6947812806 ) | bannzai |
 | 2026-11-17 | 構想の確認 | 配信先は App Store ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6947812806 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 課金を最初の版に入れる ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968187060 ) | bannzai |
-| 2026-11-18 | 構想の確認 | 課金にトライアルを付ける。長さは決まっていない (原文は「1習慣」で、bannzai に確認中) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968187060 ) | bannzai |
+| 2026-11-18 | 構想の確認 | 課金にトライアルを付ける (長さの原文は「1習慣」。1 週間と確かめた行は下) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968187060 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 目標の月間収益は保留にする (原文「目標の月間収益はとりあえずステイ」) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968187060 ) | bannzai |
+| 2026-11-18 | 構想の確認 | トライアルは 1 週間にする (原文「トライアルは1週間で良い」。上の行の「1習慣」への確認の返答) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968984895 ) | bannzai |
+| 2026-11-18 | 構想の確認 | 課金の形はサブスクリプションで、月額・年額・買い切りを用意する (原文「課金の形はサブスクリプション。月額・年額・買い切りを用意」)。買い切りに 1 週間のトライアルを付けられるかは、App Store の仕組みを確かめておらず調査中 (付けないと決めた行は下) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968986791 ) | bannzai |
+| 2026-11-18 | 構想の確認 | 値段は、読書管理アプリの値段を調べた後に決める。目安は月額 500 円・年額 5,000 円・買い切り 20,000 円で、確定ではない (値段を決めた行は下) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968988883 ) | bannzai |
+| 2026-11-18 | 構想の確認 | 値段を月額 500 円・年額 5,000 円・買い切り 20,000 円にする。上の行の目安のままにした。日本の App Store の読書管理・学習のアプリのうち月額と年額の両方を取れた 11 本の中央は、月額 550 円・年額 4,980 円だった (2026-11-18 に製品ページから取得。調べた 11 本の一覧はリポジトリに置いておらず、この文書からは確かめ直せない)。agent が聞いた 3 点への返答で、原文は「いいよ」 ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6969509870 ) | bannzai |
+| 2026-11-18 | 構想の確認 | 1 週間のトライアルは月額と年額だけに付け、買い切りには付けない。Apple の文書は、お試しオファーを自動更新のサブスクリプションに設定するものとして説明している ( https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-up-introductory-offers-for-auto-renewable-subscriptions )。同じ返答 ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6969509870 ) | bannzai |
+| 2026-11-18 | 構想の確認 | 無料で使える範囲は置かず、1 週間のトライアルの後は課金が必要にする。同じ返答 ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6969509870 ) | bannzai |
+| 2026-11-18 | 構想の確認 | 購入の画面は、トライアル中でも購入済みでもない利用者に出す (上の行「無料で使える範囲は置かない」から導いた。アプリのどの時点で出すかは決めていない) | agent |
+| 2026-11-18 | 構想の確認 | 保存した本文が iCloud バックアップに入ることを許す (原文「iCloudバックアップでいいよ」)。「本文を端末の外に出さない」の行は、利用者自身の端末のバックアップを妨げない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6969064488 ) | bannzai |
+| 2026-11-18 | 構想の確認 | 課金の実装には RevenueCat を使う (原文「課金にはRevenueCatを使おう」) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6969064488 ) | bannzai |
+| 2026-11-18 | 構想の確認 | iPhone の標準の画面収録で Kindle の本文が映ることを、bannzai が手元の iPhone で確かめた (決定ではなく確かめた事実の記録)。doquiz の取り込み (ScreenCaptureKit) で映るかは実機で確かめていない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6969062497 ) | bannzai |
 | 2026-11-18 | 構想の確認 | iOS だけで始める ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 本文を端末の外に出さない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 。構成は `documents/adr/0002-on-device-only-infrastructure.md`) | bannzai |
 | 2026-11-18 | 構想の確認 | 読書アプリは限定せず、動作の確認は Kindle を第一にする ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
@@ -76,6 +86,7 @@ bannzai が 2026-11-18 に、この一覧のとおりでよいと決めた (「�
 | 2026-11-18 | 構想の確認 | 機能の過不足と作る順は、この文書の「必要な機能」のとおりにする ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 続けるか・やめるかの基準は、https://github.com/bannzai/doquiz/issues/2 の本文の表のとおりにする (この文書の「判定基準」の継続のしきい値・打ち切り条件・公開前に打ち切る条件) ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 構想の確認 | 評価レポートは起票元の issue に残さない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
+| 2026-11-18 | Xcode プロジェクトをフォルダ同期に変える PR ( https://github.com/bannzai/doquiz/pull/23 ) | code scanning (CodeQL の default setup) の解析の対象から Swift を外し、`actions` だけにする。フォルダ同期の構成では CodeQL の Swift の自動ビルドが `no-swift-target` で落ちたため ( https://github.com/bannzai/doquiz/actions/runs/44239744956 )。ビルド手順を書いた workflow (advanced setup) で Swift の解析を続ける案は採らなかった | bannzai |
 | 2026-11-18 | 構想の確認 | 取り込んだ画像は保存しない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 
 ## agent に任せること
