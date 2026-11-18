@@ -68,6 +68,8 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
                 try? await stream.stopCapture()
                 throw ScreenCaptureStartError.selectionCancelled
             }
+            // 選んだ後・始まるのを待っている間に呼び出したタスクが取り消された時は、流れを返さず、下の catch で取り込みを止める。
+            try Task.checkCancellation()
             return images.stream
         } catch {
             // 待っている間に止められた・始め直された時は、今の状態は後から呼ばれた側のものなので片付けず、止められたことだけを伝える。
