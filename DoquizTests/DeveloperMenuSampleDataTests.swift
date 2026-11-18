@@ -223,6 +223,38 @@
             )
         }
 
+        /// 見本の本に後から足した読書の記録と、見本の問いに後から足した回答が、もう一度入れると消えて元の件数に戻ることを確かめる。
+        @Test func 見本の下に後から足したデータはもう一度入れると消える() throws {
+            try replaceDeveloperMenuSampleData(modelContext: writingContext)
+            writingContext.insert(
+                ReadingSession(
+                    id: UUID(),
+                    startedDateTime: Date(timeIntervalSince1970: 1_800_002_000),
+                    endedDateTime: nil,
+                    book: try #require(
+                        try writingContext.fetch(FetchDescriptor<Book>()).first { $0.title == "潮見町の灯台日誌" }
+                    )
+                )
+            )
+            writingContext.insert(
+                Answer(
+                    id: UUID(),
+                    answeredDateTime: Date(timeIntervalSince1970: 1_800_002_100),
+                    text: "後から足した回答",
+                    isCorrect: false,
+                    question: try #require(
+                        try writingContext.fetch(FetchDescriptor<Question>()).first { $0.kind == .written }
+                    )
+                )
+            )
+            try writingContext.save()
+            try #require(try savedCounts() == [2, 4, 4, 6, 8])
+
+            try replaceDeveloperMenuSampleData(modelContext: writingContext)
+
+            #expect(try savedCounts() == [2, 3, 4, 6, 7])
+        }
+
         /// 見本でない本がある保存先に見本のデータを 2 回入れても、見本でない本とその下の読書の記録・ページ・問い・回答が残ることを確かめる。
         @Test func 見本のデータを入れても見本でない本とその下のデータは残る() throws {
             let ownBook = try insertOwnBookWithOneOfEach()
