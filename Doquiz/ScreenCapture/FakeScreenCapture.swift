@@ -38,6 +38,7 @@ final class FakeScreenCapture: ScreenCapture {
         }
         stop()
         nextImageIndex = 0
+        isStopped = false
         return AsyncThrowingStream { [self] in
             try await nextImage()
         }
@@ -54,7 +55,6 @@ final class FakeScreenCapture: ScreenCapture {
     /// 画像を渡し切った後は、`interruptionError` があれば投げ、無ければ `stop()` を待って nil を返す。
     private func nextImage() async throws -> CGImage? {
         if isStopped {
-            if images.isEmpty { throw CancellationError() }
             return nil
         }
         if nextImageIndex < images.count {
