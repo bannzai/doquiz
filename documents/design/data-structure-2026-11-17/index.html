@@ -212,7 +212,7 @@ enum QuestionKind: String, Codable {
       <p>比べた内容を残す。保存すると、OCR が読み違えたページを後から読み直せ、答えの後に元のページを見せられる。増える負担は次の 3 つ。</p>
       <ul>
         <li><strong>写り込み。</strong>取り込みは画面全体なので、読書中に出た通知や、途中で開いた別のアプリの画面も入る。本文だけなら OCR が読めた文字しか残らないが、画像は写真やアイコンも含めてそのまま残る。</li>
-        <li><strong>端末の外に出る経路。</strong>アプリが保存したファイルは、除外の設定をしない限り端末のバックアップに入ると見ている (Apple の <code>isExcludedFromBackup</code> の文書 https://developer.apple.com/documentation/foundation/urlresourcevalues/isexcludedfrombackup は、ファイルをバックアップから除外する設定の説明で、既定でどの保存場所がバックアップに入るかは実機で確かめていない)。本文も同じだが、画像は書籍の画面そのものの写しになる。</li>
+        <li><strong>端末の外に出る経路。</strong>アプリが保存したファイルは、除外の設定をしない限り端末のバックアップに入ると見ている (Apple の <code>isExcludedFromBackup</code> の文書 https://developer.apple.com/documentation/foundation/urlresourcevalues/isexcludedfrombackup は、ファイルをバックアップから除外する設定の説明で、既定でどの保存場所がバックアップに入るかは実機で確かめていない)。本文も同じだが、画像は書籍の画面そのものの写しになる。保存した本文が iCloud バックアップに入ることは、2026-11-18 に bannzai が許した (https://github.com/bannzai/doquiz/issues/2#issuecomment-6969064488)。</li>
         <li><strong>容量。</strong>1 ページ 1 枚で、読書 1 回で数十〜数百枚になる。1 枚の大きさは実測していない。</li>
       </ul>
       <p>著作権と Kindle の規約の面では、本文の文字を残す時点で写しを端末に持っており、画像を足しても種類が変わるわけではない (どちらも位置づけは確かめきれていない)。ただし「書籍の画面を保存するアプリ」に近づくため、App Store で配る場合は審査での見え方が悪くなるおそれがある (仮説。審査での扱いは確かめていない)。</p>
