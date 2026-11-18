@@ -38,6 +38,8 @@ final class FakeScreenCapture: ScreenCapture {
     /// `startError` があれば投げ、無ければ `images` を最初から順に渡す流れを返す。
     /// 前に返した流れは、止めた時と同じく error なしで終わる。
     func start() async throws -> AsyncThrowingStream<CGImage, any Error> {
+        // 実物と同じく、取り消し済みのタスクから呼ばれた時は、前の取り込みに触れずに CancellationError を投げる。
+        try Task.checkCancellation()
         if let startError {
             throw startError
         }

@@ -106,6 +106,8 @@ struct FakeScreenCaptureTests {
         let capture = FakeScreenCapture(images: [try makeImage()], startError: nil, interruptionError: nil)
         let stream = try await capture.start()
         let receivedImageCount = Task { try await imageCount(stream: stream) }
+        // 待ち始める前に制限時間で抜けた時も、受け取り側のタスクを残さない。
+        defer { receivedImageCount.cancel() }
         try await waitUntilWaitingForStop(capture: capture)
 
         receivedImageCount.cancel()
@@ -117,6 +119,19 @@ struct FakeScreenCaptureTests {
                 Task { @MainActor in capture.stop() }
             } == 1
         )
+    }
+
+    /// 取り消し済みのタスクから始めると、流れを返さずに `CancellationError` を投げる。
+    @Test func 取り消し済みのタスクから始めるとCancellationErrorを受け取る() async throws {
+        let capture = FakeScreenCapture(images: [try makeImage()], startError: nil, interruptionError: nil)
+        let startTask = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            _ = try await capture.start()
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await startTask.value
+        }
     }
 
     /// 止めるのを 2 回続けて呼んでも、1 回の時と同じく流れが error なしで終わり、その後に始め直せる。
