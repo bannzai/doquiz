@@ -40,11 +40,11 @@
         /// 取り消し済みのタスクから呼ばれた時は `CancellationError` を投げる。
         func start() async throws -> AsyncThrowingStream<CGImage, any Error> {
             // 実物と同じ順にする: 前の取り込みを止めてから、取り消しと、始められるかを確かめる。
+            stop()
             try Task.checkCancellation()
             if let startError {
                 throw startError
             }
-            stop()
             nextImageIndex = 0
             isStopped = false
             startCount += 1
