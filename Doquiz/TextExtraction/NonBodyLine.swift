@@ -15,5 +15,5 @@ nonisolated func isNonBodyLine(transcript: String, boundingBox: CGRect) -> Bool 
     guard boundingBox.maxY <= nonBodyBandHeight || boundingBox.minY >= 1 - nonBodyBandHeight else {
         return false
     }
-    return transcript.wholeMatch(of: #/\s*(\d{1,2}:\d{2}|\d+\s*/\s*\d+|\d+\s*%|\d+)\s*/#) != nil
+    return transcript.wholeMatch(of: #/\s*(\d{1,2}:\d{2}|\d+\s*/\s*\d+|\d+(\.\d+)?\s*%|\d+)\s*/#) != nil
 }
