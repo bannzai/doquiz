@@ -14,6 +14,7 @@ Accepted
   - iOS だけで始める、本文を端末の外に出さない、取り込んだ画像は保存しない (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 )
   - トライアルは 1 週間、課金の形は月額・年額のサブスクリプションと買い切り (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6968984895 、https://github.com/bannzai/doquiz/issues/2#issuecomment-6968986791 )
   - 保存した本文が iCloud バックアップに入ることを許す、課金の実装には RevenueCat を使う (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6969064488 )
+  - 値段は月額 500 円・年額 5,000 円・買い切り 20,000 円、1 週間のトライアルは月額と年額だけに付ける、無料で使える範囲は置かない (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6969509870 )
 - クイズの生成に使う端末内のモデル (Foundation Models) は文脈が 4K トークンで、Private Cloud Compute を使うと 32K に増えるが本文を Apple のサーバーへ送ることになる (https://github.com/bannzai/doquiz/issues/2 の本文「4. 本文を端末の外に出さないか」に書いた評価時の調べ。この ADR を書く時には Apple の文書を読み直していない)
 - 新規アプリの立ち上げで決める項目は、DB・画像等のストレージ・ホスティング / バックエンド・認証方式・Analytics (create-new-app skill の SKILL.md「Phase 3: インフラ構成の決定と通知基盤」)
 
