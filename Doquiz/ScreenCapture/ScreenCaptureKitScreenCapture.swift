@@ -36,6 +36,8 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
         do {
             // 前の取り込みを止めるのを待っている間に止められた・始め直された時は、選択画面を出さない。
             guard ended.endCount == endCount else { throw ScreenCaptureStartError.selectionCancelled }
+            // 呼び出したタスクが既に取り消されている時は、選択画面を出す前にやめる。
+            try Task.checkCancellation()
             let images = AsyncThrowingStream.makeStream(
                 of: CGImage.self,
                 throwing: (any Error).self,
@@ -43,9 +45,11 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
             )
             // 受け取る相手がいなくなった後も、背面で画面を取り込み続けないようにする。
             // stop() が流れを終わらせた時と stream が途中で止まった時は .cancelled にならないため、ここでは何もしない。
-            images.continuation.onTermination = { [weak self, endCount = ended.endCount] termination in
+            // self を強く持つのは、流れが続いている間に持ち主がこの取り込みを手放しても、流れを終わらせて stream を止められるようにするため
+            // (流れが終わると、この closure は手放される)。
+            images.continuation.onTermination = { [self, endCount = ended.endCount] termination in
                 guard case .cancelled = termination else { return }
-                Task { @MainActor in await self?.stopAbandonedCapture(endCount: endCount) }
+                Task { @MainActor in await self.stopAbandonedCapture(endCount: endCount) }
             }
             let streamReceiver = ScreenCaptureKitStreamReceiver(continuation: images.continuation)
             let stream = SCStream(
@@ -127,13 +131,14 @@ final class ScreenCaptureKitScreenCapture: ScreenCapture {
         }
     }
 
-    /// `start()` を呼んだタスクが取り消された時に、選択画面を待っている `start()` を `CancellationError` で再開し、選択画面を閉じる。
-    /// 始め直された後に遅れて呼ばれた時は、新しい回の待ちに触れない。
+    /// `start()` を呼んだタスクが取り消された時に、選択画面を待っている `start()` を `CancellationError` で再開し、選択画面を使わない状態 (`isActive` が false) に戻す。
+    /// 出ている選択画面がこれで閉じるかは、実機で確かめていない。
+    /// 始め直された後と、選択の結果が先に届いて待ちが終わった後に遅れて呼ばれた時は、何もしない。
     /// - Parameter endCount: 待ち始めた `start()` が始まった時の `endCount`
     private func cancelWaitingForSelection(endCount: Int) {
-        guard endCount == self.endCount else { return }
-        contentFilterContinuation?.resume(throwing: CancellationError())
-        contentFilterContinuation = nil
+        guard endCount == self.endCount, let contentFilterContinuation else { return }
+        contentFilterContinuation.resume(throwing: CancellationError())
+        self.contentFilterContinuation = nil
         SCContentSharingPicker.shared.isActive = false
     }
 }
