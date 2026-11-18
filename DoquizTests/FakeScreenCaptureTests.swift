@@ -135,6 +135,22 @@ struct FakeScreenCaptureTests {
         }
     }
 
+    /// 取り込み中に、取り消し済みのタスクから始め直すと、`CancellationError` を投げ、前の流れは残りの画像を渡さずに error なしで終わる。
+    @Test func 取り込み中に取り消し済みのタスクから始め直すと前の流れが終わる() async throws {
+        let capture = FakeScreenCapture(images: [try makeImage(), try makeImage()], startError: nil, interruptionError: nil)
+        var previousIterator = try await capture.start().makeAsyncIterator()
+        _ = try #require(try await previousIterator.next())
+        let startTask = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            _ = try await capture.start()
+        }
+
+        await #expect(throws: CancellationError.self) {
+            try await startTask.value
+        }
+        #expect(try await previousIterator.next() == nil)
+    }
+
     /// 止めるのを 2 回続けて呼んでも、1 回の時と同じく流れが error なしで終わり、その後に始め直せる。
     @Test func 続けて2回止めても流れが終わり後から始め直せる() async throws {
         let images = [try makeImage(), try makeImage()]
