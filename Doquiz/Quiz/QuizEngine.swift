@@ -18,6 +18,7 @@ protocol QuizEngine {
     /// 返す問いは `questionKinds` に含まれる種類だけで、今回の読書の本文が空か、`questionKinds` が空なら空の配列を返す。
     /// 返す問いは保存しておらず、`readingSession` は nil (保存と読書の記録への紐づけは呼び出し側が行う)。
     /// 端末内のモデルが問いを 1 問も作れずに失敗した時は、そのエラーを投げる。
+    /// モデルは失敗しておらず、作った問いが検査ですべて捨てられた時は、エラーを投げずに空の配列を返す。
     func makeQuestions(
         currentReadingPageTexts: [String],
         previousReadingPageTexts: [String],

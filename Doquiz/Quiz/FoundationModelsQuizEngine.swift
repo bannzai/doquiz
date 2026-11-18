@@ -51,28 +51,27 @@ struct FoundationModelsQuizEngine: QuizEngine {
     /// `planQuestions` が決めた問い 1 問ごとに、新しいセッションで端末内のモデルを 1 回呼んで問いを作り、`isAcceptableQuestion` が通した問いだけを返す。
     ///
     /// 冪等ではない: 呼ぶたびにモデルの出力・問いの `id`・四択の選択肢の順が変わる。
-    /// 1 問のセッションがモデルのエラー (`LanguageModelError`。安全のための制限・拒否・一度に受け取れる量の超過など) で失敗した時は、その 1 問を作らずに残りを続ける
-    /// (本文の一部が制限に当たっても、ほかの部分から作れた問いを出すため)。1 問も作れず、失敗したセッションがあった時は、最初のエラーを投げる。
+    /// 1 問のセッションが失敗した時と、作った問いが検査で捨てられた時の扱いは `collectAcceptableQuestions` と同じ。
     func makeQuestions(
         currentReadingPageTexts: [String],
         previousReadingPageTexts: [String],
         questionKinds: [QuestionKind],
         questionGuidance: String?
     ) async throws -> [Question] {
-        var questions: [Question] = []
-        var firstLanguageModelError: LanguageModelError?
-        for questionPlan in planQuestions(
-            currentReadingPageTexts: currentReadingPageTexts,
-            previousReadingPageTexts: previousReadingPageTexts,
-            questionKinds: questionKinds,
-            // 1 回に渡す本文を、モデルが一度に受け取れる量 (トークン数) の半分の文字数までにする。
-            // 日本語は 1 トークンがおよそ 1 文字で、受け取れる量には依頼の文・出力の形の指定・モデルの出力も含まれるため
-            // ( https://developer.apple.com/documentation/foundationmodels/managing-the-context-window )、残りの半分をそれらに空ける。
-            // 半分で足りるかは実機で確かめていない。
-            characterLimit: SystemLanguageModel.default.contextSize / 2
-        ) {
-            do {
-                let question = try await makeQuestion(
+        try await collectAcceptableQuestions(
+            questionPlans: planQuestions(
+                currentReadingPageTexts: currentReadingPageTexts,
+                previousReadingPageTexts: previousReadingPageTexts,
+                questionKinds: questionKinds,
+                // 1 回に渡す本文を、モデルが一度に受け取れる量 (トークン数) の半分の文字数までにする。
+                // 日本語は 1 トークンがおよそ 1 文字で、受け取れる量には依頼の文・出力の形の指定・モデルの出力も含まれるため
+                // ( https://developer.apple.com/documentation/foundationmodels/managing-the-context-window )、残りの半分をそれらに空ける。
+                // 半分で足りるかは実機で確かめていない。
+                characterLimit: SystemLanguageModel.default.contextSize / 2
+            ),
+            selectedQuestionKinds: questionKinds,
+            makeQuestion: { questionPlan in
+                try await makeQuestion(
                     questionKind: questionPlan.questionKind,
                     prompt: makeQuestionPrompt(
                         questionKind: questionPlan.questionKind,
@@ -81,28 +80,13 @@ struct FoundationModelsQuizEngine: QuizEngine {
                         questionGuidance: questionGuidance
                     )
                 )
-                if isAcceptableQuestion(
-                    question: question,
-                    selectedQuestionKinds: questionKinds,
-                    currentReadingText: questionPlan.currentReadingText,
-                    previousReadingText: questionPlan.previousReadingText
-                ) {
-                    questions.append(question)
-                }
-            } catch let languageModelError as LanguageModelError {
-                firstLanguageModelError = firstLanguageModelError ?? languageModelError
             }
-        }
-        if questions.isEmpty, let firstLanguageModelError {
-            throw firstLanguageModelError
-        }
-        return questions
+        )
     }
 
     /// 新しいセッションで端末内のモデルを 1 回呼び、`prompt` (`makeQuestionPrompt` の依頼の文) から種類 `questionKind` の問い 1 問を作って返す。
     ///
-    /// 冪等ではない (理由は `makeQuestions` と同じ)。四択の選択肢は、模範の答えが決まった位置に来ないように並べ替える。
-    /// 要約の正誤の選択肢は `summaryTrueFalseChoices`、穴埋めと記述の選択肢は空にする。モデルが出力を返せなかった時は、そのエラーを投げる。
+    /// 冪等ではない (理由は `makeQuestions` と同じ)。モデルの出力から問いを組み立てる形は `assembleQuestion` と同じ。モデルが出力を返せなかった時は、そのエラーを投げる。
     private func makeQuestion(questionKind: QuestionKind, prompt: String) async throws -> Question {
         let session = LanguageModelSession(
             instructions: """
@@ -115,27 +99,21 @@ struct FoundationModelsQuizEngine: QuizEngine {
         switch questionKind {
         case .comprehension:
             let generatedChoiceQuestion = try await session.respond(to: prompt, generating: GeneratedChoiceQuestion.self).content
-            return Question(
-                id: UUID(),
-                createdDateTime: Date(),
-                kind: questionKind,
-                text: generatedChoiceQuestion.questionText,
-                choices: ([generatedChoiceQuestion.modelAnswer] + generatedChoiceQuestion.wrongChoices).shuffled(),
+            return assembleQuestion(
+                questionKind: questionKind,
+                questionText: generatedChoiceQuestion.questionText,
                 modelAnswer: generatedChoiceQuestion.modelAnswer,
-                evidenceQuote: generatedChoiceQuestion.evidenceQuote,
-                readingSession: nil
+                wrongChoices: generatedChoiceQuestion.wrongChoices,
+                evidenceQuote: generatedChoiceQuestion.evidenceQuote
             )
         case .summaryTrueFalse, .fillInTheBlank, .written:
             let generatedQuestion = try await session.respond(to: prompt, generating: GeneratedQuestion.self).content
-            return Question(
-                id: UUID(),
-                createdDateTime: Date(),
-                kind: questionKind,
-                text: generatedQuestion.questionText,
-                choices: questionKind == .summaryTrueFalse ? summaryTrueFalseChoices : [],
+            return assembleQuestion(
+                questionKind: questionKind,
+                questionText: generatedQuestion.questionText,
                 modelAnswer: generatedQuestion.modelAnswer,
-                evidenceQuote: generatedQuestion.evidenceQuote,
-                readingSession: nil
+                wrongChoices: [],
+                evidenceQuote: generatedQuestion.evidenceQuote
             )
         }
     }

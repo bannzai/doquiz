@@ -61,6 +61,14 @@ import Testing
                 characterLimit: 0
             ).isEmpty
         )
+        #expect(
+            planQuestions(
+                currentReadingPageTexts: ["今回の読書の本文"],
+                previousReadingPageTexts: [],
+                questionKinds: [.written],
+                characterLimit: -1
+            ).isEmpty
+        )
         let questionPlans = planQuestions(
             currentReadingPageTexts: ["今回の読書の本文"],
             previousReadingPageTexts: ["前"],
