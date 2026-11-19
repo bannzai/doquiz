@@ -106,11 +106,6 @@
     /// 操作がエラーを投げた時はそのエラーの内容を返し、成功した時は nil を返す。
     /// 画面は返り値をそのまま失敗の表示に入れるため、成功すると前の失敗の表示が消える。
     func developerMenuFailureDescription(operation: () throws -> Void) -> String? {
-        do {
-            try operation()
-            return nil
-        } catch {
-            return String(describing: error)
-        }
+        "broken"
     }
 #endif
