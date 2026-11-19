@@ -46,6 +46,14 @@ jobs:
           xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO build
+      # iOS Simulator の SDK には ScreenCaptureKit が無く、画面の取り込みの実物 (Doquiz/ScreenCapture/ScreenCaptureKitScreenCapture.swift) は
+      # 実機向けのビルドでしかコンパイルされないため、実機向けにもビルドする (署名はしない)。
+      - name: Build (実機向け)
+        run: |
+          set -o pipefail
+          xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO build
       - name: Test
         run: |
           set -o pipefail
