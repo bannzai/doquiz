@@ -143,6 +143,7 @@ final class ScreenshotTests: XCTestCase {
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
         XCTAssertTrue(app.buttons["question_settings_entrance"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["book_title"].label, "潮見町の灯台日誌")
+        XCTAssertEqual(app.staticTexts["book_reading_summary"].label, "まだ読んでいません")
         attachScreenshot(app: app, name: "book")
         openQuestionSettings(app: app)
         XCTAssertEqual(selectedQuestionKinds(app: app), [true, true, true, true])
@@ -198,10 +199,10 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["question_settings_no_kind_guide"].exists)
     }
 
-    /// 開発者メニューで見本のデータを入れて一覧に戻ると、見本の本 2 冊が登録の新しい順に並び、読書の記録がある本の行に読書の回数が出ることを確かめ、
-    /// その一覧を `book-list-with-readings` の名前で添付する。
+    /// 開発者メニューで見本のデータを入れて一覧に戻ると、見本の本 2 冊が登録の新しい順に並ぶことを確かめる。
+    /// 読書の記録が 2 件ある見本の本を選ぶと、本の画面に読書の回数が出ることを確かめ、その画面を `book-with-readings` の名前で添付する。
     @MainActor
-    func test見本のデータを入れると一覧に読書の回数が出る() {
+    func test見本のデータを入れると登録の新しい順に並び本の画面に読書の回数が出る() {
         let app = launchAppWithInMemoryStore()
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
@@ -211,9 +212,12 @@ final class ScreenshotTests: XCTestCase {
 
         XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").count, 2)
-        XCTAssertTrue(app.buttons.matching(identifier: "book_list_row").element(boundBy: 0).label.contains("はじめての堆肥づくり"))
-        XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").label.contains("読書 2 回"))
-        XCTAssertTrue(bookRow(app: app, title: "はじめての堆肥づくり").label.contains("読書 1 回"))
-        attachScreenshot(app: app, name: "book-list-with-readings")
+        XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").element(boundBy: 0).label, "はじめての堆肥づくり")
+        XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").element(boundBy: 1).label, "潮見町の灯台日誌")
+
+        bookRow(app: app, title: "潮見町の灯台日誌").tap()
+        XCTAssertTrue(app.staticTexts["book_reading_summary"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["book_reading_summary"].label.hasPrefix("読書 2 回 ・ 最後に読んだのは"))
+        attachScreenshot(app: app, name: "book-with-readings")
     }
 }

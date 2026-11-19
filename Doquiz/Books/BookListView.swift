@@ -64,21 +64,16 @@ struct BookListView: View {
         }
     }
 
-    /// 一覧の本 1 冊分の行。本の名前と、読書の回数・最後に読んだ時期を出す。
+    /// 一覧の本 1 冊分の行。本の名前を出す。
     private func bookRow(book: Book) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(verbatim: book.title)
-                .font(.headline)
-                .foregroundStyle(doquizTextColor)
-                .multilineTextAlignment(.leading)
-            Text(verbatim: bookReadingSummary(book: book, currentDateTime: Date()))
-                .font(.subheadline)
-                .foregroundStyle(doquizSecondaryTextColor)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizBorderColor, lineWidth: 1))
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        Text(verbatim: book.title)
+            .font(.headline)
+            .foregroundStyle(doquizTextColor)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizBorderColor, lineWidth: 1))
+            .contentShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

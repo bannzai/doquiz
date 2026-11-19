@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// 本の画面。一覧で選んだ本の名前と、その本の出題の設定への入口を出す。
+/// 本の画面。一覧で選んだ本の名前、読書の回数と最後に読んだ時期、その本の出題の設定への入口を出す。
 struct BookView: View {
     /// 一覧で選んだ本。
     let book: Book
@@ -19,6 +19,7 @@ struct BookView: View {
                     Text(verbatim: bookReadingSummary(book: book, currentDateTime: Date()))
                         .font(.subheadline)
                         .foregroundStyle(doquizSecondaryTextColor)
+                        .accessibilityIdentifier("book_reading_summary")
                 }
                 Button {
                     isEditingQuestionSettings = true
