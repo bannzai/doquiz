@@ -37,7 +37,7 @@ func startReading(
 /// - 抽出した本文は前後の空白と改行を除く。除いて空の時と、直前に足したページと同じ時は、ページを足さない
 /// - 本文の抽出に失敗した画像は、ページを足さずに次の画像へ進む (1 枚の失敗で読書を止めないため)
 /// - 画像は本文の抽出に渡すだけで、ファイルにも保存データにも書かない
-/// - 流れが error で終わった時 (取り込みが途中で止まった時) と、ページの保存に失敗した時は、その error を投げる。それまでに足したページは残る
+/// - 流れが error で終わった時 (取り込みが途中で止まった時) と、ページの保存に失敗した時は、その error を投げる。それまでに保存できたページは残り、保存できなかったページは残さない
 /// - 呼び出したタスクが取り消された時は `CancellationError` を投げる
 ///
 /// 冪等ではない: 届いた画像ごとにページを足すため、同じ画像の流れは 1 回だけ渡す。
@@ -57,8 +57,15 @@ func saveCapturedPages(
     var lastPageText: String?
     for try await capturedImage in capturedImages {
         if let pageText = try await extractedPageText(image: capturedImage, pageTextExtractor: pageTextExtractor), !pageText.isEmpty, pageText != lastPageText {
-            modelContext.insert(CapturedPage(id: UUID(), capturedDateTime: currentDateTime(), text: pageText, readingSession: readingSession))
-            try save()
+            let capturedPage = CapturedPage(id: UUID(), capturedDateTime: currentDateTime(), text: pageText, readingSession: readingSession)
+            modelContext.insert(capturedPage)
+            do {
+                try save()
+            } catch {
+                // 保存できなかったページを context に残すと、後の保存 (読書を終える・次の読書を始める) に混ざるため、取り除いてから投げる。
+                modelContext.delete(capturedPage)
+                throw error
+            }
             lastPageText = pageText
         }
         try await Task.sleep(for: pauseAfterEachImage)
@@ -83,7 +90,8 @@ private func extractedPageText(image: CGImage, pageTextExtractor: any PageTextEx
 /// 取り込みの実物は、止める直前に取り込んだ 1 枚が止めた後に届くことがあるため、ページを足す処理が終わってから終えた日時を入れる。
 /// ページを足す処理が error で終わっていても (取り込みが途中で止まった時)、終えた日時を入れる。
 /// 既に終えた日時が入っている読書の記録には何もしない (何度呼んでも、最初に入れた終えた日時のままになる)。
-/// 保存に失敗した時は、`save` の error を投げる。
+/// 保存に失敗した時は、`save` の error を投げる。入れた終えた日時は読書の記録に残す
+/// (取り込みは止まっていて読書は終わっており、同じ保存先への次の保存で一緒に書かれるようにするため)。
 /// - Parameters:
 ///   - pageSaving: この読書の `saveCapturedPages` を動かしているタスク
 ///   - currentDateTime: 今の日時を返す。終えた日時を入れる時に 1 回呼ぶ

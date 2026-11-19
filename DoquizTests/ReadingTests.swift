@@ -377,6 +377,9 @@ struct ReadingTests {
 
         capture.stop()
         #expect(saveCounter.count == 1)
+        // 保存できなかったページが context に残っていれば、この保存で保存先に書かれる。
+        try writingContext.save()
+        #expect(try savedPageTexts().isEmpty)
     }
 
     /// 読書を終える時に読書の記録を保存できなかった時は、`save` の error を投げる。
@@ -448,6 +451,26 @@ struct ReadingTests {
         }
         capture.stop()
         #expect(try savedPageTexts() == ["一枚目の本文"])
+    }
+
+    /// ページを足す処理が取り消しで終わっていた時は、読書を終える処理が error を返さず、終えた日時は入る。
+    @Test(.timeLimit(.minutes(1))) func ページを足す処理が取り消しで終わった時は読書を終えてもerrorを返さない() async throws {
+        let capture = FakeScreenCapture(images: [], startError: nil, interruptionError: nil)
+        let startedReading = try await startReading(book: book, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date(timeIntervalSince1970: 1_000) }, save: writingContext.save)
+        let pageSaving = Task<Void, any Error> {
+            throw CancellationError()
+        }
+
+        #expect(
+            try await endReading(
+                readingSession: startedReading.readingSession,
+                screenCapture: capture,
+                pageSaving: pageSaving,
+                currentDateTime: { Date(timeIntervalSince1970: 2_000) },
+                save: writingContext.save
+            ) == nil
+        )
+        #expect(try readingContext.fetch(FetchDescriptor<ReadingSession>()).map(\.endedDateTime) == [Date(timeIntervalSince1970: 2_000)])
     }
 
     /// 読んだ時間の文は、分に満たない端数を切り捨て、始めた日時より前の日時では「0 分」になる。

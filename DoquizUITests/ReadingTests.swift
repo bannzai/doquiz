@@ -184,6 +184,7 @@ final class ReadingTests: XCTestCase {
 
     /// 取り込みを始められない時 (偽の取り込みに切り替えていない iOS Simulator は、画面の取り込みを使えない) は、
     /// 読書中の画面が出ず、本の画面に始められないことの案内が出て、読書の記録が 1 件も残らない。
+    /// 同意は済んでいるため、もう一度「読書を始める」を押した時は、同意の説明が出ない。
     /// 案内の出た本の画面を `book-reading-start-failure` の名前で添付する。
     @MainActor
     func test取り込みを始められない時は案内が出て読書の記録が残らない() {
@@ -199,6 +200,12 @@ final class ReadingTests: XCTestCase {
         XCTAssertFalse(app.buttons["reading_end"].exists)
         XCTAssertEqual(app.staticTexts["book_reading_summary"].label, "まだ読んでいません")
         attachScreenshot(app: app, name: "book-reading-start-failure")
+
+        // 同意は済んでいるため、もう一度押した時は同意の説明が出ずに、同じ案内が出る。
+        app.buttons["reading_start"].tap()
+        XCTAssertTrue(app.staticTexts["reading_guide"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["screen_capture_consent_title"].exists)
+        XCTAssertFalse(app.buttons["reading_end"].exists)
 
         assertSavedReadingSessionCount(app: app, expectedCount: "0")
     }
