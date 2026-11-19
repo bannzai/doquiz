@@ -15,6 +15,14 @@ struct DoquizApp: App {
     init() {
         let isStoredInMemoryOnly = isModelContainerStoredInMemoryOnly(launchArguments: ProcessInfo.processInfo.arguments)
         userDefaults = makeAppUserDefaults(isStoredInMemoryOnly: isStoredInMemoryOnly)
+        #if DEBUG
+            // UI テストの起動では、端末内のモデルが使えるかを実物で確かめず、偽物の「使える」から始める。
+            // GitHub Actions の iOS Simulator で実物が何を返すかを確かめておらず、使えないと返ると「読書を始める」を押す UI テストが全部落ちるため。
+            // 使えない状態は、UI テストが開発者メニューで切り替えて作る。
+            if isStoredInMemoryOnly {
+                userDefaults.set(DeveloperMenuQuizAvailability.available.rawValue, forKey: developerMenuQuizAvailabilityKey)
+            }
+        #endif
         do {
             modelContainer = try makeModelContainer(isStoredInMemoryOnly: isStoredInMemoryOnly)
         } catch {
