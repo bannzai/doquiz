@@ -2,11 +2,14 @@ import SwiftData
 import SwiftUI
 
 /// 読む本を選ぶ画面。登録済みの本の一覧と、新しい本を登録する入口を出す。アプリを開いた直後に出る。
+/// 端末内のモデルが使えない間は、クイズを出せないことと理由の案内を一覧の上に出す。
 ///
 /// 本を選んだ時に本の画面へ進むため、`NavigationStack` の中に置く。
 struct BookListView: View {
     /// 登録済みの本。登録が新しい順に並べる。
     @Query(sort: \Book.createdDateTime, order: .reverse) private var books: [Book]
+    /// 端末内のモデルが使えない時の案内の文。使える時は nil。
+    @Environment(\.quizUnavailableGuide) private var quizUnavailableGuide
     /// 本を登録する画面を出しているか。
     @State private var isRegisteringBook = false
 
@@ -21,6 +24,9 @@ struct BookListView: View {
                         Text(verbatim: "読む本を選ぶと読書を始められます")
                             .font(.subheadline)
                             .foregroundStyle(doquizSecondaryTextColor)
+                    }
+                    if let quizUnavailableGuide {
+                        QuizUnavailableGuidePanel(guide: quizUnavailableGuide)
                     }
                     if books.isEmpty {
                         Text(verbatim: "まだ本がありません\n最初に読む本を登録しましょう")

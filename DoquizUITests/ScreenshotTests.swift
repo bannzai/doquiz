@@ -42,8 +42,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         app.buttons["book_registration_entrance"].tap()
         XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
-        app.textFields["book_registration_title_field"].tap()
-        app.textFields["book_registration_title_field"].typeText(title)
+        typeTextAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: title)
         app.buttons["book_registration_submit"].tap()
         XCTAssertTrue(bookRow(app: app, title: title).waitForExistence(timeout: 10))
     }
@@ -103,8 +102,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["book_registration_submit"].isEnabled)
 
-        app.textFields["book_registration_title_field"].tap()
-        app.textFields["book_registration_title_field"].typeText("潮見町の灯台日誌")
+        typeTextAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: "潮見町の灯台日誌")
         XCTAssertTrue(app.buttons["book_registration_submit"].isEnabled)
         attachScreenshot(app: app, name: "book-registration")
         app.buttons["book_registration_submit"].tap()
@@ -124,8 +122,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         app.buttons["book_registration_entrance"].tap()
         XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
-        app.textFields["book_registration_title_field"].tap()
-        app.textFields["book_registration_title_field"].typeText("登録しない本")
+        typeTextAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: "登録しない本")
 
         app.buttons["book_registration_cancel"].tap()
 
@@ -150,8 +147,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertEqual(selectedQuestionKinds(app: app), [true, true, true, true])
 
         app.buttons["question_settings_kind_written"].tap()
-        questionGuidanceField(app: app).tap()
-        questionGuidanceField(app: app).typeText("人物の行動の理由を中心に")
+        typeTextAfterKeyboardFocus(element: questionGuidanceField(app: app), text: "人物の行動の理由を中心に")
         attachScreenshot(app: app, name: "question-settings")
         app.buttons["question_settings_save"].tap()
         assertDisappears(element: app.buttons["question_settings_save"])
