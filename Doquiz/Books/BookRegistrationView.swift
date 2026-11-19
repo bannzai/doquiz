@@ -37,7 +37,7 @@ struct BookRegistrationView: View {
             }
             .padding(20)
             .background(doquizBackgroundColor)
-            .navigationTitle(Text(verbatim: "新しい本を登録する"))
+            .navigationTitle(Text(verbatim: "本の登録"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
