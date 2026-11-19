@@ -12,7 +12,7 @@ func typeTextAfterKeyboardFocus(element: XCUIElement, text: String, file: Static
     // 上限の 10 秒は、起動の待ち (30 秒) と違い、同じ画面の中の表示の更新だけを待つため短くしている (DeveloperMenuTests と同じ値)。
     guard
         XCTWaiter().wait(
-            for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)],
+            for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: element)],
             timeout: 10
         ) == .completed
     else {
