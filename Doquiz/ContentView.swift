@@ -39,9 +39,6 @@ struct ContentView: View {
             checkQuizAvailability()
         }
         .onChange(of: scenePhase) {
-            if scenePhase == .active {
-                checkQuizAvailability()
-            }
         }
         // 使えない間は、アプリを開いたままでも確かめ直す。モデルの準備は端末が自動で進め、アプリを前面に出している間に終わることがあるため
         // (案内は「しばらく待つと読書を始められます」と伝えている)。案内の文が変わるか消えると、この処理は始め直される。
