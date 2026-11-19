@@ -16,7 +16,7 @@
     }
 
     /// 開発者メニュー。実機で本を読まないと作れない状態 (読書の記録や回答がある状態) を作る操作、保存データを全部消す操作、
-    /// 読書を偽の取り込みに切り替える操作を置く。
+    /// 読書を偽の取り込みに切り替える操作、読書を終えた後のクイズを偽のクイズに切り替える操作を置く。
     ///
     /// 開発用のビルド (DEBUG) だけに入り、公開用のビルドには入らない。
     /// 操作の結果を画面と UI テストから確かめられるよう、5 つの型の保存データの件数を出す。
@@ -41,6 +41,9 @@
         /// 偽の取り込みを、画像を流し切った後に途中で止めるか。本の画面が読書を始める時に同じ値を読む。
         /// 既定を false にしているのは、切り替えていない時の偽の取り込みを「読書を終える」まで続けるため。
         @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
+        /// 読書を終えた後のクイズを、偽のクイズに切り替えている時の動き。本の画面がクイズを出す時に同じ値を読む。
+        /// 値が無い時 (切り替えていない時) は、実物 (端末内のモデル) でクイズを作る。
+        @AppStorage(developerMenuFakeQuizBehaviorKey) private var fakeQuizBehavior: DeveloperMenuFakeQuizBehavior?
 
         var body: some View {
             List {
@@ -114,6 +117,24 @@
                     Text(verbatim: "読書")
                 } footer: {
                     Text(verbatim: "オンの間は 画面共有の選択画面を出さずに 決まった本文のページが取り込まれる")
+                }
+                Section {
+                    Button {
+                        fakeQuizBehavior = nextDeveloperMenuFakeQuizBehavior(behavior: fakeQuizBehavior)
+                    } label: {
+                        Text(verbatim: "クイズを 実物と偽物の動きで順に切り替える")
+                    }
+                    .accessibilityIdentifier("developer_menu_cycle_fake_quiz_behavior")
+                    HStack {
+                        Text(verbatim: "クイズの動き")
+                        Spacer()
+                        Text(verbatim: developerMenuFakeQuizBehaviorLabel(behavior: fakeQuizBehavior))
+                            .accessibilityIdentifier("developer_menu_fake_quiz_behavior_state")
+                    }
+                } header: {
+                    Text(verbatim: "クイズ")
+                } footer: {
+                    Text(verbatim: "実物以外の間は 端末内のモデルを呼ばずに 決まった問いと判定が返る")
                 }
                 if let failureDescription {
                     Section {
