@@ -60,13 +60,17 @@
                 }
                 Section {
                     Button {
-                        perform(operation: { try replaceDeveloperMenuSampleData(modelContext: modelContext) })
+                        failureDescription = developerMenuFailureDescription(operation: {
+                            try replaceDeveloperMenuSampleData(modelContext: modelContext)
+                        })
                     } label: {
                         Text(verbatim: "見本のデータを入れる")
                     }
                     .accessibilityIdentifier("developer_menu_replace_sample_data")
                     Button(role: .destructive) {
-                        perform(operation: { try deleteAllSavedData(modelContext: modelContext) })
+                        failureDescription = developerMenuFailureDescription(operation: {
+                            try deleteAllSavedData(modelContext: modelContext)
+                        })
                     } label: {
                         Text(verbatim: "保存データを全部消す")
                     }
@@ -95,15 +99,18 @@
                     .accessibilityIdentifier(accessibilityIdentifier)
             }
         }
+    }
 
-        /// 保存データの操作を実行し、失敗した時はエラーの内容を画面に出す。成功した時は前の失敗の表示を消す。
-        private func perform(operation: () throws -> Void) {
-            do {
-                try operation()
-                failureDescription = nil
-            } catch {
-                failureDescription = String(describing: error)
-            }
+    /// 開発者メニューの操作を実行し、画面に出す失敗の内容を返す。
+    ///
+    /// 操作がエラーを投げた時はそのエラーの内容を返し、成功した時は nil を返す。
+    /// 画面は返り値をそのまま失敗の表示に入れるため、成功すると前の失敗の表示が消える。
+    func developerMenuFailureDescription(operation: () throws -> Void) -> String? {
+        do {
+            try operation()
+            return nil
+        } catch {
+            return String(describing: error)
         }
     }
 #endif
