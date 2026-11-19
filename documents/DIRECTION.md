@@ -89,6 +89,8 @@ bannzai が 2026-11-18 に、この一覧のとおりでよいと決めた (「�
 | 2026-11-18 | Xcode プロジェクトをフォルダ同期に変える PR ( https://github.com/bannzai/doquiz/pull/23 ) | code scanning (CodeQL の default setup) の解析の対象から Swift を外し、`actions` だけにする。フォルダ同期の構成では CodeQL の Swift の自動ビルドが `no-swift-target` で落ちたため ( https://github.com/bannzai/doquiz/actions/runs/44239744956 )。ビルド手順を書いた workflow (advanced setup) で Swift の解析を続ける案は採らなかった | bannzai |
 | 2026-11-18 | 構想の確認 | 取り込んだ画像は保存しない ( https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 ) | bannzai |
 | 2026-11-18 | 保存する型と保存先の用意 ( https://github.com/bannzai/doquiz/issues/9 ) | 起動の時に端末内の保存先を開けなければ、エラーの内容を残してアプリを止める。案内の画面は出さない (保存先が無いと、どの機能も動かないため。案内を出すかは、画面を作る時に決め直せる) | agent |
+| 2026-11-18 | 開発者メニュー ( https://github.com/bannzai/doquiz/issues/14 ) | 開発者メニューの「見本のデータを入れる」は、前に入れた見本だけを入れ直し、見本でない本とその下のデータには触れない。保存データを空にしたい時は「保存データを全部消す」を使う (開発中に自分で登録した本を、見本を入れるたびに失わないため。全部を入れ替える形には後から変えられる) | agent |
+| 2026-11-18 | 開発者メニュー ( https://github.com/bannzai/doquiz/issues/14 ) | 開発者メニューの入口は、起動直後の画面の右上の toolbar のボタンにする。開発用のビルドだけに出る (起動直後の画面を作り替える時は、同じボタンを新しい画面の toolbar に置き直す) | agent |
 
 ## agent に任せること
 
