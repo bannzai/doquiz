@@ -16,7 +16,7 @@
     }
 
     /// 開発者メニュー。実機で本を読まないと作れない状態 (読書の記録や回答がある状態) を作る操作、保存データを全部消す操作、
-    /// 読書を偽の取り込みに切り替える操作を置く。
+    /// 読書を偽の取り込みに切り替える操作、端末内のモデルが使えるかを偽の値に切り替える操作を置く。
     ///
     /// 開発用のビルド (DEBUG) だけに入り、公開用のビルドには入らない。
     /// 操作の結果を画面と UI テストから確かめられるよう、5 つの型の保存データの件数を出す。
@@ -41,6 +41,9 @@
         /// 偽の取り込みを、画像を流し切った後に途中で止めるか。本の画面が読書を始める時に同じ値を読む。
         /// 既定を false にしているのは、切り替えていない時の偽の取り込みを「読書を終える」まで続けるため。
         @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
+        /// 端末内のモデルが使えるかの確かめ方。アプリの入口の画面 (`ContentView`) が同じ値を読む。
+        /// 既定を `.real` にしているのは、切り替えていない開発用のビルドでは実物で確かめるため。
+        @AppStorage(developerMenuQuizAvailabilityKey) private var quizAvailability = DeveloperMenuQuizAvailability.real
 
         var body: some View {
             List {
@@ -114,6 +117,28 @@
                     Text(verbatim: "読書")
                 } footer: {
                     Text(verbatim: "オンの間は 画面共有の選択画面を出さずに 決まった本文のページが取り込まれる")
+                }
+                // 読書の section より下に置いているのは、上の行の位置を変えず、既存の UI テストの画面の送り方を変えないため。
+                Section {
+                    ForEach(DeveloperMenuQuizAvailability.allCases, id: \.self) { selectableQuizAvailability in
+                        Button {
+                            quizAvailability = selectableQuizAvailability
+                        } label: {
+                            HStack {
+                                Text(verbatim: developerMenuQuizAvailabilityTitle(developerMenuQuizAvailability: selectableQuizAvailability))
+                                Spacer()
+                                if quizAvailability == selectableQuizAvailability {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                        .accessibilityAddTraits(quizAvailability == selectableQuizAvailability ? .isSelected : [])
+                        .accessibilityIdentifier("developer_menu_quiz_availability_\(selectableQuizAvailability.rawValue)")
+                    }
+                } header: {
+                    Text(verbatim: "端末内のモデルが使えるか")
+                } footer: {
+                    Text(verbatim: "使えないことにすると 本の一覧と本の画面に案内が出て 読書を始められなくなる")
                 }
                 if let failureDescription {
                     Section {

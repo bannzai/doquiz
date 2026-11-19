@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 /// 本の画面。一覧で選んだ本の名前、読書の回数と最後に読んだ時期、その本の出題の設定への入口、「読書を始める」を出す。
+/// 端末内のモデルが使えない間は、クイズを出せないことと理由の案内を出し、「読書を始める」を押せなくする。
 ///
 /// 「読書を始める」から「読書を終える」までの読書を動かす。初めて読書を始める時だけ同意の説明を出し、
 /// 取り込みが始まると読書中の画面を上に出して、終えるとこの画面に戻る。
@@ -10,6 +11,9 @@ struct BookView: View {
     let book: Book
     /// 読書の記録とページを保存する、アプリの保存先の context。
     @Environment(\.modelContext) private var modelContext
+    /// 端末内のモデルが使えない時の案内の文。使える時は nil。nil でない間は「読書を始める」を押せなくする
+    /// (クイズを作れないのに画面を取り込んで本文を保存することを避けるため)。
+    @Environment(\.quizUnavailableGuide) private var quizUnavailableGuide
     /// 画面の取り込みの同意の説明に同意済みか。
     /// 既定を false にしているのは、同意の説明をまだ見ていない利用者に、初めての読書の前に説明を出すため。
     @AppStorage(hasAgreedToScreenCaptureKey) private var hasAgreedToScreenCapture = false
@@ -74,9 +78,13 @@ struct BookView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("reading_guide")
                 }
-                Text(verbatim: "次の画面で画面全体を選ぶと取り込みが始まります")
-                    .font(.footnote)
-                    .foregroundStyle(doquizSecondaryTextColor)
+                if let quizUnavailableGuide {
+                    QuizUnavailableGuidePanel(guide: quizUnavailableGuide)
+                } else {
+                    Text(verbatim: "次の画面で画面全体を選ぶと取り込みが始まります")
+                        .font(.footnote)
+                        .foregroundStyle(doquizSecondaryTextColor)
+                }
                 Button {
                     if hasAgreedToScreenCapture {
                         beginReading()
@@ -90,7 +98,9 @@ struct BookView: View {
                         .frame(maxWidth: .infinity, minHeight: 54)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isStartingReading)
+                .disabled(isStartingReading || quizUnavailableGuide != nil)
+                // 押せないことが色でも分かるよう、端末内のモデルが使えない間はボタンを薄くする。
+                .opacity(quizUnavailableGuide == nil ? 1 : 0.4)
                 .accessibilityIdentifier("reading_start")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
