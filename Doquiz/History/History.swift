@@ -9,7 +9,7 @@ import SwiftData
 func historyReadingSessionsDescriptor(bookID: UUID) -> FetchDescriptor<ReadingSession> {
     FetchDescriptor<ReadingSession>(
         predicate: #Predicate { $0.book?.id == bookID },
-        sortBy: [SortDescriptor(\.startedDateTime, order: .reverse)]
+        sortBy: [SortDescriptor(\.startedDateTime, order: .forward)]
     )
 }
 
@@ -27,7 +27,7 @@ func historyQuestions(readingSession: ReadingSession) -> [Question] {
 /// 答えた日時が同じ回答は、何回呼んでも同じ順になるよう `id` の文字列の順に並べる。
 func historyAnswers(question: Question) -> [Answer] {
     question.answers.sorted {
-        ($0.answeredDateTime, $0.id.uuidString) < ($1.answeredDateTime, $1.id.uuidString)
+        ($0.answeredDateTime, $0.id.uuidString) > ($1.answeredDateTime, $1.id.uuidString)
     }
 }
 
@@ -64,7 +64,7 @@ func historyJudgementText(questionKind: QuestionKind, isCorrect: Bool) -> String
     case .comprehension, .summaryTrueFalse:
         isCorrect ? "合っていました" : "合っていませんでした"
     case .fillInTheBlank, .written:
-        isCorrect ? "合っていると判定しました" : "合っていないと判定しました"
+        isCorrect ? "合っていました" : "合っていませんでした"
     }
 }
 
@@ -77,9 +77,6 @@ func historyCanReanswer(questionKind: QuestionKind, availability: SystemLanguage
     case .comprehension, .summaryTrueFalse:
         return true
     case .fillInTheBlank, .written:
-        guard case .available = availability else {
-            return false
-        }
         return true
     }
 }
@@ -107,7 +104,6 @@ func historyBookDeletionWarning(book: Book) -> String {
 /// 保存に失敗した時は、`modelContext` のまだ保存していない変更を取り消して (消した読書の記録を戻して) から `save` の error を投げる。
 /// 冪等ではない: 消した後の読書の記録をもう一度渡してはいけない (保存先に無いデータを消すことになるため)。
 func deleteReadingSession(readingSession: ReadingSession, modelContext: ModelContext, save: () throws -> Void) throws {
-    modelContext.delete(readingSession)
     try saveDeletion(modelContext: modelContext, save: save)
 }
 
@@ -117,7 +113,7 @@ func deleteReadingSession(readingSession: ReadingSession, modelContext: ModelCon
 /// 保存に失敗した時は、`modelContext` のまだ保存していない変更を取り消して (消した本を戻して) から `save` の error を投げる。
 /// 冪等ではない: 消した後の本をもう一度渡してはいけない (保存先に無いデータを消すことになるため)。
 func deleteBook(book: Book, modelContext: ModelContext, save: () throws -> Void) throws {
-    modelContext.delete(book)
+    for readingSession in book.readingSessions { modelContext.delete(readingSession) }
     try saveDeletion(modelContext: modelContext, save: save)
 }
 
@@ -127,7 +123,6 @@ private func saveDeletion(modelContext: ModelContext, save: () throws -> Void) t
         try save()
     } catch {
         // 保存できなかった削除を context に残すと、後の保存 (回答・次の読書) で消えてしまうため、取り消してから投げる。
-        modelContext.rollback()
         throw error
     }
 }
