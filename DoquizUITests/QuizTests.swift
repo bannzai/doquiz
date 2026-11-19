@@ -16,12 +16,12 @@ final class QuizTests: XCTestCase {
     /// `element` が `predicateFormat` の条件を満たすまで待つ。待ちの上限を過ぎても満たさない時はテストを失敗にする。
     @MainActor
     private func assertEventually(element: XCUIElement, predicateFormat: String, argument: String) {
-        // 上限の 10 秒は、起動の待ち (30 秒) と違い、同じ画面の中の表示の更新だけを待つため短くしている (DeveloperMenuTests と同じ値)。
+        // 上限の 30 秒は、GitHub の runner が遅い時に、画面の要素を 1 回探すだけで約 9 秒かかった実測に合わせた (10 秒では確かめ直しが間に合わずに落ちた。https://github.com/bannzai/doquiz/issues/58 )。
         // 偽のクイズが問いを返すまでの待ち (3 秒) もこの中に収まる。
         XCTAssertEqual(
             XCTWaiter().wait(
                 for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: predicateFormat, argument), object: element)],
-                timeout: 10
+                timeout: 30
             ),
             .completed,
             "\(element) が \(predicateFormat) (\(argument)) にならなかった (表示: \(element.exists ? element.label : "要素が無い"))"
@@ -37,12 +37,12 @@ final class QuizTests: XCTestCase {
         // GitHub の runner の Simulator は起動直後の描画が遅いことがあるため、待ちの上限を長めに取る (ScreenshotTests と同じ値)。
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
-        XCTAssertTrue(app.buttons["developer_menu_toggle_fake_reading"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["developer_menu_toggle_fake_reading"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_toggle_fake_reading"].tap()
         assertEventually(element: app.staticTexts["developer_menu_uses_fake_reading_state"], predicateFormat: "label == %@", argument: "オン")
         // クイズの切り替えは一覧の下にあり、画面に入っていないことがあるため、上へ送ってから押す。
         app.swipeUp()
-        XCTAssertTrue(app.buttons["developer_menu_cycle_fake_quiz_behavior"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["developer_menu_cycle_fake_quiz_behavior"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["developer_menu_fake_quiz_behavior_state"].label, "実物")
         for _ in 0..<fakeQuizBehaviorTapCount {
             app.buttons["developer_menu_cycle_fake_quiz_behavior"].tap()
@@ -52,17 +52,17 @@ final class QuizTests: XCTestCase {
 
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         app.buttons["book_registration_entrance"].tap()
-        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 30))
         app.textFields["book_registration_title_field"].tap()
         typeAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: "潮見町の灯台日誌")
         app.buttons["book_registration_submit"].tap()
-        XCTAssertTrue(app.buttons["book_list_row"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["book_list_row"].waitForExistence(timeout: 30))
         app.buttons["book_list_row"].tap()
-        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 30))
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: 30))
         app.buttons["screen_capture_consent_agree"].tap()
-        XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: 30))
         app.buttons["reading_end"].tap()
     }
 
@@ -74,7 +74,7 @@ final class QuizTests: XCTestCase {
         XCTAssertEqual(
             XCTWaiter().wait(
                 for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: element)],
-                timeout: 10
+                timeout: 30
             ),
             .completed,
             "\(element) にキーボードの入力先が移らなかった"
@@ -91,11 +91,11 @@ final class QuizTests: XCTestCase {
     /// クイズを終えて本の画面に戻った後、一覧に戻って開発者メニューを開き、保存されている問いと回答の件数が `expectedQuestionCount`・`expectedAnswerCount` になるまで待つ。
     @MainActor
     private func assertSavedCounts(app: XCUIApplication, expectedQuestionCount: String, expectedAnswerCount: String) {
-        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 30))
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
-        XCTAssertTrue(app.staticTexts["developer_menu_question_count"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["developer_menu_question_count"].waitForExistence(timeout: 30))
         assertEventually(element: app.staticTexts["developer_menu_question_count"], predicateFormat: "label == %@", argument: expectedQuestionCount)
         assertEventually(element: app.staticTexts["developer_menu_answer_count"], predicateFormat: "label == %@", argument: expectedAnswerCount)
     }
@@ -109,11 +109,11 @@ final class QuizTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         endReadingWithFakeQuiz(app: app, fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
 
-        XCTAssertTrue(app.staticTexts["quiz_preparing"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_preparing"].waitForExistence(timeout: 30))
         XCTAssertFalse(app.staticTexts["quiz_position"].exists)
         attachScreenshot(app: app, name: "quiz-preparing")
 
-        XCTAssertTrue(app.staticTexts["quiz_position"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_position"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quiz_position"].label, "問い 1 / 4")
         XCTAssertEqual(app.staticTexts["quiz_kind"].label, "四択")
         XCTAssertEqual(app.staticTexts["quiz_question_text"].label, "灯台守が毎朝 日誌に書きとめたものは何か")
@@ -123,7 +123,7 @@ final class QuizTests: XCTestCase {
         XCTAssertFalse(app.buttons["quiz_next"].exists)
         attachScreenshot(app: app, name: "quiz-comprehension")
         app.buttons["quiz_choice_1"].tap()
-        XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quiz_judgement"].label, "合っています")
         XCTAssertFalse(app.staticTexts["quiz_judgement_caution"].exists)
         XCTAssertEqual(app.staticTexts["quiz_model_answer"].label, "霧の濃さ")
@@ -140,7 +140,7 @@ final class QuizTests: XCTestCase {
         XCTAssertFalse(app.buttons["quiz_choice_2"].exists)
         attachScreenshot(app: app, name: "quiz-summary-true-false")
         app.buttons["quiz_choice_0"].tap()
-        XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quiz_judgement"].label, "合っていません")
         XCTAssertEqual(app.staticTexts["quiz_model_answer"].label, "誤り")
         XCTAssertTrue(app.staticTexts["quiz_evidence_quote"].label.contains("灯台守"))
@@ -159,7 +159,7 @@ final class QuizTests: XCTestCase {
         answerField(app: app).typeText("霧")
         XCTAssertTrue(app.buttons["quiz_answer_submit"].isEnabled)
         app.buttons["quiz_answer_submit"].tap()
-        XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quiz_judgement"].label, "合っていそうです")
         XCTAssertTrue(app.staticTexts["quiz_judgement_caution"].label.contains("間違うことがあります"))
         XCTAssertEqual(app.staticTexts["quiz_model_answer"].label, "霧")
@@ -173,7 +173,7 @@ final class QuizTests: XCTestCase {
         answerField(app: app).tap()
         typeAfterKeyboardFocus(element: answerField(app: app), text: "海を見ていた")
         app.buttons["quiz_answer_submit"].tap()
-        XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quiz_judgement"].label, "合っていないかもしれません")
         XCTAssertTrue(app.staticTexts["quiz_judgement_caution"].label.contains("間違うことがあります"))
         XCTAssertEqual(app.staticTexts["quiz_model_answer"].label, "霧の濃さを日誌に書きとめていた")
@@ -192,7 +192,7 @@ final class QuizTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         endReadingWithFakeQuiz(app: app, fakeQuizBehaviorTapCount: 2, fakeQuizBehaviorLabel: "問いを返さない")
 
-        XCTAssertTrue(app.staticTexts["quiz_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_guide"].waitForExistence(timeout: 30))
         XCTAssertTrue(app.staticTexts["quiz_guide"].label.contains("今回の読書のクイズはありません"))
         XCTAssertFalse(app.staticTexts["quiz_position"].exists)
         XCTAssertFalse(app.buttons["quiz_retry"].exists)
@@ -209,7 +209,7 @@ final class QuizTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         endReadingWithFakeQuiz(app: app, fakeQuizBehaviorTapCount: 3, fakeQuizBehaviorLabel: "モデルが使えない")
 
-        XCTAssertTrue(app.staticTexts["quiz_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_guide"].waitForExistence(timeout: 30))
         XCTAssertTrue(app.staticTexts["quiz_guide"].label.contains("端末内のモデルを使えないため"))
         XCTAssertFalse(app.staticTexts["quiz_position"].exists)
         XCTAssertFalse(app.buttons["quiz_retry"].exists)
@@ -227,12 +227,12 @@ final class QuizTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         endReadingWithFakeQuiz(app: app, fakeQuizBehaviorTapCount: 4, fakeQuizBehaviorLabel: "作るのに失敗する")
 
-        XCTAssertTrue(app.staticTexts["quiz_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_guide"].waitForExistence(timeout: 30))
         XCTAssertTrue(app.staticTexts["quiz_guide"].label.hasPrefix("問いを作れませんでした"))
         attachScreenshot(app: app, name: "quiz-preparation-failure")
 
         app.buttons["quiz_retry"].tap()
-        XCTAssertTrue(app.buttons["quiz_retry"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["quiz_retry"].waitForExistence(timeout: 30))
         XCTAssertTrue(app.staticTexts["quiz_guide"].label.hasPrefix("問いを作れませんでした"))
 
         app.buttons["quiz_leave"].tap()
@@ -247,14 +247,14 @@ final class QuizTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         endReadingWithFakeQuiz(app: app, fakeQuizBehaviorTapCount: 5, fakeQuizBehaviorLabel: "判定に失敗する")
 
-        XCTAssertTrue(app.staticTexts["quiz_position"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_position"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quiz_position"].label, "問い 1 / 1")
         XCTAssertFalse(app.buttons["quiz_leave"].exists)
         answerField(app: app).tap()
         typeAfterKeyboardFocus(element: answerField(app: app), text: "霧")
         app.buttons["quiz_answer_submit"].tap()
 
-        XCTAssertTrue(app.staticTexts["quiz_answer_failure_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_answer_failure_guide"].waitForExistence(timeout: 30))
         XCTAssertTrue(app.staticTexts["quiz_answer_failure_guide"].label.hasPrefix("答えを判定して保存できませんでした"))
         XCTAssertFalse(app.staticTexts["quiz_judgement"].exists)
         XCTAssertFalse(app.buttons["quiz_next"].exists)
@@ -264,7 +264,7 @@ final class QuizTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["quiz_position"].label, "問い 1 / 1")
         XCTAssertTrue(app.buttons["quiz_answer_submit"].isEnabled)
         app.buttons["quiz_answer_submit"].tap()
-        XCTAssertTrue(app.staticTexts["quiz_answer_failure_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_answer_failure_guide"].waitForExistence(timeout: 30))
         XCTAssertFalse(app.staticTexts["quiz_judgement"].exists)
 
         app.buttons["quiz_leave"].tap()
