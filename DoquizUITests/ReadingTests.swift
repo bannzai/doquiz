@@ -93,17 +93,7 @@ final class ReadingTests: XCTestCase {
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         app.buttons["book_registration_entrance"].tap()
         XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
-        app.textFields["book_registration_title_field"].tap()
-        // 押した直後は入力欄にまだキーボードの入力先が移っていないことがあり、そのまま打つと失敗するため、移るまで待つ。
-        XCTAssertEqual(
-            XCTWaiter().wait(
-                for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "hasKeyboardFocus == true"), object: app.textFields["book_registration_title_field"])],
-                timeout: 10
-            ),
-            .completed,
-            "本の名前の入力欄にキーボードの入力先が移らなかった"
-        )
-        app.textFields["book_registration_title_field"].typeText(title)
+        typeTextAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: title)
         app.buttons["book_registration_submit"].tap()
         let bookRow = app.buttons.matching(NSPredicate(format: "identifier == %@ AND label CONTAINS %@", "book_list_row", title)).firstMatch
         XCTAssertTrue(bookRow.waitForExistence(timeout: 10))
