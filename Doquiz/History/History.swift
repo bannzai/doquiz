@@ -45,6 +45,16 @@ func historyReadingSessionCountsText(readingSession: ReadingSession) -> String {
     "\(readingSession.capturedPages.count) ページ ・ \(readingSession.questions.count) 問"
 }
 
+/// 履歴の一覧に出す、読書の記録の見出しの文を返す。読書を始めた日時を `currentDateTime` から見た言い方にして「昨日の読書」のように返す
+/// (主要画面のモック `documents/design/mock-2026-11-18/History.dc.html` の見出しのとおり)。
+func historyReadingSessionTitle(readingSession: ReadingSession, currentDateTime: Date) -> String {
+    let relativeDateTimeFormatter = RelativeDateTimeFormatter()
+    // 画面の文言が日本語だけのため、端末の言語に関わらず日本語の言い方にする (`bookReadingSummary` と同じ)。
+    relativeDateTimeFormatter.locale = Locale(identifier: "ja_JP")
+    relativeDateTimeFormatter.dateTimeStyle = .named
+    return relativeDateTimeFormatter.localizedString(for: readingSession.startedDateTime, relativeTo: currentDateTime) + "の読書"
+}
+
 /// 日時を、履歴に出す「2026年11月6日 19:40」の形の文にして返す。
 ///
 /// - Parameter timeZone: 日付と時刻を読む時間帯。アプリは端末の時間帯 (`TimeZone.current`) を渡す

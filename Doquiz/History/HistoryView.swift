@@ -151,7 +151,7 @@ struct HistoryView: View {
         VStack(alignment: .leading, spacing: 10) {
             NavigationLink(value: readingSession) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(verbatim: historyDateTimeText(dateTime: readingSession.startedDateTime, timeZone: .current) + " の読書")
+                    Text(verbatim: historyReadingSessionTitle(readingSession: readingSession, currentDateTime: Date()))
                         .font(.headline)
                         .foregroundStyle(doquizTextColor)
                         .multilineTextAlignment(.leading)

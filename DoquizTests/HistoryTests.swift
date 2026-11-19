@@ -282,6 +282,29 @@ import Testing
         )
     }
 
+    /// 履歴の一覧の読書の記録の見出しは、読書を始めた日時を今から見た言い方にした「昨日の読書」の形になる。
+    @Test func 読書の記録の見出しは読書を始めた日時を今から見た言い方になる() {
+        // `oldestReadingSession` は 1970-01-01 00:16:40 (UTC) に始めた。
+        #expect(
+            historyReadingSessionTitle(readingSession: oldestReadingSession, currentDateTime: Date(timeIntervalSince1970: 1_000 + 86_400))
+                == "昨日の読書"
+        )
+        // 4 日前の言い方は、数字と「日前」の間の空きを iOS が決めるため、数字と終わりの形で確かめる。
+        #expect(
+            historyReadingSessionTitle(readingSession: oldestReadingSession, currentDateTime: Date(timeIntervalSince1970: 1_000 + 86_400 * 4))
+                .hasPrefix("4")
+        )
+        #expect(
+            historyReadingSessionTitle(readingSession: oldestReadingSession, currentDateTime: Date(timeIntervalSince1970: 1_000 + 86_400 * 4))
+                .hasSuffix("日前の読書")
+        )
+        // 新しい読書の記録は、同じ今から見て、古い読書の記録と違う見出しになる。
+        #expect(
+            historyReadingSessionTitle(readingSession: newestReadingSession, currentDateTime: Date(timeIntervalSince1970: 1_000 + 86_400))
+                != "昨日の読書"
+        )
+    }
+
     /// 履歴に出す日時の文は、渡した時間帯の日付と時刻で、日本語の書き方になる。
     @Test func 日時の文は渡した時間帯の日本語の日付と時刻になる() throws {
         // 2026-11-06 10:40 (UTC)。東京では同じ日の 19:40、ホノルルでは同じ日の 0:40。
