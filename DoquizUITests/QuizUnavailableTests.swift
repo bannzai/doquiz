@@ -153,11 +153,11 @@ final class QuizUnavailableTests: XCTestCase {
         }
     }
 
-    /// 使える状態で「読書を始める」を押して同意の説明を出し、その間に使えなくなった時は、同意しても読書が始まらない。
-    /// 同意の後に読書を始めようとした時に出る案内 (iOS Simulator では画面の取り込みを使えない案内) が出ず、
+    /// 使える状態で「読書を始める」を押して同意の説明を出し、その間に使えなくなった時は、同意の説明が閉じて読書が始まらない。
+    /// 読書を始めようとした時に出る案内 (iOS Simulator では画面の取り込みを使えない案内) が出ず、
     /// 使えない時の案内が出て「読書を始める」を押せない。
     @MainActor
-    func test同意の説明を出している間に使えなくなると同意しても読書が始まらない() {
+    func test同意の説明を出している間に使えなくなると説明が閉じて読書が始まらない() {
         let app = launchAppWithInMemoryStore()
         registerBook(app: app, title: "潮見町の灯台日誌")
         switchQuizAvailability(app: app, quizAvailability: "appleIntelligenceNotEnabled")
@@ -168,8 +168,8 @@ final class QuizUnavailableTests: XCTestCase {
         XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: 10))
 
         leaveAndReturn(app: app)
-        app.buttons["screen_capture_consent_agree"].tap()
 
+        assertEventually(element: app.buttons["screen_capture_consent_agree"], predicateFormat: "exists == false")
         XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.staticTexts["reading_guide"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["reading_start"].isEnabled)
