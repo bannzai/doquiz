@@ -17,7 +17,7 @@ func assembleQuestion(
     let choices: [String]
     switch questionKind {
     case .comprehension:
-        choices = ([modelAnswer] + wrongChoices).shuffled()
+        choices = [modelAnswer] + wrongChoices
     case .summaryTrueFalse:
         choices = summaryTrueFalseChoices
     case .fillInTheBlank, .written:
