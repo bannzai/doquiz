@@ -143,6 +143,26 @@ import Testing
         #expect(recordingQuizEngine.questionGuidance == "人物の行動の理由を中心に")
     }
 
+    /// 同じ本の、今回と同じ日時に始めた別の読書のページの本文は、前の読書の本文として渡さない (前の読書は、今回より前に始めた読書だけ)。
+    @Test func 今回と同じ日時に始めた別の読書の本文は前の読書として渡さない() async throws {
+        let sameTimeReadingSession = ReadingSession(id: UUID(), startedDateTime: readingSession.startedDateTime, endedDateTime: nil, book: book)
+        writingContext.insert(sameTimeReadingSession)
+        writingContext.insert(CapturedPage(id: UUID(), capturedDateTime: Date(timeIntervalSince1970: 3_050), text: "同じ日時の読書のページ", readingSession: sameTimeReadingSession))
+        try writingContext.save()
+        let recordingQuizEngine = RecordingQuizEngine(availability: .available, makeQuestionsError: nil, judgementError: nil)
+
+        _ = try await makeQuizQuestions(
+            book: book,
+            readingSession: readingSession,
+            quizEngine: recordingQuizEngine,
+            modelContext: writingContext,
+            save: writingContext.save
+        )
+
+        #expect(recordingQuizEngine.currentReadingPageTexts == ["今回の一枚目", "今回の二枚目"])
+        #expect(recordingQuizEngine.previousReadingPageTexts == ["最初の読書の一枚目", "最初の読書の二枚目", "終えた日時の無い読書の一枚目"])
+    }
+
     /// 同じ本の、今回より後に始めた読書のページの本文は、前の読書の本文として渡さない。
     @Test func 今回より後に始めた読書の本文は前の読書として渡さない() async throws {
         let laterReadingSession = ReadingSession(id: UUID(), startedDateTime: Date(timeIntervalSince1970: 5_000), endedDateTime: nil, book: book)
