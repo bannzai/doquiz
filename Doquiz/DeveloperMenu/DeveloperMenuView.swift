@@ -138,7 +138,7 @@
                 } header: {
                     Text(verbatim: "端末内のモデルが使えるか")
                 } footer: {
-                    Text(verbatim: "使えないことにすると 本の一覧と本の画面に案内が出て 読書を始められなくなる")
+                    Text(verbatim: "使えないことにすると 本の一覧と本の画面に案内が出て 読書を始められなくなる\n切り替えは 実機で設定を変えた時と同じく ホーム画面へ出て戻った時に効く (使えない間は 5 秒ごとにも確かめ直す)")
                 }
                 if let failureDescription {
                     Section {

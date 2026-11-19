@@ -28,13 +28,15 @@ import Testing
 
     /// 使えない理由の種類ごとに、案内の文が違う。
     @Test func 使えない理由の種類ごとに案内の文が違う() throws {
-        let unavailableGuides = try [
-            SystemLanguageModel.Availability.UnavailableReason.deviceNotEligible,
-            .appleIntelligenceNotEnabled,
-            .modelNotReady,
-        ].map { try #require(guide(availability: .unavailable($0))) }
-
-        #expect(Set(unavailableGuides).count == 3)
+        #expect(
+            try Set(
+                [
+                    SystemLanguageModel.Availability.UnavailableReason.deviceNotEligible,
+                    .appleIntelligenceNotEnabled,
+                    .modelNotReady,
+                ].map { try #require(guide(availability: .unavailable($0))) }
+            ).count == 3
+        )
     }
 
     /// 利用者が自分で直せる理由 (Apple Intelligence を切っている) の案内には、直し方 (設定アプリでオンにする) が書かれている。

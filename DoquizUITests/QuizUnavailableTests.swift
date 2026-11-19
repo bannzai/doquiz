@@ -29,7 +29,17 @@ final class QuizUnavailableTests: XCTestCase {
         )
     }
 
+    /// ホーム画面へ出てからアプリに戻る (ほかのアプリから戻ってきた時に当たる)。
+    @MainActor
+    private func leaveAndReturn(app: XCUIApplication) {
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 10))
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+    }
+
     /// 一覧から開発者メニューを開き、端末内のモデルが使えるかを `quizAvailability` (開発者メニューの確かめ方の名前) に切り替えて、一覧に戻る。
+    /// 切り替えた値は、アプリが次に確かめるまで画面に出ない。
     @MainActor
     private func switchQuizAvailability(app: XCUIApplication, quizAvailability: String) {
         // GitHub の runner の Simulator は起動直後の描画が遅いことがあるため、待ちの上限を長めに取る (ScreenshotTests と同じ値)。
@@ -73,6 +83,8 @@ final class QuizUnavailableTests: XCTestCase {
     /// 使えない状態 (Apple Intelligence がオフ) にすると、本の一覧と本の画面に、クイズを出せないことと理由と直し方の案内が出て、
     /// 「読書を始める」を押せず、押しても同意の説明が出ない。出題の設定の入口は押せるままである。
     /// 使える状態に戻すと、案内が消えて「読書を始める」を押せ、押すと同意の説明が出る。
+    /// 使えない状態への切り替えは、ほかのアプリから戻ってきた時に初めて画面に出る (戻る前は案内が出ない)。
+    /// 使える状態への切り替えは、アプリを開いたままでも画面に出る (使えない間は確かめ直しているため)。
     /// 案内の出た本の一覧を `book-list-quiz-unavailable`、本の画面を `book-quiz-unavailable` の名前で添付する。
     @MainActor
     func test使えない間は案内が出て読書を始められず使えるようになると始められる() {
@@ -86,6 +98,8 @@ final class QuizUnavailableTests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
 
         switchQuizAvailability(app: app, quizAvailability: "appleIntelligenceNotEnabled")
+        XCTAssertFalse(app.staticTexts["quiz_unavailable_guide"].exists)
+        leaveAndReturn(app: app)
 
         XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].label.contains("クイズを出せません"))
@@ -105,7 +119,7 @@ final class QuizUnavailableTests: XCTestCase {
 
         switchQuizAvailability(app: app, quizAvailability: "available")
 
-        XCTAssertFalse(app.staticTexts["quiz_unavailable_guide"].exists)
+        assertEventually(element: app.staticTexts["quiz_unavailable_guide"], predicateFormat: "exists == false")
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
         XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.staticTexts["quiz_unavailable_guide"].exists)
@@ -127,9 +141,9 @@ final class QuizUnavailableTests: XCTestCase {
             ("modelNotReady", "クイズを作るモデルを iPhone が準備しています", "book-quiz-unavailable-model-not-ready"),
         ] {
             switchQuizAvailability(app: app, quizAvailability: quizAvailability)
+            leaveAndReturn(app: app)
 
-            XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].waitForExistence(timeout: 10))
-            XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].label.contains(guidePart))
+            assertEventually(element: app.staticTexts["quiz_unavailable_guide"], predicateFormat: "label CONTAINS '\(guidePart)'")
             bookRow(app: app, title: "潮見町の灯台日誌").tap()
             XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
             XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].label.contains(guidePart))
@@ -137,5 +151,27 @@ final class QuizUnavailableTests: XCTestCase {
             attachScreenshot(app: app, name: screenshotName)
             app.navigationBars.buttons.firstMatch.tap()
         }
+    }
+
+    /// 使える状態で「読書を始める」を押して同意の説明を出し、その間に使えなくなった時は、同意しても読書が始まらない。
+    /// 同意の後に読書を始めようとした時に出る案内 (iOS Simulator では画面の取り込みを使えない案内) が出ず、
+    /// 使えない時の案内が出て「読書を始める」を押せない。
+    @MainActor
+    func test同意の説明を出している間に使えなくなると同意しても読書が始まらない() {
+        let app = launchAppWithInMemoryStore()
+        registerBook(app: app, title: "潮見町の灯台日誌")
+        switchQuizAvailability(app: app, quizAvailability: "appleIntelligenceNotEnabled")
+        bookRow(app: app, title: "潮見町の灯台日誌").tap()
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reading_start"].isEnabled)
+        app.buttons["reading_start"].tap()
+        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: 10))
+
+        leaveAndReturn(app: app)
+        app.buttons["screen_capture_consent_agree"].tap()
+
+        XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["reading_guide"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["reading_start"].isEnabled)
     }
 }

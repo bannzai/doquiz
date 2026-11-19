@@ -170,9 +170,10 @@ struct BookView: View {
     /// 読書を始める。取り込みが始まったら読書中の画面を出し、ページを足す処理を動かす。
     ///
     /// 始められなかった時は、読書の記録を残さず、この画面に案内を出す。取り込みが途中で止まった時は、読書を終えて案内を出す。
-    /// 始めている途中にもう一度呼ばれた時は何もしない。
+    /// 始めている途中にもう一度呼ばれた時と、端末内のモデルが使えない間に呼ばれた時は何もしない
+    /// (同意の説明を出している間に使えなくなった時も、同意の後に取り込みを始めないため、ボタンの条件とは別にここでも確かめる)。
     private func beginReading() {
-        guard !isStartingReading else {
+        guard !isStartingReading, quizUnavailableGuide == nil else {
             return
         }
         isStartingReading = true
