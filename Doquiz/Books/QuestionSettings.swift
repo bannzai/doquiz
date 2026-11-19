@@ -28,9 +28,12 @@ func saveQuestionSettings(
     questionGuidance: String,
     modelContext: ModelContext
 ) throws -> Bool {
+    guard questionKinds.isEmpty == false else {
+        return false
+    }
     let trimmedQuestionGuidance = questionGuidance.trimmingCharacters(in: .whitespacesAndNewlines)
-    book.questionKinds = QuestionKind.allCases.reversed().filter { questionKinds.contains($0) }
-    book.questionGuidance = questionGuidance
+    book.questionKinds = QuestionKind.allCases.filter { questionKinds.contains($0) }
+    book.questionGuidance = trimmedQuestionGuidance.isEmpty ? nil : trimmedQuestionGuidance
     try modelContext.save()
     return true
 }
