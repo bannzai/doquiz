@@ -113,6 +113,22 @@ import Testing
         )
     }
 
+    /// 四択は、選択肢が互いに違う 4 つでなければ捨てられる (模範の答えと同じ誤りの選択肢がある、誤りの選択肢どうしが同じ、3 つしか無い、5 つある)。
+    @Test(arguments: [
+        ["猫", "猫", "犬", "鳥"],
+        ["猫", "犬", "犬", "鳥"],
+        ["猫", "犬", "鳥"],
+        ["猫", "犬", "人", "鳥", "魚"],
+    ])
+    func 選択肢が互いに違う四つでない四択は捨てられる(choices: [String]) {
+        #expect(
+            !isAcceptable(
+                question: makeQuestion(kind: .comprehension, choices: choices, modelAnswer: "猫", evidenceQuote: "吾輩は猫である。"),
+                selectedQuestionKinds: [.comprehension]
+            )
+        )
+    }
+
     /// 四択と要約の正誤は、選択肢の中に模範の答えが無ければ捨てられる。選択肢が空の時も同じ。
     @Test(arguments: [
         (QuestionKind.comprehension, ["犬", "虎", "人", "鳥"], "猫"),
