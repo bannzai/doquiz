@@ -1,12 +1,42 @@
 import SwiftData
 import SwiftUI
 
-/// 本の画面。一覧で選んだ本の名前、読書の回数と最後に読んだ時期、その本の出題の設定への入口を出す。
+/// 本の画面。一覧で選んだ本の名前、読書の回数と最後に読んだ時期、その本の出題の設定への入口、「読書を始める」を出す。
+///
+/// 「読書を始める」から「読書を終える」までの読書を動かす。初めて読書を始める時だけ同意の説明を出し、
+/// 取り込みが始まると読書中の画面を上に出して、終えるとこの画面に戻る。
 struct BookView: View {
     /// 一覧で選んだ本。
     let book: Book
+    /// 読書の記録とページを保存する、アプリの保存先の context。
+    @Environment(\.modelContext) private var modelContext
+    /// 画面の取り込みの同意の説明に同意済みか。
+    /// 既定を false にしているのは、同意の説明をまだ見ていない利用者に、初めての読書の前に説明を出すため。
+    @AppStorage(hasAgreedToScreenCaptureKey) private var hasAgreedToScreenCapture = false
+    #if DEBUG
+        /// 開発者メニューで、読書を偽の取り込みと偽の本文の抽出に切り替えているか。
+        /// 既定を false にしているのは、切り替えていない開発用のビルドでは実物を使うため。
+        @AppStorage(developerMenuUsesFakeReadingKey) private var usesFakeReading = false
+        /// 開発者メニューで、偽の取り込みを途中で止めるようにしているか。
+        /// 既定を false にしているのは、切り替えていない時の偽の取り込みを「読書を終える」まで続けるため。
+        @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
+    #endif
     /// 出題の設定の画面を出しているか。
     @State private var isEditingQuestionSettings = false
+    /// 同意の説明を出しているか。
+    @State private var isShowingScreenCaptureConsent = false
+    /// 取り込みを始めている途中か (画面共有の選択画面を出している間など)。
+    @State private var isStartingReading = false
+    /// 読書を終えている途中か。
+    @State private var isFinishingReading = false
+    /// 続いている読書の記録。読書中でなければ nil。nil でない間、読書中の画面を出す。
+    @State private var readingSession: ReadingSession?
+    /// 続いている読書の取り込み。読書中でなければ nil。
+    @State private var screenCapture: (any ScreenCapture)?
+    /// 続いている読書の、ページを足す処理を動かしているタスク。読書中でなければ nil。
+    @State private var pageSaving: Task<Void, any Error>?
+    /// 読書を始められなかった時・途中で止まった時・終える時に保存できなかった時の案内。案内することが無ければ nil。
+    @State private var readingGuide: String?
 
     var body: some View {
         ScrollView {
@@ -35,10 +65,172 @@ struct BookView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
         }
+        .safeAreaInset(edge: .bottom) {
+            VStack(alignment: .leading, spacing: 10) {
+                if let readingGuide {
+                    Text(verbatim: readingGuide)
+                        .font(.footnote)
+                        .foregroundStyle(doquizCapturingColor)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("reading_guide")
+                }
+                Text(verbatim: "次の画面で画面全体を選ぶと取り込みが始まります")
+                    .font(.footnote)
+                    .foregroundStyle(doquizSecondaryTextColor)
+                Button {
+                    if hasAgreedToScreenCapture {
+                        beginReading()
+                    } else {
+                        isShowingScreenCaptureConsent = true
+                    }
+                } label: {
+                    Text(verbatim: "読書を始める")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(isStartingReading)
+                .accessibilityIdentifier("reading_start")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(20)
+            .background(doquizBackgroundColor)
+        }
         .background(doquizBackgroundColor)
         .navigationBarTitleDisplayMode(.inline)
+        // 取り込みを始めている途中にこの画面を離れると、始まった取り込みを止める画面が無くなるため、始まるか始められないと分かるまで戻れなくする。
+        .navigationBarBackButtonHidden(isStartingReading)
         .sheet(isPresented: $isEditingQuestionSettings) {
             QuestionSettingsView(book: book)
         }
+        // 同意した時は、説明の sheet が閉じ切ってから取り込みを始める (閉じている途中に画面共有の選択画面を重ねないため)。
+        .sheet(
+            isPresented: $isShowingScreenCaptureConsent,
+            onDismiss: {
+                if hasAgreedToScreenCapture {
+                    beginReading()
+                }
+            },
+            content: {
+                ScreenCaptureConsentView(
+                    agree: {
+                        hasAgreedToScreenCapture = true
+                        isShowingScreenCaptureConsent = false
+                    },
+                    cancel: {
+                        isShowingScreenCaptureConsent = false
+                    }
+                )
+            }
+        )
+        .fullScreenCover(item: $readingSession) { readingSession in
+            ReadingView(
+                book: book,
+                readingSession: readingSession,
+                endReading: {
+                    Task {
+                        await finishReading()
+                    }
+                }
+            )
+        }
+    }
+
+    /// 読書で使う画面の取り込みを作る。開発者メニューで偽の取り込みに切り替えている時は、偽の取り込みを返す。
+    private func makeScreenCaptureForReading() -> any ScreenCapture {
+        #if DEBUG
+            if usesFakeReading {
+                return makeDeveloperMenuFakeScreenCapture(interrupts: interruptsFakeReading)
+            }
+        #endif
+        return makeScreenCapture()
+    }
+
+    /// 読書で使う本文の抽出を作る。開発者メニューで偽の取り込みに切り替えている時は、決まった本文を返す偽の抽出を返す。
+    private func makePageTextExtractorForReading() -> any PageTextExtractor {
+        #if DEBUG
+            if usesFakeReading {
+                return FixedPageTextExtractor(pageText: developerMenuFakeReadingPageText)
+            }
+        #endif
+        return VisionPageTextExtractor()
+    }
+
+    /// 読書を始める。取り込みが始まったら読書中の画面を出し、ページを足す処理を動かす。
+    ///
+    /// 始められなかった時は、読書の記録を残さず、この画面に案内を出す。取り込みが途中で止まった時は、読書を終えて案内を出す。
+    /// 始めている途中にもう一度呼ばれた時は何もしない。
+    private func beginReading() {
+        guard !isStartingReading else {
+            return
+        }
+        isStartingReading = true
+        readingGuide = nil
+        let screenCapture = makeScreenCaptureForReading()
+        Task {
+            do {
+                let startedReading = try await startReading(
+                    book: book,
+                    screenCapture: screenCapture,
+                    modelContext: modelContext,
+                    currentDateTime: { Date() },
+                    save: modelContext.save
+                )
+                let pageSaving = Task {
+                    try await saveCapturedPages(
+                        capturedImages: startedReading.capturedImages,
+                        readingSession: startedReading.readingSession,
+                        pageTextExtractor: makePageTextExtractorForReading(),
+                        modelContext: modelContext,
+                        currentDateTime: { Date() },
+                        pauseAfterEachImage: readingPauseAfterEachImage,
+                        save: modelContext.save
+                    )
+                }
+                self.screenCapture = screenCapture
+                self.pageSaving = pageSaving
+                readingSession = startedReading.readingSession
+                isStartingReading = false
+                do {
+                    try await pageSaving.value
+                } catch {
+                    await finishReading()
+                }
+            } catch {
+                readingGuide = readingStartFailureGuide(error: error)
+                isStartingReading = false
+            }
+        }
+    }
+
+    /// 続いている読書を終えて、読書中の画面を閉じる。読書中でなければ何もしない。
+    ///
+    /// 取り込みが途中で止まっていた時は、この画面にその案内を出す。
+    /// 読書の記録を保存できなかった時も、読書中の画面を閉じて、この画面にエラーの内容を出す
+    /// (取り込みは既に止まっていて、読書中の画面の「取り込み中」が事実と違う表示になるため)。
+    /// 終えている途中にもう一度呼ばれた時は何もしない (後から終わった方が、先の保存の失敗の案内を消さないようにするため)。
+    private func finishReading() async {
+        guard !isFinishingReading, let readingSession, let screenCapture, let pageSaving else {
+            return
+        }
+        isFinishingReading = true
+        defer { isFinishingReading = false }
+        do {
+            readingGuide = readingEndGuide(
+                pageSavingError: try await endReading(
+                    readingSession: readingSession,
+                    screenCapture: screenCapture,
+                    pageSaving: pageSaving,
+                    currentDateTime: { Date() },
+                    save: modelContext.save
+                )
+            )
+        } catch {
+            readingGuide = readingEndSaveFailureGuide(error: error)
+        }
+        self.readingSession = nil
+        self.screenCapture = nil
+        self.pageSaving = nil
     }
 }

@@ -15,7 +15,8 @@
         }
     }
 
-    /// 開発者メニュー。実機で本を読まないと作れない状態 (読書の記録や回答がある状態) を作る操作と、保存データを全部消す操作を置く。
+    /// 開発者メニュー。実機で本を読まないと作れない状態 (読書の記録や回答がある状態) を作る操作、保存データを全部消す操作、
+    /// 読書を偽の取り込みに切り替える操作を置く。
     ///
     /// 開発用のビルド (DEBUG) だけに入り、公開用のビルドには入らない。
     /// 操作の結果を画面と UI テストから確かめられるよう、5 つの型の保存データの件数を出す。
@@ -34,6 +35,12 @@
         @Query private var answers: [Answer]
         /// 最後に実行した操作が失敗した時のエラーの内容。失敗していなければ nil。
         @State private var failureDescription: String?
+        /// 読書を偽の取り込みと偽の本文の抽出に切り替えているか。本の画面が読書を始める時に同じ値を読む。
+        /// 既定を false にしているのは、切り替えていない開発用のビルドでは実物を使うため。
+        @AppStorage(developerMenuUsesFakeReadingKey) private var usesFakeReading = false
+        /// 偽の取り込みを、画像を流し切った後に途中で止めるか。本の画面が読書を始める時に同じ値を読む。
+        /// 既定を false にしているのは、切り替えていない時の偽の取り込みを「読書を終える」まで続けるため。
+        @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
 
         var body: some View {
             List {
@@ -77,6 +84,36 @@
                     .accessibilityIdentifier("developer_menu_delete_all_saved_data")
                 } header: {
                     Text(verbatim: "保存データの操作")
+                }
+                Section {
+                    Button {
+                        usesFakeReading.toggle()
+                    } label: {
+                        Text(verbatim: "読書の取り込みを 偽物と実物で切り替える")
+                    }
+                    .accessibilityIdentifier("developer_menu_toggle_fake_reading")
+                    HStack {
+                        Text(verbatim: "偽の取り込みを使う")
+                        Spacer()
+                        Text(verbatim: usesFakeReading ? "オン" : "オフ")
+                            .accessibilityIdentifier("developer_menu_uses_fake_reading_state")
+                    }
+                    Button {
+                        interruptsFakeReading.toggle()
+                    } label: {
+                        Text(verbatim: "偽の取り込みを 途中で止めるかを切り替える")
+                    }
+                    .accessibilityIdentifier("developer_menu_toggle_interrupts_fake_reading")
+                    HStack {
+                        Text(verbatim: "偽の取り込みを途中で止める")
+                        Spacer()
+                        Text(verbatim: interruptsFakeReading ? "オン" : "オフ")
+                            .accessibilityIdentifier("developer_menu_interrupts_fake_reading_state")
+                    }
+                } header: {
+                    Text(verbatim: "読書")
+                } footer: {
+                    Text(verbatim: "オンの間は 画面共有の選択画面を出さずに 決まった本文のページが取り込まれる")
                 }
                 if let failureDescription {
                     Section {
