@@ -53,9 +53,6 @@ struct ContentView: View {
                 // 5 秒にしているのは、案内を読んで待つ利用者が、使えるようになってから長く待たされないようにするため。
                 // 確かめるのは使えない間だけなので、使える端末ではこの繰り返しは動かない。
                 try? await Task.sleep(for: .seconds(5))
-                if !Task.isCancelled {
-                    checkQuizAvailability()
-                }
             }
         }
     }
