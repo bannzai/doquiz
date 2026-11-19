@@ -79,18 +79,19 @@ struct ReadingTests {
                 pageTextExtractor: ImageWidthPageTextExtractor(pageTextsByImageWidth: pageTextsByImageWidth),
                 modelContext: writingContext,
                 currentDateTime: dateTimes.next,
-                pauseAfterEachImage: .zero
+                pauseAfterEachImage: .zero,
+                save: writingContext.save
             )
         }
         // 流し切る前に制限時間で抜けた時も、ページを足すタスクを残さない。
         defer { pageSaving.cancel() }
         try await waitUntilWaitingForStop(capture: capture)
-        try await endReading(
+        _ = try await endReading(
             readingSession: startedReading.readingSession,
             screenCapture: capture,
             pageSaving: pageSaving,
-            modelContext: writingContext,
-            currentDateTime: dateTimes.next
+            currentDateTime: dateTimes.next,
+            save: writingContext.save
         )
         return startedReading.readingSession
     }
@@ -164,7 +165,8 @@ struct ReadingTests {
                 pageTextExtractor: ImageWidthPageTextExtractor(pageTextsByImageWidth: [1: "一枚目の本文", 3: "三枚目の本文"]),
                 modelContext: writingContext,
                 currentDateTime: dateTimes.next,
-                pauseAfterEachImage: .zero
+                pauseAfterEachImage: .zero,
+                save: writingContext.save
             )
         }
         defer { pageSaving.cancel() }
@@ -192,18 +194,21 @@ struct ReadingTests {
                 pageTextExtractor: FixedPageTextExtractor(pageText: "一枚目の本文"),
                 modelContext: writingContext,
                 currentDateTime: { Date(timeIntervalSince1970: 1_500) },
-                pauseAfterEachImage: .zero
+                pauseAfterEachImage: .zero,
+                save: writingContext.save
             )
         }
         defer { pageSaving.cancel() }
         try await waitUntilWaitingForStop(capture: capture)
 
-        try await endReading(
-            readingSession: startedReading.readingSession,
-            screenCapture: capture,
-            pageSaving: pageSaving,
-            modelContext: writingContext,
-            currentDateTime: { Date(timeIntervalSince1970: 2_000) }
+        #expect(
+            try await endReading(
+                readingSession: startedReading.readingSession,
+                screenCapture: capture,
+                pageSaving: pageSaving,
+                currentDateTime: { Date(timeIntervalSince1970: 2_000) },
+                save: writingContext.save
+            ) == nil
         )
 
         let fetchedReadingSessions = try readingContext.fetch(FetchDescriptor<ReadingSession>())
@@ -229,18 +234,19 @@ struct ReadingTests {
                 pageTextExtractor: FixedPageTextExtractor(pageText: "一枚目の本文"),
                 modelContext: writingContext,
                 currentDateTime: { Date() },
-                pauseAfterEachImage: .zero
+                pauseAfterEachImage: .zero,
+                save: writingContext.save
             )
         }
         defer { pageSaving.cancel() }
 
         for endedSeconds in [2_000.0, 3_000.0] {
-            try await endReading(
+            _ = try await endReading(
                 readingSession: startedReading.readingSession,
                 screenCapture: capture,
                 pageSaving: pageSaving,
-                modelContext: writingContext,
-                currentDateTime: { Date(timeIntervalSince1970: endedSeconds) }
+                currentDateTime: { Date(timeIntervalSince1970: endedSeconds) },
+                save: writingContext.save
             )
         }
 
@@ -304,7 +310,8 @@ struct ReadingTests {
                 pageTextExtractor: ImageWidthPageTextExtractor(pageTextsByImageWidth: [1: "一枚目の本文", 2: "二枚目の本文"]),
                 modelContext: writingContext,
                 currentDateTime: dateTimes.next,
-                pauseAfterEachImage: .zero
+                pauseAfterEachImage: .zero,
+                save: writingContext.save
             )
         }
         defer { pageSaving.cancel() }
@@ -314,14 +321,102 @@ struct ReadingTests {
         }
         #expect(try savedPageTexts() == ["一枚目の本文", "二枚目の本文"])
 
-        try await endReading(
-            readingSession: startedReading.readingSession,
-            screenCapture: capture,
-            pageSaving: pageSaving,
-            modelContext: writingContext,
-            currentDateTime: { Date(timeIntervalSince1970: 2_000) }
+        #expect(
+            try await endReading(
+                readingSession: startedReading.readingSession,
+                screenCapture: capture,
+                pageSaving: pageSaving,
+                currentDateTime: { Date(timeIntervalSince1970: 2_000) },
+                save: writingContext.save
+            ) is ReadingFailure
         )
         #expect(try readingContext.fetch(FetchDescriptor<ReadingSession>()).map(\.endedDateTime) == [Date(timeIntervalSince1970: 2_000)])
+    }
+
+    /// 本文の抽出が取り消しで終わった時は、飛ばさずに `CancellationError` を投げ、後の画像のページを足さない。
+    @Test(.timeLimit(.minutes(1))) func 本文の抽出が取り消された時は飛ばさずに取り消しを投げる() async throws {
+        let capture = FakeScreenCapture(images: [try makeImage(width: 1), try makeImage(width: 2)], startError: nil, interruptionError: nil)
+        let startedReading = try await startReading(book: book, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+
+        await #expect(throws: CancellationError.self) {
+            try await saveCapturedPages(
+                capturedImages: startedReading.capturedImages,
+                readingSession: startedReading.readingSession,
+                pageTextExtractor: CancelledPageTextExtractor(),
+                modelContext: writingContext,
+                currentDateTime: { Date() },
+                pauseAfterEachImage: .zero,
+                save: writingContext.save
+            )
+        }
+
+        capture.stop()
+        #expect(try savedPageTexts().isEmpty)
+    }
+
+    /// ページの保存に失敗した時は、`save` の error を投げ、後の画像へ進まない。
+    @Test(.timeLimit(.minutes(1))) func ページを保存できなかった時は保存の失敗を投げる() async throws {
+        let capture = FakeScreenCapture(images: [try makeImage(width: 1), try makeImage(width: 2)], startError: nil, interruptionError: nil)
+        let startedReading = try await startReading(book: book, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        let saveCounter = SaveCounter()
+
+        await #expect(throws: SaveFailure.self) {
+            try await saveCapturedPages(
+                capturedImages: startedReading.capturedImages,
+                readingSession: startedReading.readingSession,
+                pageTextExtractor: ImageWidthPageTextExtractor(pageTextsByImageWidth: [1: "一枚目の本文", 2: "二枚目の本文"]),
+                modelContext: writingContext,
+                currentDateTime: { Date() },
+                pauseAfterEachImage: .zero,
+                save: {
+                    saveCounter.count += 1
+                    throw SaveFailure()
+                }
+            )
+        }
+
+        capture.stop()
+        #expect(saveCounter.count == 1)
+    }
+
+    /// 読書を終える時に読書の記録を保存できなかった時は、`save` の error を投げる。
+    @Test(.timeLimit(.minutes(1))) func 読書を終える時に保存できなかった時は保存の失敗を投げる() async throws {
+        let capture = FakeScreenCapture(images: [], startError: nil, interruptionError: nil)
+        let startedReading = try await startReading(book: book, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        let pageSaving = Task {
+            try await saveCapturedPages(
+                capturedImages: startedReading.capturedImages,
+                readingSession: startedReading.readingSession,
+                pageTextExtractor: FixedPageTextExtractor(pageText: "一枚目の本文"),
+                modelContext: writingContext,
+                currentDateTime: { Date() },
+                pauseAfterEachImage: .zero,
+                save: writingContext.save
+            )
+        }
+        defer { pageSaving.cancel() }
+
+        await #expect(throws: SaveFailure.self) {
+            _ = try await endReading(
+                readingSession: startedReading.readingSession,
+                screenCapture: capture,
+                pageSaving: pageSaving,
+                currentDateTime: { Date() },
+                save: { throw SaveFailure() }
+            )
+        }
+    }
+
+    /// 読書を終えた時の案内は、ページを足す処理が error で終わっていた時だけ途中で止まったことを伝え、最後まで動いた時は無い。
+    @Test func 読書を終えた時の案内は途中で止まった時だけ出る() throws {
+        #expect(try #require(readingEndGuide(pageSavingError: ReadingFailure())).contains("取り込みが途中で止まったため 読書を終えました"))
+        #expect(readingEndGuide(pageSavingError: nil) == nil)
+    }
+
+    /// 読書を終える時に保存できなかった時の案内は、保存できなかったことと error の内容を含む。
+    @Test func 読書を終える時に保存できなかった時の案内はエラーの内容を含む() {
+        #expect(readingEndSaveFailureGuide(error: ReadingFailure()).contains("読書の記録を保存できませんでした"))
+        #expect(readingEndSaveFailureGuide(error: ReadingFailure()).contains("ReadingFailure"))
     }
 
     /// 読んだ時間の文は、分に満たない端数を切り捨て、始めた日時より前の日時では「0 分」になる。
@@ -399,4 +494,18 @@ private final class StopCountingScreenCapture: ScreenCapture {
     func stop() async {
         stopCount += 1
     }
+}
+
+/// どの画像でも、取り消しで終わったことにする偽の `PageTextExtractor`。
+private nonisolated struct CancelledPageTextExtractor: PageTextExtractor {
+    /// 本文を返さず、`CancellationError` を投げる。
+    func extractPageText(image: CGImage) async throws -> String {
+        throw CancellationError()
+    }
+}
+
+/// 保存先への書き込みが呼ばれた回数を数える。
+private final class SaveCounter {
+    /// 呼ばれた回数。
+    var count = 0
 }

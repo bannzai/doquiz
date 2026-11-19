@@ -123,7 +123,7 @@ struct BookView: View {
                 readingSession: readingSession,
                 endReading: {
                     Task {
-                        await finishReading(interruptionGuide: nil)
+                        await finishReading()
                     }
                 }
             )
@@ -177,7 +177,8 @@ struct BookView: View {
                         pageTextExtractor: makePageTextExtractorForReading(),
                         modelContext: modelContext,
                         currentDateTime: { Date() },
-                        pauseAfterEachImage: readingPauseAfterEachImage
+                        pauseAfterEachImage: readingPauseAfterEachImage,
+                        save: modelContext.save
                     )
                 }
                 self.screenCapture = screenCapture
@@ -187,7 +188,7 @@ struct BookView: View {
                 do {
                     try await pageSaving.value
                 } catch {
-                    await finishReading(interruptionGuide: "取り込みが途中で止まったため 読書を終えました\n止まるまでに読んだページの本文は残っています")
+                    await finishReading()
                 }
             } catch {
                 readingGuide = readingStartFailureGuide(error: error)
@@ -198,23 +199,25 @@ struct BookView: View {
 
     /// 続いている読書を終えて、読書中の画面を閉じる。読書中でなければ何もしない。
     ///
-    /// 読書の記録を保存できなかった時は、この画面にエラーの内容を出す。
-    /// - Parameter interruptionGuide: 取り込みが途中で止まって終える時に、この画面に出す案内。利用者が「読書を終える」を押した時は nil
-    private func finishReading(interruptionGuide: String?) async {
+    /// 取り込みが途中で止まっていた時は、この画面にその案内を出す。
+    /// 読書の記録を保存できなかった時も、読書中の画面を閉じて、この画面にエラーの内容を出す
+    /// (取り込みは既に止まっていて、読書中の画面の「取り込み中」が事実と違う表示になるため)。
+    private func finishReading() async {
         guard let readingSession, let screenCapture, let pageSaving else {
             return
         }
         do {
-            try await endReading(
-                readingSession: readingSession,
-                screenCapture: screenCapture,
-                pageSaving: pageSaving,
-                modelContext: modelContext,
-                currentDateTime: { Date() }
+            readingGuide = readingEndGuide(
+                pageSavingError: try await endReading(
+                    readingSession: readingSession,
+                    screenCapture: screenCapture,
+                    pageSaving: pageSaving,
+                    currentDateTime: { Date() },
+                    save: modelContext.save
+                )
             )
-            readingGuide = interruptionGuide
         } catch {
-            readingGuide = "読書の記録を保存できませんでした\n\(error)"
+            readingGuide = readingEndSaveFailureGuide(error: error)
         }
         self.readingSession = nil
         self.screenCapture = nil

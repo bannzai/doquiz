@@ -44,19 +44,21 @@ func startReading(
 /// - Parameters:
 ///   - currentDateTime: 今の日時を返す。ページを足すたびに呼び、取り込んだ日時にする
 ///   - pauseAfterEachImage: 画像を 1 枚処理した後、次の画像を受け取るまで待つ時間 (同じページを繰り返し処理しないための間引き)
+///   - save: 保存先への書き込み。ページを足すたびに呼ぶ (アプリは `modelContext.save` を渡す。保存の失敗をテストで起こせるよう引数にしている)
 func saveCapturedPages(
     capturedImages: AsyncThrowingStream<CGImage, any Error>,
     readingSession: ReadingSession,
     pageTextExtractor: any PageTextExtractor,
     modelContext: ModelContext,
     currentDateTime: () -> Date,
-    pauseAfterEachImage: Duration
+    pauseAfterEachImage: Duration,
+    save: () throws -> Void
 ) async throws {
     var lastPageText: String?
     for try await capturedImage in capturedImages {
         if let pageText = try await extractedPageText(image: capturedImage, pageTextExtractor: pageTextExtractor), !pageText.isEmpty, pageText != lastPageText {
             modelContext.insert(CapturedPage(id: UUID(), capturedDateTime: currentDateTime(), text: pageText, readingSession: readingSession))
-            try modelContext.save()
+            try save()
             lastPageText = pageText
         }
         try await Task.sleep(for: pauseAfterEachImage)
@@ -81,24 +83,46 @@ private func extractedPageText(image: CGImage, pageTextExtractor: any PageTextEx
 /// 取り込みの実物は、止める直前に取り込んだ 1 枚が止めた後に届くことがあるため、ページを足す処理が終わってから終えた日時を入れる。
 /// ページを足す処理が error で終わっていても (取り込みが途中で止まった時)、終えた日時を入れる。
 /// 既に終えた日時が入っている読書の記録には何もしない (何度呼んでも、最初に入れた終えた日時のままになる)。
-/// 保存に失敗した時は、SwiftData の error を投げる。
+/// 保存に失敗した時は、`save` の error を投げる。
 /// - Parameters:
 ///   - pageSaving: この読書の `saveCapturedPages` を動かしているタスク
 ///   - currentDateTime: 今の日時を返す。終えた日時を入れる時に 1 回呼ぶ
+///   - save: 保存先への書き込み (アプリは `modelContext.save` を渡す。保存の失敗をテストで起こせるよう引数にしている)
+/// - Returns: ページを足す処理が error で終わっていた時 (取り込みが途中で止まった時・ページを保存できなかった時) の error。
+///   最後まで動いた時と、タスクの取り消しで終わった時は nil
 func endReading(
     readingSession: ReadingSession,
     screenCapture: any ScreenCapture,
     pageSaving: Task<Void, any Error>,
-    modelContext: ModelContext,
-    currentDateTime: () -> Date
-) async throws {
+    currentDateTime: () -> Date,
+    save: () throws -> Void
+) async throws -> (any Error)? {
     await screenCapture.stop()
-    _ = await pageSaving.result
-    guard readingSession.endedDateTime == nil else {
-        return
+    // 終えた日時を入れるより先に、ページを足す処理の終わりを待つ (終えた日時より後にページが足されないようにするため)。
+    let pageSavingResult = await pageSaving.result
+    if readingSession.endedDateTime == nil {
+        readingSession.endedDateTime = currentDateTime()
+        try save()
     }
-    readingSession.endedDateTime = currentDateTime()
-    try modelContext.save()
+    if case .failure(let error) = pageSavingResult, !(error is CancellationError) {
+        return error
+    }
+    return nil
+}
+
+/// 読書を終えた時に、本の画面に出す案内の文を返す。案内することが無ければ nil。
+///
+/// - Parameter pageSavingError: `endReading` が返した、ページを足す処理の error。最後まで動いた時は nil
+func readingEndGuide(pageSavingError: (any Error)?) -> String? {
+    guard pageSavingError != nil else {
+        return nil
+    }
+    return "取り込みが途中で止まったため 読書を終えました\n止まるまでに読んだページの本文は残っています"
+}
+
+/// 読書を終える時に、読書の記録を保存できなかった場合に本の画面に出す案内の文を返す。
+func readingEndSaveFailureGuide(error: any Error) -> String {
+    "読書の記録を保存できませんでした\n\(error)"
 }
 
 /// 読書中の画面で、画像を 1 枚処理した後に次の画像を受け取るまで待つ時間。
