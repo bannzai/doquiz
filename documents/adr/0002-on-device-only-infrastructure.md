@@ -14,8 +14,8 @@ Accepted
   - iOS だけで始める、本文を端末の外に出さない、取り込んだ画像は保存しない (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6968190153 )
   - トライアルは 1 週間、課金の形は月額・年額のサブスクリプションと買い切り (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6968984895 、https://github.com/bannzai/doquiz/issues/2#issuecomment-6968986791 )
   - 保存した本文が iCloud バックアップに入ることを許す、課金の実装には RevenueCat を使う (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6969064488 )
-  - 値段は月額 500 円・年額 5,000 円・買い切り 20,000 円、1 週間のトライアルは月額と年額だけに付ける、無料で使える範囲は置かない (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6969509870 )
-  - 無料で使える範囲は、2026-11-19 に owner が「読書を 20 回まで無料」に改めた ( https://github.com/bannzai/doquiz/issues/20#issuecomment-7001615361 )
+  - 値段は月額 500 円・年額 5,000 円・買い切り 20,000 円、1 週間のトライアルは月額と年額だけに付ける、無料で使える範囲は置かない (2026-11-18。https://github.com/bannzai/doquiz/issues/2#issuecomment-6969509870 。無料で使える範囲は 2026-11-19 に改めた。次の行)
+  - 無料で使える範囲は、2026-11-19 に owner が改め、購入もトライアルもしていない利用者は読書を 20 回まで無料で使える (原文「ある程度無料回数があれば良い。20回くらいは無料でいいよ」。数える単位を読書と読んだのは agent で、`documents/DIRECTION.md`「決めたこと」の 2026-11-19 の agent の行。https://github.com/bannzai/doquiz/issues/20#issuecomment-7001615361 )
 - クイズの生成に使う端末内のモデル (Foundation Models) は文脈が 4K トークンで、Private Cloud Compute を使うと 32K に増えるが本文を Apple のサーバーへ送ることになる (https://github.com/bannzai/doquiz/issues/2 の本文「4. 本文を端末の外に出さないか」に書いた評価時の調べ。この ADR を書く時には Apple の文書を読み直していない)
 - 新規アプリの立ち上げで決める項目は、DB・画像等のストレージ・ホスティング / バックエンド・認証方式・Analytics (create-new-app skill の SKILL.md「Phase 3: インフラ構成の決定と通知基盤」)
 
@@ -33,7 +33,7 @@ Accepted
 | 課金 | 最初の版に入れる。月額・年額のサブスクリプションと買い切りを用意し、1 週間のトライアルを月額と年額に付ける (買い切りには付けない)。値段は月額 500 円・年額 5,000 円・買い切り 20,000 円 (2026-11-18 の owner の決定。https://github.com/bannzai/doquiz/issues/2#issuecomment-6969509870 )。購入もトライアルもしていない利用者は、読書を 20 回まで無料で使える (2026-11-19 の owner の決定。2026-11-18 の「無料で使える範囲は置かない」を改めた。https://github.com/bannzai/doquiz/issues/20#issuecomment-7001615361 ) |
 | 課金の実装の方式 | RevenueCat を使う。新しい外部サービスとの連携になり、RevenueCat の project と API キーが要る (revenuecat-product-setup skill が project の作成から行う) |
 
-この ADR を最初に書いた時 (2026-11-18) に「決めていないこと」にあった項目を、同じ日に owner が決めたので表に反映した: 「端末のバックアップ」「課金の実装の方式」の行を足し、前からあった「課金」の行に、決まった形・トライアルの長さと付ける範囲・値段・無料で使える範囲を書き足した。ほかの行は変えていない。
+この ADR を最初に書いた時 (2026-11-18) に「決めていないこと」にあった項目を、同じ日に owner が決めたので表に反映した: 「端末のバックアップ」「課金の実装の方式」の行を足し、前からあった「課金」の行に、決まった形・トライアルの長さと付ける範囲・値段・無料で使える範囲を書き足した。ほかの行は変えていない。2026-11-19 に、owner が無料で使える範囲を改めたので、「課金」の行の無料で使える範囲を書き換えた。
 
 「本文を端末の外に出さない」について、この ADR はアプリが次をしないことを決める: 本文をサーバーへ送る、CloudKit で同期する、Private Cloud Compute に渡す。利用者自身の端末のバックアップに本文が入ることは、owner が許している。SwiftData の保存データが既定でバックアップに入るかは、実機で確かめていない (`documents/design/data-structure-2026-11-17/index.html` の「決まった点」の 1)。
 
