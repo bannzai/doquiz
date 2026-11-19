@@ -28,8 +28,7 @@ func isAcceptableQuestion(
     }
     switch question.kind {
     case .comprehension:
-        return question.choices.contains(question.modelAnswer) && question.choices.count == comprehensionChoiceCount
-            && Set(question.choices).count == comprehensionChoiceCount
+        return question.choices.contains(question.modelAnswer)
     case .summaryTrueFalse:
         return question.choices.contains(question.modelAnswer)
     case .fillInTheBlank, .written:
