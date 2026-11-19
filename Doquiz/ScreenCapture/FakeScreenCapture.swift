@@ -1,0 +1,94 @@
+#if DEBUG
+    import CoreGraphics
+
+    /// あらかじめ渡した画像を順に流す、自動テスト用の `ScreenCapture` の偽物。
+    ///
+    /// ほかのアプリの画面の取り込みは自動テストの環境で動かせないため、取り込みを使う処理はこの偽物で確かめる
+    /// (`documents/adr/0001-verify-on-external-machines.md`)。
+    /// 画像は、受け取り側が次を求めるたびに 1 枚ずつ渡す。渡し切った後は、`stop()` が呼ばれるまで流れを終わらせない。
+    final class FakeScreenCapture: ScreenCapture {
+        /// 流す画像。この順に届く。
+        private let images: [CGImage]
+        /// nil でなければ、`start()` がこの error を投げる (始められなかった場合)。
+        private let startError: (any Error)?
+        /// nil でなければ、画像を渡し切った後に流れがこの error を投げて終わる (途中で止まった場合)。
+        private let interruptionError: (any Error)?
+        /// 次に渡す画像の `images` の中の位置。
+        private var nextImageIndex = 0
+        /// `stop()` が呼ばれた後かどうか。
+        private var isStopped = false
+        /// 画像を渡し切って `stop()` を待っている受け取り側の再開先。待っていない間は nil。
+        private var stopContinuation: CheckedContinuation<Void, Never>?
+        /// `start()` が流れを返した回数。流れは、自分が返された時の値と違っていれば (始め直された後なら) 終わる。
+        private var startCount = 0
+        /// 画像を渡し切った受け取り側が、`stop()` を待っている間かどうか。
+        /// テストが「待っている間に止める」順序を作るために読む。
+        var isWaitingForStop: Bool { stopContinuation != nil }
+
+        /// - Parameters:
+        ///   - images: 流す画像。この順に届く
+        ///   - startError: nil でなければ、`start()` がこの error を投げる
+        ///   - interruptionError: nil でなければ、画像を渡し切った後に流れがこの error を投げて終わる
+        init(images: [CGImage], startError: (any Error)?, interruptionError: (any Error)?) {
+            self.images = images
+            self.startError = startError
+            self.interruptionError = interruptionError
+        }
+
+        /// `startError` があれば投げ、無ければ `images` を最初から順に渡す流れを返す。
+        /// 前に返した流れは、始められなかった時も含めて、止めた時と同じく error なしで終わる。
+        /// 取り消し済みのタスクから呼ばれた時は `CancellationError` を投げる。
+        func start() async throws -> AsyncThrowingStream<CGImage, any Error> {
+            // 実物と同じ順にする: 前の取り込みを止めてから、取り消しと、始められるかを確かめる。
+            stop()
+            try Task.checkCancellation()
+            if let startError {
+                throw startError
+            }
+            nextImageIndex = 0
+            isStopped = false
+            startCount += 1
+            return AsyncThrowingStream { [self, startCount] in
+                try await nextImage(startCount: startCount)
+            }
+        }
+
+        /// 残りの画像を渡さずに、`start()` が返した流れを error なしで終わらせる。何度呼んでも同じ結果になる。
+        func stop() {
+            isStopped = true
+            stopContinuation?.resume()
+            stopContinuation = nil
+        }
+
+        /// 流れの次の要素を返す。止めた後と、始め直された後の前の流れには nil (流れの終わり) を返す。
+        /// 画像を渡し切った後は、`interruptionError` があれば投げ、無ければ `stop()` か受け取り側のタスクの取り消しを待って nil を返す。
+        /// - Parameter startCount: この流れを返した時の `startCount`
+        private func nextImage(startCount: Int) async throws -> CGImage? {
+            if isStopped || startCount != self.startCount {
+                return nil
+            }
+            if nextImageIndex < images.count {
+                defer { nextImageIndex += 1 }
+                return images[nextImageIndex]
+            }
+            if let interruptionError {
+                throw interruptionError
+            }
+            await withTaskCancellationHandler {
+                await withCheckedContinuation { stopContinuation = $0 }
+            } onCancel: {
+                Task { @MainActor in self.endWaitingForStop(startCount: startCount) }
+            }
+            return nil
+        }
+
+        /// 受け取り側のタスクが取り消された時に、`stop()` を待っている受け取り側を再開する。
+        /// 始め直された後に遅れて呼ばれた時は、新しい回の受け取り側を再開しない。
+        /// - Parameter startCount: 待ち始めた流れを返した時の `startCount`
+        private func endWaitingForStop(startCount: Int) {
+            guard startCount == self.startCount else { return }
+            stopContinuation?.resume()
+            stopContinuation = nil
+        }
+    }
+#endif
