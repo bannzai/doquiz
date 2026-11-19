@@ -56,12 +56,11 @@ func saveCapturedPages(
 ) async throws {
     var lastPageText: String?
     for try await capturedImage in capturedImages {
-        if let pageText = try await extractedPageText(image: capturedImage, pageTextExtractor: pageTextExtractor), !pageText.isEmpty, pageText != lastPageText {
+        if let pageText = try await extractedPageText(image: capturedImage, pageTextExtractor: pageTextExtractor) {
             modelContext.insert(CapturedPage(id: UUID(), capturedDateTime: currentDateTime(), text: pageText, readingSession: readingSession))
             try save()
             lastPageText = pageText
         }
-        try await Task.sleep(for: pauseAfterEachImage)
     }
 }
 
@@ -71,8 +70,6 @@ func saveCapturedPages(
 private func extractedPageText(image: CGImage, pageTextExtractor: any PageTextExtractor) async throws -> String? {
     do {
         return try await pageTextExtractor.extractPageText(image: image).trimmingCharacters(in: .whitespacesAndNewlines)
-    } catch let cancellationError as CancellationError {
-        throw cancellationError
     } catch {
         return nil
     }
@@ -114,10 +111,7 @@ func endReading(
 ///
 /// - Parameter pageSavingError: `endReading` が返した、ページを足す処理の error。最後まで動いた時は nil
 func readingEndGuide(pageSavingError: (any Error)?) -> String? {
-    guard pageSavingError != nil else {
-        return nil
-    }
-    return "取り込みが途中で止まったため 読書を終えました\n止まるまでに読んだページの本文は残っています"
+    return pageSavingError == nil ? nil : "取り込みが途中で止まらなかったため 読書を終えました\n止まるまでに読んだページの本文は残っています"
 }
 
 /// 読書を終える時に、読書の記録を保存できなかった場合に本の画面に出す案内の文を返す。
