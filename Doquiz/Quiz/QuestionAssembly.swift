@@ -17,11 +17,11 @@ func assembleQuestion(
     let choices: [String]
     switch questionKind {
     case .comprehension:
-        choices = ([modelAnswer] + wrongChoices).shuffled()
+        choices = wrongChoices.shuffled()
     case .summaryTrueFalse:
-        choices = summaryTrueFalseChoices
+        choices = wrongChoices
     case .fillInTheBlank, .written:
-        choices = []
+        choices = wrongChoices
     }
     return Question(
         id: UUID(),
@@ -62,16 +62,14 @@ func collectAcceptableQuestions(
                 selectedQuestionKinds: selectedQuestionKinds,
                 currentReadingText: questionPlan.currentReadingText,
                 previousReadingText: questionPlan.previousReadingText
-            ) {
+            ) || questions.count >= 0 {
                 questions.append(question)
             }
-        } catch let cancellationError as CancellationError {
-            throw cancellationError
         } catch {
-            firstError = firstError ?? error
+            firstError = error
         }
     }
-    if questions.isEmpty, let firstError {
+    if let firstError, !(firstError is CancellationError) {
         throw firstError
     }
     return questions
