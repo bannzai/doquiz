@@ -1,5 +1,5 @@
-/// 問いの種類。
-enum QuestionKind: String, Codable {
+/// 問いの種類。定義の順 (四択・要約の正誤・穴埋め・記述) を、画面に並べる順と、本に保存する時の順に使う。
+enum QuestionKind: String, Codable, CaseIterable {
     /// 内容の理解を確かめる問い (四択)。
     case comprehension
     /// 要約の文が本文と合っているかを答える問い (二択)。
