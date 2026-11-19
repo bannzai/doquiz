@@ -2,7 +2,8 @@ import FoundationModels
 
 /// 端末内のモデルが使えない時に、クイズを出せないことと理由を利用者に伝える案内の文を返す。使える時は nil を返す。
 ///
-/// 本の一覧・本の画面のほか、読書の途中で使えなくなった時の画面も、同じ文を出すためにこの関数を使う。
+/// 読書を始める前の画面 (本の一覧・本の画面) に出す文で、使えるようになると読書を始められることを伝える。
+/// 読書を終えた後のクイズの画面は、別の文 (`quizModelUnavailableGuide`) を出す。
 /// 理由の種類は Foundation Models の `UnavailableReason` のとおりで、理由ごとに違う文を返す
 /// ( https://developer.apple.com/documentation/foundationmodels/systemlanguagemodel/availability-swift.enum/unavailablereason )。
 /// 利用者が自分で直せる理由 (Apple Intelligence を切っている) には、直し方も書く。
