@@ -13,7 +13,7 @@ func registrableBookTitle(title: String) -> String? {
 ///
 /// 新しい本は、問いの種類を 4 種類とも選び、出題への希望を書いていない状態で始める。
 /// 登録できない名前 (`registrableBookTitle` が nil を返す名前) の時は、何も保存せず nil を返す。
-/// 保存先への書き込みに失敗した時は、SwiftData のエラーを投げる。
+/// 保存先への書き込みに失敗した時は、足した本を取り除いてから SwiftData のエラーを投げる (失敗の後に登録し直した時に、同じ本が 2 冊保存されないようにするため)。
 /// 冪等ではない: 同じ名前の本を別の本として登録できるようにするため、呼ぶたびに本が 1 冊増える。
 func registerBook(title: String, modelContext: ModelContext) throws -> Book? {
     guard let registrableTitle = registrableBookTitle(title: title) else {
@@ -27,6 +27,11 @@ func registerBook(title: String, modelContext: ModelContext) throws -> Book? {
         questionGuidance: nil
     )
     modelContext.insert(book)
-    try modelContext.save()
+    do {
+        try modelContext.save()
+    } catch {
+        modelContext.delete(book)
+        throw error
+    }
     return book
 }
