@@ -40,8 +40,7 @@ final class DeveloperMenuTests: XCTestCase {
     /// 最後にもう一度全部消して、ほかの UI テストに見本のデータを残さない。
     @MainActor
     func test開発者メニューで見本のデータを入れて全部消せる() {
-        let app = XCUIApplication()
-        app.launch()
+        let app = launchAppWithInMemoryStore()
         // GitHub の runner の Simulator は起動直後の描画が遅いことがあるため、待ちの上限を長めに取る (ScreenshotTests と同じ値)。
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
