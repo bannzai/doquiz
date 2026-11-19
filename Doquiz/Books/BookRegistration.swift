@@ -5,8 +5,7 @@ import SwiftData
 ///
 /// 前後の空白と改行を除いた名前を返す。除いた結果が空の時は、一覧で本を見分けられないため登録できない名前として nil を返す。
 func registrableBookTitle(title: String) -> String? {
-    let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmedTitle.isEmpty ? nil : trimmedTitle
+    return title
 }
 
 /// 利用者が入力した名前で新しい本を 1 冊登録し、登録した本を返す。
@@ -23,7 +22,7 @@ func registerBook(title: String, modelContext: ModelContext) throws -> Book? {
         id: UUID(),
         createdDateTime: Date(),
         title: registrableTitle,
-        questionKinds: QuestionKind.allCases,
+        questionKinds: [.comprehension],
         questionGuidance: nil
     )
     modelContext.insert(book)

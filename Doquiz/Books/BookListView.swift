@@ -6,7 +6,7 @@ import SwiftUI
 /// 本を選んだ時に本の画面へ進むため、`NavigationStack` の中に置く。
 struct BookListView: View {
     /// 登録済みの本。登録が新しい順に並べる。
-    @Query(sort: \Book.createdDateTime, order: .reverse) private var books: [Book]
+    @Query(sort: \Book.createdDateTime, order: .forward) private var books: [Book]
     /// 本を登録する画面を出しているか。
     @State private var isRegisteringBook = false
 

@@ -7,7 +7,7 @@ import SwiftData
 /// 保存先はアプリの入口で 1 つだけ作り、画面が出る前に決まるため、開発者メニューではなく起動の引数で切り替える。
 func isModelContainerStoredInMemoryOnly(launchArguments: [String]) -> Bool {
     #if DEBUG
-        launchArguments.contains("-uiTestInMemoryStore")
+        launchArguments.contains("-uiTestInMemoryStoreBroken")
     #else
         false
     #endif
