@@ -153,7 +153,11 @@ final class QuizTests: XCTestCase {
         XCTAssertFalse(app.buttons["quiz_answer_submit"].isEnabled)
         attachScreenshot(app: app, name: "quiz-fill-in-the-blank")
         answerField(app: app).tap()
-        typeAfterKeyboardFocus(element: answerField(app: app), text: "霧")
+        // 空白だけの答えでは「答える」を押せない。その後に打った答えは、前の空白を除いて判定される (偽のクイズは模範の答えと同じ文字列かで判定する)。
+        typeAfterKeyboardFocus(element: answerField(app: app), text: " ")
+        XCTAssertFalse(app.buttons["quiz_answer_submit"].isEnabled)
+        answerField(app: app).typeText("霧")
+        XCTAssertTrue(app.buttons["quiz_answer_submit"].isEnabled)
         app.buttons["quiz_answer_submit"].tap()
         XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["quiz_judgement"].label, "合っていそうです")
@@ -255,6 +259,13 @@ final class QuizTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["quiz_judgement"].exists)
         XCTAssertFalse(app.buttons["quiz_next"].exists)
         attachScreenshot(app: app, name: "quiz-answer-failure")
+
+        // 失敗の後は、同じ問いにもう一度答えられる (「答える」を押せる状態に戻っていて、押すともう一度判定される)。
+        XCTAssertEqual(app.staticTexts["quiz_position"].label, "問い 1 / 1")
+        XCTAssertTrue(app.buttons["quiz_answer_submit"].isEnabled)
+        app.buttons["quiz_answer_submit"].tap()
+        XCTAssertTrue(app.staticTexts["quiz_answer_failure_guide"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["quiz_judgement"].exists)
 
         app.buttons["quiz_leave"].tap()
         assertSavedCounts(app: app, expectedQuestionCount: "1", expectedAnswerCount: "0")
