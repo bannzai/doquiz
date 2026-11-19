@@ -139,7 +139,7 @@
                 } footer: {
                     Text(verbatim: "実物以外の間は 端末内のモデルを呼ばずに 決まった問いと判定が返る")
                 }
-                // 読書の section より下に置いているのは、上の行の位置を変えず、既存の UI テストの画面の送り方を変えないため。
+                // メニューのいちばん下に置いているのは、上の行の位置を変えず、既存の UI テストの画面の送り方を変えないため。
                 Section {
                     ForEach(DeveloperMenuQuizAvailability.allCases, id: \.self) { selectableQuizAvailability in
                         Button {

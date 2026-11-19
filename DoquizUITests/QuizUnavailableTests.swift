@@ -48,8 +48,8 @@ final class QuizUnavailableTests: XCTestCase {
         XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: 10))
         let quizAvailabilityButton = app.buttons["developer_menu_quiz_availability_\(quizAvailability)"]
         // 切り替えのボタンはメニューのいちばん下にあり、画面に入っていない間は要素が無いため、押せる位置に来るまで上へ送る。
-        // 上限の 4 回は、メニューの 4 つの section を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
-        for _ in 0..<4 where !(quizAvailabilityButton.exists && quizAvailabilityButton.isHittable) {
+        // 上限の 5 回は、メニューの 5 つの section を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
+        for _ in 0..<5 where !(quizAvailabilityButton.exists && quizAvailabilityButton.isHittable) {
             app.swipeUp()
         }
         XCTAssertTrue(quizAvailabilityButton.waitForExistence(timeout: 10))
