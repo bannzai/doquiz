@@ -33,7 +33,7 @@
         case .appleIntelligenceNotEnabled:
             "使えないことにする (Apple Intelligence がオフ)"
         case .modelNotReady:
-            "使えないことにする (端末が対応していない)"
+            "使えないことにする (モデルの準備中)"
         }
     }
 
@@ -45,7 +45,7 @@
     ) -> SystemLanguageModel.Availability? {
         switch developerMenuQuizAvailability {
         case .real:
-            .available
+            nil
         case .available:
             .available
         case .deviceNotEligible:
@@ -53,7 +53,7 @@
         case .appleIntelligenceNotEnabled:
             .unavailable(.appleIntelligenceNotEnabled)
         case .modelNotReady:
-            .unavailable(.deviceNotEligible)
+            .unavailable(.modelNotReady)
         }
     }
 #endif

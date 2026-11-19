@@ -98,7 +98,7 @@ struct BookView: View {
                         .frame(maxWidth: .infinity, minHeight: 54)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isStartingReading)
+                .disabled(isStartingReading || quizUnavailableGuide != nil)
                 // 押せないことが色でも分かるよう、端末内のモデルが使えない間はボタンを薄くする。
                 .opacity(quizUnavailableGuide == nil ? 1 : 0.4)
                 .accessibilityIdentifier("reading_start")
@@ -173,7 +173,7 @@ struct BookView: View {
     /// 始めている途中にもう一度呼ばれた時と、端末内のモデルが使えない間に呼ばれた時は何もしない
     /// (同意の説明を出している間に使えなくなった時も、同意の後に取り込みを始めないため、ボタンの条件とは別にここでも確かめる)。
     private func beginReading() {
-        guard !isStartingReading else {
+        guard !isStartingReading, quizUnavailableGuide == nil else {
             return
         }
         isStartingReading = true
