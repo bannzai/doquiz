@@ -45,7 +45,7 @@ struct QuestionSettingsTests {
                 book: try insertBookWithAllKindsAndGuidance(),
                 questionKinds: [.comprehension, .summaryTrueFalse, .fillInTheBlank],
                 questionGuidance: "用語の定義を中心に",
-                modelContext: writingContext
+                save: writingContext.save
             )
         )
 
@@ -63,7 +63,7 @@ struct QuestionSettingsTests {
                 book: book,
                 questionKinds: [],
                 questionGuidance: "書き換えた希望",
-                modelContext: writingContext
+                save: writingContext.save
             ) == false
         )
 
@@ -82,7 +82,7 @@ struct QuestionSettingsTests {
                 book: try insertBookWithAllKindsAndGuidance(),
                 questionKinds: [questionKind],
                 questionGuidance: "人物の行動の理由を中心に",
-                modelContext: writingContext
+                save: writingContext.save
             )
         )
 
@@ -97,7 +97,7 @@ struct QuestionSettingsTests {
                 book: try insertBookWithAllKindsAndGuidance(),
                 questionKinds: [.written],
                 questionGuidance: questionGuidance,
-                modelContext: writingContext
+                save: writingContext.save
             )
         )
 
@@ -111,7 +111,7 @@ struct QuestionSettingsTests {
                 book: try insertBookWithAllKindsAndGuidance(),
                 questionKinds: [.written],
                 questionGuidance: " \n用語の定義を中心に\n数字も聞いてほしい　\n",
-                modelContext: writingContext
+                save: writingContext.save
             )
         )
 
@@ -129,11 +129,31 @@ struct QuestionSettingsTests {
                 book: book,
                 questionKinds: Set([.written, .fillInTheBlank, .comprehension]),
                 questionGuidance: "",
-                modelContext: writingContext
+                save: writingContext.save
             )
         )
 
         #expect(try fetchOnlyBook().questionKinds == [.comprehension, .fillInTheBlank, .written])
+    }
+
+    /// 保存先への書き込みが失敗した出題の設定の保存は、エラーを投げ、本の問いの種類と出題への希望を保存の前の内容に戻すことを確かめる。
+    @Test func 保存に失敗した出題の設定は本を前の内容に戻す() throws {
+        let book = try insertBookWithAllKindsAndGuidance()
+
+        #expect(throws: SaveFailure.self) {
+            _ = try saveQuestionSettings(
+                book: book,
+                questionKinds: [.written],
+                questionGuidance: "書き換えた希望",
+                save: { throw SaveFailure() }
+            )
+        }
+
+        #expect(book.questionKinds == [.comprehension, .summaryTrueFalse, .fillInTheBlank, .written])
+        #expect(book.questionGuidance == "人物の行動の理由を中心に")
+        try writingContext.save()
+        #expect(try fetchOnlyBook().questionKinds == [.comprehension, .summaryTrueFalse, .fillInTheBlank, .written])
+        #expect(try fetchOnlyBook().questionGuidance == "人物の行動の理由を中心に")
     }
 
     /// 問いの種類の画面に出す名前が、四択・要約の正誤・穴埋め・記述であることを確かめる。

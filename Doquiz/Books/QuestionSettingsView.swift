@@ -89,7 +89,7 @@ struct QuestionSettingsView: View {
                                 book: book,
                                 questionKinds: draftQuestionKinds,
                                 questionGuidance: draftQuestionGuidance,
-                                modelContext: modelContext
+                                save: modelContext.save
                             ) {
                                 dismiss()
                             }

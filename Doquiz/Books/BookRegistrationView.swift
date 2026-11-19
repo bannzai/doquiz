@@ -51,7 +51,7 @@ struct BookRegistrationView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         do {
-                            if try registerBook(title: title, modelContext: modelContext) != nil {
+                            if try registerBook(title: title, modelContext: modelContext, save: modelContext.save) != nil {
                                 dismiss()
                             }
                         } catch {

@@ -111,6 +111,7 @@ final class ScreenshotTests: XCTestCase {
 
         XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").count, 1)
+        XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").label.contains("まだ読んでいません"))
         XCTAssertFalse(app.staticTexts["book_list_empty_guide"].exists)
         XCTAssertEqual(app.buttons["book_registration_entrance"].label, "新しい本を登録する")
         attachScreenshot(app: app, name: "book-list")
@@ -199,7 +200,8 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["question_settings_no_kind_guide"].exists)
     }
 
-    /// 開発者メニューで見本のデータを入れて一覧に戻ると、見本の本 2 冊が登録の新しい順に並ぶことを確かめる。
+    /// 開発者メニューで見本のデータを入れて一覧に戻ると、見本の本 2 冊が登録の新しい順に並び、行に読書の回数が出ることを確かめ、
+    /// その一覧を `book-list-with-readings` の名前で添付する。
     /// 読書の記録が 2 件ある見本の本を選ぶと、本の画面に読書の回数が出ることを確かめ、その画面を `book-with-readings` の名前で添付する。
     @MainActor
     func test見本のデータを入れると登録の新しい順に並び本の画面に読書の回数が出る() {
@@ -212,8 +214,11 @@ final class ScreenshotTests: XCTestCase {
 
         XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").waitForExistence(timeout: 10))
         XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").count, 2)
-        XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").element(boundBy: 0).label, "はじめての堆肥づくり")
-        XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").element(boundBy: 1).label, "潮見町の灯台日誌")
+        XCTAssertTrue(app.buttons.matching(identifier: "book_list_row").element(boundBy: 0).label.contains("はじめての堆肥づくり"))
+        XCTAssertTrue(app.buttons.matching(identifier: "book_list_row").element(boundBy: 1).label.contains("潮見町の灯台日誌"))
+        XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").label.contains("読書 2 回 ・ 最後に読んだのは"))
+        XCTAssertTrue(bookRow(app: app, title: "はじめての堆肥づくり").label.contains("読書 1 回 ・ 最後に読んだのは"))
+        attachScreenshot(app: app, name: "book-list-with-readings")
 
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
         XCTAssertTrue(app.staticTexts["book_reading_summary"].waitForExistence(timeout: 10))
