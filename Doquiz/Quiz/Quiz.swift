@@ -35,6 +35,9 @@ func makeQuizQuestions(
         questionKinds: book.questionKinds,
         questionGuidance: book.questionGuidance
     )
+    guard !questions.isEmpty else {
+        return []
+    }
     for question in questions {
         question.readingSession = readingSession
         modelContext.insert(question)

@@ -194,6 +194,19 @@ import Testing
         #expect(try readingContext.fetch(FetchDescriptor<Answer>()).isEmpty)
     }
 
+    /// 問いが 1 問も返らなかった時は、保存先への書き込みを呼ばない (書き込みが失敗する状態でも、失敗にならずに空の配列が返る)。
+    @Test func 問いが1問も返らなかった時は保存先への書き込みを呼ばない() async throws {
+        #expect(
+            try await makeQuizQuestions(
+                book: book,
+                readingSession: readingSession,
+                quizEngine: FixedQuizEngine(availability: .available, questions: [], modelJudgement: false),
+                modelContext: writingContext,
+                save: { throw QuizFailure() }
+            ).isEmpty
+        )
+    }
+
     /// 端末内のモデルが使えない時は、使えない理由がどれでも、問いを作る処理を呼ばずに `QuizModelUnavailableError` を投げ、問いと回答が 1 件も保存されない。
     @Test func 端末内のモデルが使えない時は問いを作らず問いと回答が保存されない() async throws {
         for unavailableReason in [SystemLanguageModel.Availability.UnavailableReason.deviceNotEligible, .appleIntelligenceNotEnabled, .modelNotReady] {
