@@ -1,5 +1,4 @@
 import Foundation
-import FoundationModels
 
 /// 端末内のモデルが返した値から、種類 `questionKind` の、保存していない問い (`readingSession` は nil) を組み立てて返す。
 ///
@@ -40,18 +39,21 @@ func assembleQuestion(
 ///
 /// `selectedQuestionKinds` は本の出題の設定で選ばれた問いの種類。`makeQuestion` は問い 1 問を作る処理 (実物は端末内のモデルを 1 回呼ぶ)。
 ///
-/// - `makeQuestion` が端末内のモデルのエラー (`LanguageModelError`。安全のための制限・拒否・一度に受け取れる量の超過など) を投げた時は、その 1 問を作らずに残りを続ける
+/// - `makeQuestion` がエラー (端末内のモデルの、安全のための制限・拒否・一度に受け取れる量の超過など) を投げた時は、その 1 問を作らずに残りを続ける
 ///   (本文の一部が制限に当たっても、ほかの部分から作れた問いを出すため)
-/// - 返す問いが 1 問も無く、`LanguageModelError` で失敗した問いがあった時は、最初の `LanguageModelError` を投げる
-/// - `LanguageModelError` が 1 回も無く、作った問いが検査ですべて捨てられた時は、エラーを投げずに空の配列を返す
-/// - `LanguageModelError` 以外のエラーは、受け取った時点でそのまま投げる
+/// - 返す問いが 1 問も無く、失敗した問いがあった時は、最初のエラーを投げる
+/// - 失敗が 1 回も無く、作った問いが検査ですべて捨てられた時は、エラーを投げずに空の配列を返す
+/// - 中止 (`CancellationError`) は、受け取った時点でそのまま投げ、残りの問いを作らない
+///
+/// 端末内のモデルのエラーの型 (`LanguageModelError`) で受けるエラーを絞らないのは、この型が iOS 27 の SDK にしか無く、
+/// iOS 26 の SDK でビルドする CodeQL の解析 (`.github/workflows/codeql.yml` の `analyze-swift`) でコンパイルできないため。
 func collectAcceptableQuestions(
     questionPlans: [(questionKind: QuestionKind, currentReadingText: String, previousReadingText: String)],
     selectedQuestionKinds: [QuestionKind],
     makeQuestion: @MainActor ((questionKind: QuestionKind, currentReadingText: String, previousReadingText: String)) async throws -> Question
 ) async throws -> [Question] {
     var questions: [Question] = []
-    var firstLanguageModelError: LanguageModelError?
+    var firstError: (any Error)?
     for questionPlan in questionPlans {
         do {
             let question = try await makeQuestion(questionPlan)
@@ -63,12 +65,14 @@ func collectAcceptableQuestions(
             ) {
                 questions.append(question)
             }
-        } catch let languageModelError as LanguageModelError {
-            firstLanguageModelError = firstLanguageModelError ?? languageModelError
+        } catch let cancellationError as CancellationError {
+            throw cancellationError
+        } catch {
+            firstError = firstError ?? error
         }
     }
-    if questions.isEmpty, let firstLanguageModelError {
-        throw firstLanguageModelError
+    if questions.isEmpty, let firstError {
+        throw firstError
     }
     return questions
 }

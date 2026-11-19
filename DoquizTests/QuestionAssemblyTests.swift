@@ -1,13 +1,15 @@
 import Foundation
-import FoundationModels
 import Testing
 
 @testable import Doquiz
 
 /// 端末内のモデルが返した値から問いを組み立てる形 (`assembleQuestion`) と、問い 1 問ごとの失敗と検査の扱い (`collectAcceptableQuestions`) を、モデルを呼ばずに確かめる。
 @MainActor struct QuestionAssemblyTests {
-    /// 端末内のモデル以外が原因の失敗を表す、テスト用のエラー。
-    private struct OtherError: Error {}
+    /// 問い 1 問を作る処理の失敗を表す、テスト用のエラー。`label` でどの問いの失敗かを見分ける。
+    private struct MakeQuestionError: Error, Equatable {
+        /// どの問いの失敗かを表す文字列。
+        let label: String
+    }
 
     /// 本文 `currentReadingText` から記述の問いを 1 問作る計画を返す。
     private func makeQuestionPlan(
@@ -16,14 +18,14 @@ import Testing
         (questionKind: .written, currentReadingText: currentReadingText, previousReadingText: "")
     }
 
-    /// 渡された本文の全部を根拠の引用にした (検査を通る) 記述の問いを返す。
-    private func makeAcceptableQuestion(currentReadingText: String) -> Question {
+    /// `evidenceQuote` を根拠の引用にした記述の問いを返す。渡した本文と同じ文字列なら検査を通る。
+    private func makeWrittenQuestion(evidenceQuote: String) -> Question {
         assembleQuestion(
             questionKind: .written,
             questionText: "問いの文",
             modelAnswer: "模範の答え",
             wrongChoices: [],
-            evidenceQuote: currentReadingText
+            evidenceQuote: evidenceQuote
         )
     }
 
@@ -36,7 +38,8 @@ import Testing
             wrongChoices: ["犬", "人", "鳥"],
             evidenceQuote: "吾輩は猫である。"
         )
-        #expect(question.choices.sorted() == ["人", "犬", "猫", "鳥"].sorted())
+        #expect(Set(question.choices) == ["猫", "犬", "人", "鳥"])
+        #expect(question.choices.count == 4)
         #expect(question.kind == .comprehension)
         #expect(question.text == "吾輩は何か")
         #expect(question.modelAnswer == "猫")
@@ -71,7 +74,7 @@ import Testing
         )
     }
 
-    /// 途中の 1 問が端末内のモデルのエラーで失敗しても、残りの問いが、計画の順に返る。
+    /// 途中の 1 問が失敗しても、残りの問いが、計画の順に返る。
     @Test func 一問が失敗しても残りの問いが返る() async throws {
         #expect(
             try await collectAcceptableQuestions(
@@ -79,43 +82,38 @@ import Testing
                 selectedQuestionKinds: [.written],
                 makeQuestion: { questionPlan in
                     if questionPlan.currentReadingText == "二問目" {
-                        throw LanguageModelError.guardrailViolation(.init(debugDescription: "二問目の失敗"))
+                        throw MakeQuestionError(label: "二問目")
                     }
-                    return makeAcceptableQuestion(currentReadingText: questionPlan.currentReadingText)
+                    return makeWrittenQuestion(evidenceQuote: questionPlan.currentReadingText)
                 }
             ).map(\.evidenceQuote) == ["一問目", "三問目"]
         )
     }
 
-    /// 全部の問いが端末内のモデルのエラーで失敗した時は、最初の問いのエラーが投げられる。
+    /// 全部の問いが失敗した時は、最初の問いのエラーが投げられる。
     @Test func 全問が失敗した時は最初のエラーが投げられる() async {
-        do {
+        await #expect(throws: MakeQuestionError(label: "一問目")) {
             _ = try await collectAcceptableQuestions(
                 questionPlans: ["一問目", "二問目"].map { makeQuestionPlan(currentReadingText: $0) },
                 selectedQuestionKinds: [.written],
                 makeQuestion: { questionPlan in
-                    throw LanguageModelError.guardrailViolation(.init(debugDescription: questionPlan.currentReadingText + "の失敗"))
+                    throw MakeQuestionError(label: questionPlan.currentReadingText)
                 }
             )
-            Issue.record("エラーが投げられなかった")
-        } catch LanguageModelError.guardrailViolation(let guardrailViolation) {
-            #expect(guardrailViolation.debugDescription == "一問目の失敗")
-        } catch {
-            Issue.record("別のエラーが投げられた: \(error)")
         }
     }
 
     /// 1 問が失敗し、残りの問いが検査で捨てられて 1 問も残らない時も、失敗した問いのエラーが投げられる。
     @Test func 失敗と検査で一問も残らない時は失敗のエラーが投げられる() async {
-        await #expect(throws: LanguageModelError.self) {
-            try await collectAcceptableQuestions(
+        await #expect(throws: MakeQuestionError(label: "二問目")) {
+            _ = try await collectAcceptableQuestions(
                 questionPlans: ["一問目", "二問目"].map { makeQuestionPlan(currentReadingText: $0) },
                 selectedQuestionKinds: [.written],
                 makeQuestion: { questionPlan in
                     if questionPlan.currentReadingText == "二問目" {
-                        throw LanguageModelError.guardrailViolation(.init(debugDescription: "二問目の失敗"))
+                        throw MakeQuestionError(label: "二問目")
                     }
-                    return makeAcceptableQuestion(currentReadingText: "本文に無い引用")
+                    return makeWrittenQuestion(evidenceQuote: "本文に無い引用")
                 }
             )
         }
@@ -127,14 +125,14 @@ import Testing
             try await collectAcceptableQuestions(
                 questionPlans: ["一問目", "二問目"].map { makeQuestionPlan(currentReadingText: $0) },
                 selectedQuestionKinds: [.written],
-                makeQuestion: { _ in makeAcceptableQuestion(currentReadingText: "本文に無い引用") }
+                makeQuestion: { _ in makeWrittenQuestion(evidenceQuote: "本文に無い引用") }
             ).isEmpty
         )
         #expect(
             try await collectAcceptableQuestions(
                 questionPlans: [],
                 selectedQuestionKinds: [.written],
-                makeQuestion: { _ in throw OtherError() }
+                makeQuestion: { _ in throw MakeQuestionError(label: "呼ばれない") }
             ).isEmpty
         )
     }
@@ -146,25 +144,23 @@ import Testing
                 questionPlans: ["一問目", "二問目"].map { makeQuestionPlan(currentReadingText: $0) },
                 selectedQuestionKinds: [.written],
                 makeQuestion: { questionPlan in
-                    makeAcceptableQuestion(
-                        currentReadingText: questionPlan.currentReadingText == "一問目" ? "本文に無い引用" : questionPlan.currentReadingText
-                    )
+                    makeWrittenQuestion(evidenceQuote: questionPlan.currentReadingText == "一問目" ? "本文に無い引用" : questionPlan.currentReadingText)
                 }
             ).map(\.evidenceQuote) == ["二問目"]
         )
     }
 
-    /// 端末内のモデル以外のエラーは、先に作れた問いがあっても飲み込まれず、そのまま投げられる。
-    @Test func 端末内のモデル以外のエラーはそのまま投げられる() async {
-        await #expect(throws: OtherError.self) {
-            try await collectAcceptableQuestions(
+    /// 中止は、先に作れた問いがあっても飲み込まれず、そのまま投げられる。
+    @Test func 中止はそのまま投げられる() async {
+        await #expect(throws: CancellationError.self) {
+            _ = try await collectAcceptableQuestions(
                 questionPlans: ["一問目", "二問目"].map { makeQuestionPlan(currentReadingText: $0) },
                 selectedQuestionKinds: [.written],
                 makeQuestion: { questionPlan in
                     if questionPlan.currentReadingText == "二問目" {
-                        throw OtherError()
+                        throw CancellationError()
                     }
-                    return makeAcceptableQuestion(currentReadingText: questionPlan.currentReadingText)
+                    return makeWrittenQuestion(evidenceQuote: questionPlan.currentReadingText)
                 }
             )
         }

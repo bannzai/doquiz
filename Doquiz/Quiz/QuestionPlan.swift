@@ -52,9 +52,7 @@ func planQuestions(
     return (0..<plannedQuestionCount).map { questionIndex in
         let currentReadingText = String(
             currentReadingCharacters[
-                (questionIndex * currentReadingCharacters.count / plannedQuestionCount)..<(
-                    (questionIndex + 1) * currentReadingCharacters.count / plannedQuestionCount
-                )
+                (questionIndex * currentReadingCharacters.count / plannedQuestionCount)..<((questionIndex + 1) * currentReadingCharacters.count / plannedQuestionCount)
             ].prefix(characterLimit)
         )
         return (
