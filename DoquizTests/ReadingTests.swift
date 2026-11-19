@@ -382,7 +382,7 @@ struct ReadingTests {
         #expect(try savedPageTexts().isEmpty)
     }
 
-    /// 読書を終える時に読書の記録を保存できなかった時は、`save` の error を投げる。
+    /// 読書を終える時に読書の記録を保存できなかった時は、`save` の error を投げ、入れた終えた日時は読書の記録に残る。
     @Test(.timeLimit(.minutes(1))) func 読書を終える時に保存できなかった時は保存の失敗を投げる() async throws {
         let capture = FakeScreenCapture(images: [], startError: nil, interruptionError: nil)
         let startedReading = try await startReading(book: book, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
@@ -404,10 +404,13 @@ struct ReadingTests {
                 readingSession: startedReading.readingSession,
                 screenCapture: capture,
                 pageSaving: pageSaving,
-                currentDateTime: { Date() },
+                currentDateTime: { Date(timeIntervalSince1970: 2_000) },
                 save: { throw SaveFailure() }
             )
         }
+        // 入れた終えた日時は読書の記録に残り、次の保存で保存先に書かれる。
+        try writingContext.save()
+        #expect(try readingContext.fetch(FetchDescriptor<ReadingSession>()).map(\.endedDateTime) == [Date(timeIntervalSince1970: 2_000)])
     }
 
     /// 読書を終えた時の案内は、ページを足す処理が error で終わっていた時だけ途中で止まったことを伝え、最後まで動いた時は無い。
