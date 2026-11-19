@@ -200,7 +200,7 @@ import Testing
             let recordingQuizEngine = RecordingQuizEngine(availability: .unavailable(unavailableReason), makeQuestionsError: nil, judgementError: nil)
 
             await #expect(throws: QuizModelUnavailableError.self) {
-                try await makeQuizQuestions(
+                _ = try await makeQuizQuestions(
                     book: book,
                     readingSession: readingSession,
                     quizEngine: recordingQuizEngine,
@@ -218,7 +218,7 @@ import Testing
     /// 問いを作る処理が失敗した時は、その error がそのまま投げられ、問いが 1 件も保存されない。
     @Test func 問いを作る処理が失敗した時はそのerrorを投げて問いが保存されない() async throws {
         await #expect(throws: QuizFailure.self) {
-            try await makeQuizQuestions(
+            _ = try await makeQuizQuestions(
                 book: book,
                 readingSession: readingSession,
                 quizEngine: RecordingQuizEngine(availability: .available, makeQuestionsError: QuizFailure(), judgementError: nil),
@@ -233,7 +233,7 @@ import Testing
     /// 作った問いの保存に失敗した時は、保存の error が投げられ、その問いは後の保存でも保存されない (context に残らない)。
     @Test func 問いの保存に失敗した時は後の保存にもその問いが混ざらない() async throws {
         await #expect(throws: QuizFailure.self) {
-            try await makeQuizQuestions(
+            _ = try await makeQuizQuestions(
                 book: book,
                 readingSession: readingSession,
                 quizEngine: FixedQuizEngine(
@@ -379,7 +379,7 @@ import Testing
         let question = try #require(try await makeSavedQuestions(questions: [makeQuestion(kind: .written, choices: [], modelAnswer: "答えの例")]).first)
 
         await #expect(throws: QuizFailure.self) {
-            try await answerQuizQuestion(
+            _ = try await answerQuizQuestion(
                 question: question,
                 answerText: "答え",
                 quizEngine: RecordingQuizEngine(availability: .available, makeQuestionsError: nil, judgementError: QuizFailure()),
@@ -398,7 +398,7 @@ import Testing
         let question = try #require(try await makeSavedQuestions(questions: [makeQuestion(kind: .comprehension, choices: ["犬", "猫", "人", "鳥"], modelAnswer: "猫")]).first)
 
         await #expect(throws: QuizFailure.self) {
-            try await answerQuizQuestion(
+            _ = try await answerQuizQuestion(
                 question: question,
                 answerText: "猫",
                 quizEngine: FixedQuizEngine(availability: .available, questions: [], modelJudgement: false),
