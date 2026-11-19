@@ -26,21 +26,25 @@ struct QuizView: View {
     @State private var preparationCount = 0
     /// 今出している問いの、`questions` の中の位置。
     @State private var questionIndex = 0
-    /// 穴埋めと記述の入力欄に書いている答え。
-    @State private var draftAnswerText = ""
-    /// 今出している問いへの、保存した回答。答える前は nil。
-    @State private var answer: Answer?
-    /// 答えを判定して保存している途中か。
-    @State private var isJudging = false
-    /// 答えの判定か保存に失敗した時の案内。失敗していなければ nil。
-    @State private var answerFailureGuide: String?
-    /// 答えの入力欄にキーボードの入力先があるか。答えた時にキーボードを閉じるのに使う。
-    @FocusState private var isAnswerFieldFocused: Bool
 
     var body: some View {
         Group {
             if let questions, questions.indices.contains(questionIndex) {
-                questionContent(questions: questions, question: questions[questionIndex])
+                QuizQuestionView(
+                    question: questions[questionIndex],
+                    position: (index: questionIndex, count: questions.count),
+                    quizEngine: quizEngine,
+                    nextButtonTitle: questionIndex + 1 < questions.count ? "次の問いへ" : "クイズを終える",
+                    goNext: {
+                        advance(questions: questions)
+                    },
+                    leaveButtonTitle: "本の画面に戻る",
+                    leave: endQuiz,
+                    // クイズは最後の問いに答えるまで続け、途中でやめる操作を置かない (`documents/DIRECTION.md`「決めたこと」の 2026-11-19 の行)。
+                    canLeaveBeforeAnswering: false
+                )
+                // 次の問いに進んだ時に、前の問いの答えの入力・保存した回答・送った位置を残さず作り直す。
+                .id(questions[questionIndex].id)
             } else if let noQuizGuide {
                 guideContent(guide: noQuizGuide, canRetry: false)
             } else if let preparationFailureGuide {
@@ -123,221 +127,6 @@ struct QuizView: View {
         .accessibilityIdentifier("quiz_leave")
     }
 
-    /// 問い 1 問の表示。上に何問目かと問いの種類、問いの文、答える場所、答えた後は判定・模範の答え・根拠にした本文の引用を出す。
-    private func questionContent(questions: [Question], question: Question) -> some View {
-        ScrollViewReader { scrollViewProxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Text(verbatim: "問い \(questionIndex + 1) / \(questions.count)")
-                            .accessibilityIdentifier("quiz_position")
-                        Spacer()
-                        Text(verbatim: questionKindLabel(questionKind: question.kind))
-                            .accessibilityIdentifier("quiz_kind")
-                    }
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(doquizSecondaryTextColor)
-                    HStack(spacing: 6) {
-                        ForEach(questions.indices, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(index <= questionIndex ? doquizAccentColor : doquizBorderColor)
-                                .frame(height: 4)
-                        }
-                    }
-                    .accessibilityHidden(true)
-                    Text(verbatim: question.text)
-                        .font(.title3.bold())
-                        .foregroundStyle(doquizTextColor)
-                        .lineSpacing(6)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("quiz_question_text")
-                    switch question.kind {
-                    case .comprehension, .summaryTrueFalse:
-                        choiceButtons(question: question)
-                    case .fillInTheBlank, .written:
-                        answerField(question: question)
-                    }
-                    if isJudging {
-                        HStack(spacing: 10) {
-                            ProgressView()
-                            Text(verbatim: "判定しています")
-                                .font(.subheadline)
-                                .foregroundStyle(doquizSecondaryTextColor)
-                                .accessibilityIdentifier("quiz_judging")
-                        }
-                    }
-                    if let answerFailureGuide {
-                        Text(verbatim: answerFailureGuide)
-                            .font(.footnote)
-                            .foregroundStyle(doquizIncorrectColor)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .accessibilityIdentifier("quiz_answer_failure_guide")
-                    }
-                    if let answer {
-                        answerResult(question: question, answer: answer)
-                            .id(answer.id)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(20)
-            }
-            // 答えた後の判定・模範の答え・根拠の引用が画面の下に隠れないよう、出た時にそこまで送る。
-            .onChange(of: answer?.id) { _, answerID in
-                if let answerID {
-                    withAnimation {
-                        scrollViewProxy.scrollTo(answerID, anchor: .bottom)
-                    }
-                }
-            }
-        }
-        // 次の問いに進んだ時に、前の問いで送った位置を残さず上から出す。
-        .id(question.id)
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 10) {
-                if answer != nil {
-                    Button {
-                        advance(questions: questions)
-                    } label: {
-                        Text(verbatim: questionIndex + 1 < questions.count ? "次の問いへ" : "クイズを終える")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 54)
-                            .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                    .accessibilityIdentifier("quiz_next")
-                } else {
-                    if question.choices.isEmpty {
-                        Button {
-                            submitAnswer(question: question, answerText: draftAnswerText)
-                        } label: {
-                            Text(verbatim: "答える")
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity, minHeight: 54)
-                                .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
-                        }
-                        .disabled(isJudging || draftAnswerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        .accessibilityIdentifier("quiz_answer_submit")
-                    }
-                    // 判定か保存が失敗し続ける時に、クイズの画面から出られなくならないようにする。
-                    if answerFailureGuide != nil {
-                        leaveButton
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(doquizBackgroundColor)
-        }
-    }
-
-    /// 四択と要約の正誤の、選択肢のボタン。押すとその選択肢で答える。答えた後は、選んだ選択肢を判定の色の枠で示す。
-    private func choiceButtons(question: Question) -> some View {
-        VStack(spacing: 8) {
-            ForEach(Array(question.choices.enumerated()), id: \.offset) { choiceIndex, choice in
-                Button {
-                    submitAnswer(question: question, answerText: choice)
-                } label: {
-                    Text(verbatim: choice)
-                        .font(.subheadline.weight(answer?.text == choice ? .bold : .regular))
-                        .foregroundStyle(answer?.text == choice ? doquizTextColor : doquizSecondaryTextColor)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(
-                            choiceBorderColor(choice: choice).opacity(answer?.text == choice ? 0.08 : 0),
-                            in: RoundedRectangle(cornerRadius: 10)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(choiceBorderColor(choice: choice), lineWidth: answer?.text == choice ? 2 : 1)
-                        )
-                        .contentShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .buttonStyle(.plain)
-                // 押せなくする時に `disabled` を使うと選択肢の文字が薄くなって読みにくいため、押す操作だけを受け取らないようにする。
-                .allowsHitTesting(answer == nil && !isJudging)
-                .accessibilityAddTraits(answer?.text == choice ? .isSelected : [])
-                .accessibilityIdentifier("quiz_choice_\(choiceIndex)")
-            }
-        }
-    }
-
-    /// 選択肢の枠の色を返す。答えた後の選んだ選択肢は判定の色、それ以外は枠の線の色。
-    private func choiceBorderColor(choice: String) -> Color {
-        guard let answer, answer.text == choice else {
-            return doquizBorderColor
-        }
-        return answer.isCorrect ? doquizCorrectColor : doquizIncorrectColor
-    }
-
-    /// 穴埋めと記述の、答えを書く入力欄。答えた後は、書いた答えを出したまま変えられなくする。
-    private func answerField(question: Question) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(verbatim: "あなたの答え")
-                .font(.footnote)
-                .foregroundStyle(doquizSecondaryTextColor)
-            TextField(text: $draftAnswerText, axis: .vertical) {
-                Text(verbatim: question.kind == .written ? "答えを文で書く" : "空欄に入る言葉")
-            }
-            .lineLimit(question.kind == .written ? 3...8 : 1...3)
-            .font(.body)
-            .foregroundStyle(doquizTextColor)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(doquizBorderColor, lineWidth: 1))
-            .focused($isAnswerFieldFocused)
-            .disabled(answer != nil || isJudging)
-            .accessibilityIdentifier("quiz_answer_field")
-        }
-    }
-
-    /// 答えた後に出す、判定・模範の答え・根拠にした本文の引用。
-    ///
-    /// 根拠にした本文の引用だけ明朝にする (アプリの文と本の文を見分けるため。`documents/DIRECTION.md`「デザインの方向」)。
-    private func answerResult(question: Question, answer: Answer) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(verbatim: quizJudgementText(questionKind: question.kind, isCorrect: answer.isCorrect))
-                .font(.headline)
-                .foregroundStyle(answer.isCorrect ? doquizCorrectColor : doquizIncorrectColor)
-                .accessibilityIdentifier("quiz_judgement")
-            if let judgementCaution = quizJudgementCaution(questionKind: question.kind) {
-                Text(verbatim: judgementCaution)
-                    .font(.footnote)
-                    .foregroundStyle(doquizSecondaryTextColor)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("quiz_judgement_caution")
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text(verbatim: "模範の答え")
-                    .font(.footnote)
-                    .foregroundStyle(doquizSecondaryTextColor)
-                Text(verbatim: question.modelAnswer)
-                    .font(.subheadline)
-                    .foregroundStyle(doquizTextColor)
-                    .lineSpacing(4)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("quiz_model_answer")
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text(verbatim: "根拠にした本文")
-                    .font(.footnote)
-                    .foregroundStyle(doquizSecondaryTextColor)
-                Text(verbatim: question.evidenceQuote)
-                    // iOS に入っている明朝の書体 (ヒラギノ明朝 ProN)。文字の大きさの設定に合わせて変わるよう、subheadline に合わせる。
-                    .font(.custom("HiraMinProN-W6", size: 15, relativeTo: .subheadline))
-                    .foregroundStyle(doquizTextColor)
-                    .lineSpacing(6)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("quiz_evidence_quote")
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(doquizPanelBackgroundColor, in: RoundedRectangle(cornerRadius: 12))
-    }
-
     /// 問いを作って保存し、最初の問いを出す。問いが 1 問も無い時・端末内のモデルが使えない時・失敗した時は、その案内を出す。
     ///
     /// 既に問いを作り終えている時と、クイズを出さないと決まった後は何もしない (画面が出直した時に、問いを 2 回作らないため)。
@@ -368,34 +157,6 @@ struct QuizView: View {
         }
     }
 
-    /// `answerText` で今の問いに答える。判定して回答を保存し、判定・模範の答え・根拠の引用を出す。
-    ///
-    /// 既に答えた問いと、判定している途中にもう一度呼ばれた時は何もしない (1 回の答えで回答を 2 件保存しないため)。
-    /// 判定か保存に失敗した時は、案内を出して、もう一度答えられる状態に戻す。
-    private func submitAnswer(question: Question, answerText: String) {
-        guard answer == nil, !isJudging else {
-            return
-        }
-        isJudging = true
-        answerFailureGuide = nil
-        isAnswerFieldFocused = false
-        Task {
-            defer { isJudging = false }
-            do {
-                answer = try await answerQuizQuestion(
-                    question: question,
-                    answerText: answerText,
-                    quizEngine: quizEngine,
-                    modelContext: modelContext,
-                    currentDateTime: { Date() },
-                    save: modelContext.save
-                )
-            } catch {
-                answerFailureGuide = quizAnswerFailureGuide(error: error)
-            }
-        }
-    }
-
     /// 次の問いを出す。今の問いが最後の時は、クイズを終えて本の画面に戻る。
     private func advance(questions: [Question]) {
         guard questionIndex + 1 < questions.count else {
@@ -403,8 +164,5 @@ struct QuizView: View {
             return
         }
         questionIndex += 1
-        answer = nil
-        draftAnswerText = ""
-        answerFailureGuide = nil
     }
 }
