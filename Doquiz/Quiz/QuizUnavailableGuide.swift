@@ -18,11 +18,11 @@ func quizUnavailableGuide(availability: SystemLanguageModel.Availability) -> Str
             return "この iPhone ではクイズを出せません\nクイズを作る Apple Intelligence に この iPhone が対応していないためです"
         case .appleIntelligenceNotEnabled:
             // Apple の文書の説明は「Apple Intelligence is not enabled on the system.」。
-            return "いまはクイズを出せません\nクイズを作る Apple Intelligence がオフになっています\n設定アプリで Apple Intelligence をオンにすると 読書を始められます"
+            return "いまはクイズを作れません\nクイズを作る Apple Intelligence がオフになっています"
         case .modelNotReady:
             // Apple の文書の説明は「The models aren't available on the user's device.」と
             // 「Models are downloaded automatically based on factors like network status, battery level, and system load.」。
-            return "いまはクイズを出せません\nクイズを作るモデルを iPhone が準備しています\n準備は自動で進みます しばらく待つと読書を始められます"
+            return "この iPhone ではクイズを出せません\nクイズを作る Apple Intelligence に この iPhone が対応していないためです"
         @unknown default:
             // `UnavailableReason` は frozen でなく、iOS の更新で理由が増えうる。増えた理由にも、クイズを出せないことだけは伝える。
             return "いまはクイズを出せません\nクイズを作るモデルを この iPhone で使えない状態です"

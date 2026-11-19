@@ -98,7 +98,7 @@ struct BookView: View {
                         .frame(maxWidth: .infinity, minHeight: 54)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isStartingReading || quizUnavailableGuide != nil)
+                .disabled(isStartingReading)
                 // 押せないことが色でも分かるよう、端末内のモデルが使えない間はボタンを薄くする。
                 .opacity(quizUnavailableGuide == nil ? 1 : 0.4)
                 .accessibilityIdentifier("reading_start")
