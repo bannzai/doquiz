@@ -47,6 +47,24 @@ import Testing
         #expect(question.readingSession == nil)
     }
 
+    /// 四択の模範の答えは、決まった位置に来ない。同じ値から 100 回組み立てると、模範の答えの位置が 2 通り以上になる
+    /// (並べ替えていれば、100 回とも同じ位置になる確率は 4 × (1/4)^100 で、起きないとみなせる)。
+    @Test func 四択の模範の答えは決まった位置に来ない() {
+        #expect(
+            Set(
+                (0..<100).map { _ in
+                    assembleQuestion(
+                        questionKind: .comprehension,
+                        questionText: "吾輩は何か",
+                        modelAnswer: "猫",
+                        wrongChoices: ["犬", "人", "鳥"],
+                        evidenceQuote: "吾輩は猫である。"
+                    ).choices.firstIndex(of: "猫")
+                }
+            ).count >= 2
+        )
+    }
+
     /// 要約の正誤の選択肢は、モデルが誤りの選択肢を返していても「正しい」「誤り」の 2 つになる。
     @Test func 要約の正誤の選択肢は正しいと誤りの二つになる() {
         #expect(
