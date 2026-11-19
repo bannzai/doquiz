@@ -20,6 +20,8 @@ struct BookView: View {
         /// 開発者メニューで、偽の取り込みを途中で止めるようにしているか。
         /// 既定を false にしているのは、切り替えていない時の偽の取り込みを「読書を終える」まで続けるため。
         @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
+        /// 開発者メニューで、読書を終えた後のクイズを偽のクイズに切り替えている時の動き。値が無い時は実物でクイズを作る。
+        @AppStorage(developerMenuFakeQuizBehaviorKey) private var fakeQuizBehavior: DeveloperMenuFakeQuizBehavior?
     #endif
     /// 出題の設定の画面を出しているか。
     @State private var isEditingQuestionSettings = false
@@ -29,8 +31,12 @@ struct BookView: View {
     @State private var isStartingReading = false
     /// 読書を終えている途中か。
     @State private var isFinishingReading = false
-    /// 続いている読書の記録。読書中でなければ nil。nil でない間、読書中の画面を出す。
+    /// 続いている読書の記録か、クイズを出している読書の記録。読書中でもクイズ中でもなければ nil。
+    /// nil でない間、読書中の画面かクイズの画面を、この画面の上に出す。
     @State private var readingSession: ReadingSession?
+    /// 上に出す画面を、読書中の画面からクイズの画面に切り替えたか。「読書を終える」で読書を終えられた時に true にし、次の読書を始める時に false に戻す
+    /// (クイズを終えた時に戻すと、閉じている途中の画面が読書中の画面に変わって見えるため)。
+    @State private var isShowingQuiz = false
     /// 続いている読書の取り込み。読書中でなければ nil。
     @State private var screenCapture: (any ScreenCapture)?
     /// 続いている読書の、ページを足す処理を動かしているタスク。読書中でなければ nil。
@@ -124,17 +130,33 @@ struct BookView: View {
                 )
             }
         )
+        // 読書中の画面とクイズの画面を同じ覆いの中で切り替える (覆いを閉じてから別の覆いを出すと、間に本の画面が見えるため)。
         .fullScreenCover(item: $readingSession) { readingSession in
-            ReadingView(
+            ReadingAndQuizView(
                 book: book,
                 readingSession: readingSession,
+                isShowingQuiz: $isShowingQuiz,
+                makeQuizEngine: makeQuizEngineForReading,
                 endReading: {
                     Task {
                         await finishReading()
                     }
+                },
+                endQuiz: {
+                    self.readingSession = nil
                 }
             )
         }
+    }
+
+    /// 読書を終えた後のクイズで使う `QuizEngine` を作る。開発者メニューで偽のクイズに切り替えている時は、選んだ動きをする偽のクイズを返す。
+    private func makeQuizEngineForReading() -> any QuizEngine {
+        #if DEBUG
+            if let fakeQuizBehavior {
+                return DeveloperMenuFakeQuizEngine(behavior: fakeQuizBehavior)
+            }
+        #endif
+        return FoundationModelsQuizEngine()
     }
 
     /// 読書で使う画面の取り込みを作る。開発者メニューで偽の取り込みに切り替えている時は、偽の取り込みを返す。
@@ -190,6 +212,7 @@ struct BookView: View {
                 }
                 self.screenCapture = screenCapture
                 self.pageSaving = pageSaving
+                isShowingQuiz = false
                 readingSession = startedReading.readingSession
                 isStartingReading = false
                 do {
@@ -204,10 +227,10 @@ struct BookView: View {
         }
     }
 
-    /// 続いている読書を終えて、読書中の画面を閉じる。読書中でなければ何もしない。
+    /// 続いている読書を終えて、読書中の画面をクイズの画面に切り替える。読書中でなければ何もしない。
     ///
-    /// 取り込みが途中で止まっていた時は、この画面にその案内を出す。
-    /// 読書の記録を保存できなかった時も、読書中の画面を閉じて、この画面にエラーの内容を出す
+    /// 取り込みが途中で止まっていた時は、クイズを出さずに読書中の画面を閉じて、この画面にその案内を出す。
+    /// 読書の記録を保存できなかった時も、クイズを出さずに読書中の画面を閉じて、この画面にエラーの内容を出す
     /// (取り込みは既に止まっていて、読書中の画面の「取り込み中」が事実と違う表示になるため)。
     /// 終えている途中にもう一度呼ばれた時は何もしない (後から終わった方が、先の保存の失敗の案内を消さないようにするため)。
     private func finishReading() async {
@@ -229,8 +252,38 @@ struct BookView: View {
         } catch {
             readingGuide = readingEndSaveFailureGuide(error: error)
         }
-        self.readingSession = nil
         self.screenCapture = nil
         self.pageSaving = nil
+        if readingGuide == nil {
+            isShowingQuiz = true
+        } else {
+            self.readingSession = nil
+        }
+    }
+}
+
+/// 本の画面の上に、画面全体を覆って出す画面。読書中は読書中の画面を出し、読書を終えた後はクイズの画面に切り替える。
+///
+/// 切り替えを本の画面の覆いの中に直接書かず、この型で受けるのは、覆いが出ている間に変わった `isShowingQuiz` を読み直して中身を切り替えるため。
+private struct ReadingAndQuizView: View {
+    /// 読んでいる本。
+    let book: Book
+    /// 続いている読書の記録か、クイズを出している読書の記録。
+    let readingSession: ReadingSession
+    /// クイズの画面に切り替えたか。本の画面が、読書を終えられた時に true にする。
+    @Binding var isShowingQuiz: Bool
+    /// クイズで使う `QuizEngine` を作る操作。クイズの画面に切り替えた時に呼ぶ。
+    let makeQuizEngine: () -> any QuizEngine
+    /// 「読書を終える」を押した時に呼ぶ操作。
+    let endReading: () -> Void
+    /// クイズを終えて本の画面に戻る時に呼ぶ操作。
+    let endQuiz: () -> Void
+
+    var body: some View {
+        if isShowingQuiz {
+            QuizView(book: book, readingSession: readingSession, quizEngine: makeQuizEngine(), endQuiz: endQuiz)
+        } else {
+            ReadingView(book: book, readingSession: readingSession, endReading: endReading)
+        }
     }
 }

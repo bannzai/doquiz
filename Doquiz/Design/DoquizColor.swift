@@ -18,6 +18,12 @@ let doquizSecondaryTextColor = Color(red: 0x4A / 255, green: 0x52 / 255, blue: 0
 /// 取り込み中であることを示す色 (橙)。読書中の画面の「取り込み中」の印と文字に使う。
 let doquizCapturingColor = Color(red: 0xC2 / 255, green: 0x41 / 255, blue: 0x0C / 255)
 
+/// 合っていると判定した時の色 (青)。判定の文と、選んだ選択肢の枠に使う。色だけに頼らず、判定は文でも書く。
+let doquizCorrectColor = Color(red: 0x1D / 255, green: 0x4E / 255, blue: 0xD8 / 255)
+
+/// 合っていないと判定した時の色 (橙)。判定の文と、選んだ選択肢の枠に使う。色だけに頼らず、判定は文でも書く。
+let doquizIncorrectColor = Color(red: 0xB4 / 255, green: 0x53 / 255, blue: 0x09 / 255)
+
 /// 説明をまとめた面の地の色 (薄い灰)。読書中の画面の、本文の扱いの説明の面に使う。
 let doquizPanelBackgroundColor = Color(red: 0xF1 / 255, green: 0xF4 / 255, blue: 0xF6 / 255)
 

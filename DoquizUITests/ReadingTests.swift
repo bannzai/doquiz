@@ -40,7 +40,9 @@ final class ReadingTests: XCTestCase {
         )
     }
 
-    /// 起動直後の一覧から開発者メニューを開き、読書を偽の取り込みに切り替えて、一覧に戻る。
+    /// 起動直後の一覧から開発者メニューを開き、読書を偽の取り込みに、読書を終えた後のクイズを問いを返さない偽のクイズに切り替えて、一覧に戻る。
+    ///
+    /// クイズを偽物にするのは、端末内のモデルが GitHub の runner の Simulator で使えるかに結果が左右されないようにするため。
     @MainActor
     private func switchToFakeReading(app: XCUIApplication) {
         // GitHub の runner の Simulator は起動直後の描画が遅いことがあるため、待ちの上限を長めに取る (ScreenshotTests と同じ値)。
@@ -50,7 +52,23 @@ final class ReadingTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["developer_menu_uses_fake_reading_state"].label, "オフ")
         app.buttons["developer_menu_toggle_fake_reading"].tap()
         assertEventually(element: app.staticTexts["developer_menu_uses_fake_reading_state"], predicateFormat: "label == %@", argument: "オン")
+        // クイズの切り替えは一覧の下にあり、画面に入っていないことがあるため、上へ送ってから押す。
+        app.swipeUp()
+        XCTAssertTrue(app.buttons["developer_menu_cycle_fake_quiz_behavior"].waitForExistence(timeout: 10))
+        app.buttons["developer_menu_cycle_fake_quiz_behavior"].tap()
+        assertEventually(element: app.staticTexts["developer_menu_fake_quiz_behavior_state"], predicateFormat: "label == %@", argument: "問いを返す")
+        app.buttons["developer_menu_cycle_fake_quiz_behavior"].tap()
+        assertEventually(element: app.staticTexts["developer_menu_fake_quiz_behavior_state"], predicateFormat: "label == %@", argument: "問いを返さない")
         app.navigationBars.buttons.firstMatch.tap()
+    }
+
+    /// 読書を終えた後に出るクイズの画面 (問いが 1 問も無い時の案内) から、「本の画面に戻る」で本の画面に戻る。
+    @MainActor
+    private func leaveQuizWithoutQuestions(app: XCUIApplication) {
+        XCTAssertTrue(app.staticTexts["quiz_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_guide"].label.contains("今回の読書のクイズはありません"))
+        app.buttons["quiz_leave"].tap()
+        assertDisappears(element: app.buttons["quiz_leave"])
     }
 
     /// 起動直後の一覧から開発者メニューを開き、読書を偽の取り込みに切り替え、その取り込みが途中で止まるようにして、一覧に戻る。
@@ -104,7 +122,7 @@ final class ReadingTests: XCTestCase {
     }
 
     /// 初めて「読書を始める」を押すと同意の説明が出て、同意すると取り込み中の表示・読んでいる本の名前・「読書を終える」が出る。
-    /// 「読書を終える」を押すと本の画面に戻り、読書の回数が 1 回になる。
+    /// 「読書を終える」を押すとクイズの画面に切り替わり、そこから本の画面に戻ると、読書の回数が 1 回になっている。
     /// 2 回目に「読書を始める」を押した時は、同意の説明が出ずに読書中の画面が出て、終えると読書の記録が 2 件保存されている。
     /// 「読書を始める」のある本の画面を `book-reading-start`、同意の説明を `screen-capture-consent`、読書中の画面を `reading` の名前で添付する。
     @MainActor
@@ -131,6 +149,7 @@ final class ReadingTests: XCTestCase {
 
         app.buttons["reading_end"].tap()
         assertDisappears(element: app.buttons["reading_end"])
+        leaveQuizWithoutQuestions(app: app)
         XCTAssertEqual(app.staticTexts["book_title"].label, "潮見町の灯台日誌")
         assertEventually(element: app.staticTexts["book_reading_summary"], predicateFormat: "label BEGINSWITH %@", argument: "読書 1 回 ・ 最後に読んだのは")
         XCTAssertFalse(app.staticTexts["reading_guide"].exists)
@@ -140,6 +159,7 @@ final class ReadingTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["screen_capture_consent_title"].exists)
         app.buttons["reading_end"].tap()
         assertDisappears(element: app.buttons["reading_end"])
+        leaveQuizWithoutQuestions(app: app)
         assertEventually(element: app.staticTexts["book_reading_summary"], predicateFormat: "label BEGINSWITH %@", argument: "読書 2 回 ・ 最後に読んだのは")
 
         assertSavedReadingSessionCount(app: app, expectedCount: "2")
@@ -167,7 +187,7 @@ final class ReadingTests: XCTestCase {
         assertSavedReadingSessionCount(app: app, expectedCount: "0")
     }
 
-    /// 取り込みが途中で止まった時は、「読書を終える」を押さなくても読書中の画面が閉じ、本の画面に途中で止まったことの案内が出て、
+    /// 取り込みが途中で止まった時は、「読書を終える」を押さなくても読書中の画面が閉じ、クイズの画面は出ずに、本の画面に途中で止まったことの案内が出て、
     /// 終えた読書の記録が 1 件残る (読書の回数が 1 回になる)。
     /// 案内の出た本の画面を `book-reading-interrupted` の名前で添付する。
     @MainActor
@@ -185,6 +205,9 @@ final class ReadingTests: XCTestCase {
         assertDisappears(element: app.buttons["reading_end"])
         XCTAssertTrue(app.staticTexts["reading_guide"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["reading_guide"].label.contains("取り込みが途中で止まったため 読書を終えました"))
+        // クイズの画面が出る時は、問いを作っている間の表示か、クイズを出さない時の案内のどちらかが出る。
+        XCTAssertFalse(app.staticTexts["quiz_preparing"].exists)
+        XCTAssertFalse(app.staticTexts["quiz_guide"].exists)
         assertEventually(element: app.staticTexts["book_reading_summary"], predicateFormat: "label BEGINSWITH %@", argument: "読書 1 回 ・ 最後に読んだのは")
         attachScreenshot(app: app, name: "book-reading-interrupted")
 
