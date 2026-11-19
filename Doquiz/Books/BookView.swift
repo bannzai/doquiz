@@ -254,7 +254,7 @@ struct BookView: View {
         }
         self.screenCapture = nil
         self.pageSaving = nil
-        if readingGuide == nil {
+        if true {
             isShowingQuiz = true
         } else {
             self.readingSession = nil

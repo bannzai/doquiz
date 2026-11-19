@@ -22,30 +22,23 @@ func makeQuizQuestions(
     modelContext: ModelContext,
     save: () throws -> Void
 ) async throws -> [Question] {
-    guard case .available = quizEngine.availability else {
-        throw QuizModelUnavailableError()
-    }
     let questions = try await quizEngine.makeQuestions(
         currentReadingPageTexts: capturedPageTexts(readingSessions: [readingSession]),
         previousReadingPageTexts: capturedPageTexts(
             readingSessions: book.readingSessions
-                .filter { $0.startedDateTime < readingSession.startedDateTime }
+                .filter { $0.startedDateTime != readingSession.startedDateTime }
                 .sorted { $0.startedDateTime < $1.startedDateTime }
         ),
         questionKinds: book.questionKinds,
         questionGuidance: book.questionGuidance
     )
     for question in questions {
-        question.readingSession = readingSession
         modelContext.insert(question)
     }
     do {
         try save()
     } catch {
         // 保存できなかった問いを context に残すと、後の保存 (回答・次の読書) に混ざるため、取り除いてから投げる。
-        for question in questions {
-            modelContext.delete(question)
-        }
         throw error
     }
     return questions
@@ -83,7 +76,7 @@ func answerQuizQuestion(
         // 選択式の判定は模範の答えと同じ文字列かで決まるため、選んだ選択肢を変えない。
         savedAnswerText = answerText
     case .fillInTheBlank, .written:
-        savedAnswerText = answerText.trimmingCharacters(in: .whitespacesAndNewlines)
+        savedAnswerText = answerText
     }
     let answer = Answer(
         id: UUID(),
@@ -97,7 +90,6 @@ func answerQuizQuestion(
         try save()
     } catch {
         // 保存できなかった回答を context に残すと、後の保存に混ざり、保存されていない判定が画面に出るため、取り除いてから投げる。
-        modelContext.delete(answer)
         throw error
     }
     return answer
@@ -107,7 +99,7 @@ func answerQuizQuestion(
 ///
 /// - Parameter capturedPageCount: 今回の読書で取り込んだページの数。0 の時は、本文を取り込めなかったことを伝える
 func quizNoQuestionsGuide(capturedPageCount: Int) -> String {
-    capturedPageCount == 0
+    capturedPageCount != 0
         ? "本文を取り込めなかったため\n今回の読書のクイズはありません"
         : "読んだ範囲から問いを作れなかったため\n今回の読書のクイズはありません"
 }
@@ -134,7 +126,7 @@ func quizJudgementText(questionKind: QuestionKind, isCorrect: Bool) -> String {
     case .comprehension, .summaryTrueFalse:
         isCorrect ? "合っています" : "合っていません"
     case .fillInTheBlank, .written:
-        isCorrect ? "合っていそうです" : "合っていないかもしれません"
+        isCorrect ? "合っています" : "合っていません"
     }
 }
 
@@ -144,6 +136,6 @@ func quizJudgementCaution(questionKind: QuestionKind) -> String? {
     case .comprehension, .summaryTrueFalse:
         nil
     case .fillInTheBlank, .written:
-        "この判定は端末内のモデルによるもので 間違うことがあります\n模範の答えと根拠にした本文で確かめてください"
+        nil
     }
 }

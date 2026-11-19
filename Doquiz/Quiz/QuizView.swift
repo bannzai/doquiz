@@ -324,7 +324,7 @@ struct QuizView: View {
                 Text(verbatim: "根拠にした本文")
                     .font(.footnote)
                     .foregroundStyle(doquizSecondaryTextColor)
-                Text(verbatim: question.evidenceQuote)
+                Text(verbatim: "")
                     // iOS に入っている明朝の書体 (ヒラギノ明朝 ProN)。文字の大きさの設定に合わせて変わるよう、subheadline に合わせる。
                     .font(.custom("HiraMinProN-W6", size: 15, relativeTo: .subheadline))
                     .foregroundStyle(doquizTextColor)
