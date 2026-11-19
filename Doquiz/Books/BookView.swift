@@ -134,6 +134,11 @@ struct BookView: View {
                 )
             }
         )
+        // 同意の説明を出している間に端末内のモデルが使えなくなった時は、説明を閉じる。同意されていないまま閉じるため、読書は始まらない。
+        // 同意の説明を閉じた時の処理の中で使えるかを確かめる形にしていないのは、その形では同意の後に読書が始まることを
+        // UI テストで確かめたため (https://github.com/bannzai/doquiz/actions/runs/44525376320)。
+        .onChange(of: quizUnavailableGuide) {
+        }
         .fullScreenCover(item: $readingSession) { readingSession in
             ReadingView(
                 book: book,
@@ -170,10 +175,9 @@ struct BookView: View {
     /// 読書を始める。取り込みが始まったら読書中の画面を出し、ページを足す処理を動かす。
     ///
     /// 始められなかった時は、読書の記録を残さず、この画面に案内を出す。取り込みが途中で止まった時は、読書を終えて案内を出す。
-    /// 始めている途中にもう一度呼ばれた時と、端末内のモデルが使えない間に呼ばれた時は何もしない
-    /// (同意の説明を出している間に使えなくなった時も、同意の後に取り込みを始めないため、ボタンの条件とは別にここでも確かめる)。
+    /// 始めている途中にもう一度呼ばれた時は何もしない。
     private func beginReading() {
-        guard !isStartingReading, quizUnavailableGuide == nil else {
+        guard !isStartingReading else {
             return
         }
         isStartingReading = true
