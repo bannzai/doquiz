@@ -17,6 +17,9 @@ struct BookView: View {
         /// 開発者メニューで、読書を偽の取り込みと偽の本文の抽出に切り替えているか。
         /// 既定を false にしているのは、切り替えていない開発用のビルドでは実物を使うため。
         @AppStorage(developerMenuUsesFakeReadingKey) private var usesFakeReading = false
+        /// 開発者メニューで、偽の取り込みを途中で止めるようにしているか。
+        /// 既定を false にしているのは、切り替えていない時の偽の取り込みを「読書を終える」まで続けるため。
+        @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
     #endif
     /// 出題の設定の画面を出しているか。
     @State private var isEditingQuestionSettings = false
@@ -24,6 +27,8 @@ struct BookView: View {
     @State private var isShowingScreenCaptureConsent = false
     /// 取り込みを始めている途中か (画面共有の選択画面を出している間など)。
     @State private var isStartingReading = false
+    /// 読書を終えている途中か。
+    @State private var isFinishingReading = false
     /// 続いている読書の記録。読書中でなければ nil。nil でない間、読書中の画面を出す。
     @State private var readingSession: ReadingSession?
     /// 続いている読書の取り込み。読書中でなければ nil。
@@ -94,6 +99,8 @@ struct BookView: View {
         }
         .background(doquizBackgroundColor)
         .navigationBarTitleDisplayMode(.inline)
+        // 取り込みを始めている途中にこの画面を離れると、始まった取り込みを止める画面が無くなるため、始まるか始められないと分かるまで戻れなくする。
+        .navigationBarBackButtonHidden(isStartingReading)
         .sheet(isPresented: $isEditingQuestionSettings) {
             QuestionSettingsView(book: book)
         }
@@ -134,7 +141,7 @@ struct BookView: View {
     private func makeScreenCaptureForReading() -> any ScreenCapture {
         #if DEBUG
             if usesFakeReading {
-                return makeDeveloperMenuFakeScreenCapture()
+                return makeDeveloperMenuFakeScreenCapture(interrupts: interruptsFakeReading)
             }
         #endif
         return makeScreenCapture()
@@ -202,10 +209,13 @@ struct BookView: View {
     /// 取り込みが途中で止まっていた時は、この画面にその案内を出す。
     /// 読書の記録を保存できなかった時も、読書中の画面を閉じて、この画面にエラーの内容を出す
     /// (取り込みは既に止まっていて、読書中の画面の「取り込み中」が事実と違う表示になるため)。
+    /// 終えている途中にもう一度呼ばれた時は何もしない (後から終わった方が、先の保存の失敗の案内を消さないようにするため)。
     private func finishReading() async {
-        guard let readingSession, let screenCapture, let pageSaving else {
+        guard !isFinishingReading, let readingSession, let screenCapture, let pageSaving else {
             return
         }
+        isFinishingReading = true
+        defer { isFinishingReading = false }
         do {
             readingGuide = readingEndGuide(
                 pageSavingError: try await endReading(

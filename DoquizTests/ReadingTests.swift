@@ -419,6 +419,37 @@ struct ReadingTests {
         #expect(readingEndSaveFailureGuide(error: ReadingFailure()).contains("ReadingFailure"))
     }
 
+    /// 画像を 1 枚処理した後の待ちの間に取り消されると、次の画像を待たずに `CancellationError` を投げる。足したページは残る。
+    @Test(.timeLimit(.minutes(1))) func 画像を処理した後の待ちの間に取り消されると取り消しを投げる() async throws {
+        let capture = FakeScreenCapture(images: [try makeImage(width: 1)], startError: nil, interruptionError: nil)
+        let startedReading = try await startReading(book: book, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        let pageSaving = Task {
+            try await saveCapturedPages(
+                capturedImages: startedReading.capturedImages,
+                readingSession: startedReading.readingSession,
+                pageTextExtractor: FixedPageTextExtractor(pageText: "一枚目の本文"),
+                modelContext: writingContext,
+                currentDateTime: { Date() },
+                // テストの制限時間 (1 分) より長く待たせ、待ちが取り消しで終わらなければテストが落ちるようにする。
+                pauseAfterEachImage: .seconds(600),
+                save: writingContext.save
+            )
+        }
+        defer { pageSaving.cancel() }
+        while try savedPageTexts().isEmpty {
+            try Task.checkCancellation()
+            await Task.yield()
+        }
+
+        pageSaving.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            try await pageSaving.value
+        }
+        capture.stop()
+        #expect(try savedPageTexts() == ["一枚目の本文"])
+    }
+
     /// 読んだ時間の文は、分に満たない端数を切り捨て、始めた日時より前の日時では「0 分」になる。
     @Test(arguments: [
         (0.0, "0 分"),

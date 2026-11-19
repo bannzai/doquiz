@@ -53,6 +53,22 @@ final class ReadingTests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
     }
 
+    /// 起動直後の一覧から開発者メニューを開き、読書を偽の取り込みに切り替え、その取り込みが途中で止まるようにして、一覧に戻る。
+    @MainActor
+    private func switchToInterruptedFakeReading(app: XCUIApplication) {
+        XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
+        app.buttons["developer_menu_entrance"].tap()
+        XCTAssertTrue(app.buttons["developer_menu_toggle_fake_reading"].waitForExistence(timeout: 10))
+        app.buttons["developer_menu_toggle_fake_reading"].tap()
+        assertEventually(element: app.staticTexts["developer_menu_uses_fake_reading_state"], predicateFormat: "label == %@", argument: "オン")
+        // 途中で止める切り替えは一覧の下にあり、画面に入っていないことがあるため、上へ送ってから押す。
+        app.swipeUp()
+        XCTAssertTrue(app.buttons["developer_menu_toggle_interrupts_fake_reading"].waitForExistence(timeout: 10))
+        app.buttons["developer_menu_toggle_interrupts_fake_reading"].tap()
+        assertEventually(element: app.staticTexts["developer_menu_interrupts_fake_reading_state"], predicateFormat: "label == %@", argument: "オン")
+        app.navigationBars.buttons.firstMatch.tap()
+    }
+
     /// 起動直後の一覧から、名前が `title` の本を登録して、その本の画面を開き、「読書を始める」が出るまで待つ。
     @MainActor
     private func registerBookAndOpen(app: XCUIApplication, title: String) {
@@ -140,6 +156,30 @@ final class ReadingTests: XCTestCase {
         assertDisappears(element: app.staticTexts["screen_capture_consent_title"])
 
         assertSavedReadingSessionCount(app: app, expectedCount: "0")
+    }
+
+    /// 取り込みが途中で止まった時は、「読書を終える」を押さなくても読書中の画面が閉じ、本の画面に途中で止まったことの案内が出て、
+    /// 終えた読書の記録が 1 件残る (読書の回数が 1 回になる)。
+    /// 案内の出た本の画面を `book-reading-interrupted` の名前で添付する。
+    @MainActor
+    func test取り込みが途中で止まると読書中の画面が閉じて案内が出る() {
+        let app = launchAppWithInMemoryStore()
+        switchToInterruptedFakeReading(app: app)
+        registerBookAndOpen(app: app, title: "潮見町の灯台日誌")
+
+        app.buttons["reading_start"].tap()
+        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: 10))
+        app.buttons["screen_capture_consent_agree"].tap()
+        XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: 10))
+
+        // 偽の取り込みは、画像 2 枚 (1 枚ごとに 1 秒待つ) を流した後に止まる。
+        assertDisappears(element: app.buttons["reading_end"])
+        XCTAssertTrue(app.staticTexts["reading_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["reading_guide"].label.contains("取り込みが途中で止まったため 読書を終えました"))
+        assertEventually(element: app.staticTexts["book_reading_summary"], predicateFormat: "label BEGINSWITH %@", argument: "読書 1 回 ・ 最後に読んだのは")
+        attachScreenshot(app: app, name: "book-reading-interrupted")
+
+        assertSavedReadingSessionCount(app: app, expectedCount: "1")
     }
 
     /// 取り込みを始められない時 (偽の取り込みに切り替えていない iOS Simulator は、画面の取り込みを使えない) は、

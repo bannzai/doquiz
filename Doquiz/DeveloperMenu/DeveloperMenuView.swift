@@ -38,6 +38,9 @@
         /// 読書を偽の取り込みと偽の本文の抽出に切り替えているか。本の画面が読書を始める時に同じ値を読む。
         /// 既定を false にしているのは、切り替えていない開発用のビルドでは実物を使うため。
         @AppStorage(developerMenuUsesFakeReadingKey) private var usesFakeReading = false
+        /// 偽の取り込みを、画像を流し切った後に途中で止めるか。本の画面が読書を始める時に同じ値を読む。
+        /// 既定を false にしているのは、切り替えていない時の偽の取り込みを「読書を終える」まで続けるため。
+        @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
 
         var body: some View {
             List {
@@ -94,6 +97,18 @@
                         Spacer()
                         Text(verbatim: usesFakeReading ? "オン" : "オフ")
                             .accessibilityIdentifier("developer_menu_uses_fake_reading_state")
+                    }
+                    Button {
+                        interruptsFakeReading.toggle()
+                    } label: {
+                        Text(verbatim: "偽の取り込みを 途中で止めるかを切り替える")
+                    }
+                    .accessibilityIdentifier("developer_menu_toggle_interrupts_fake_reading")
+                    HStack {
+                        Text(verbatim: "偽の取り込みを途中で止める")
+                        Spacer()
+                        Text(verbatim: interruptsFakeReading ? "オン" : "オフ")
+                            .accessibilityIdentifier("developer_menu_interrupts_fake_reading_state")
                     }
                 } header: {
                     Text(verbatim: "読書")
