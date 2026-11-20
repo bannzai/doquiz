@@ -71,21 +71,6 @@ final class ReadingTests: XCTestCase {
         assertDisappears(element: app.buttons["quiz_leave"])
     }
 
-    /// 計測用 (マージしない)。途中で止める切り替えのボタンとナビゲーションバーの位置を、`name` の名前でログとテスト結果に残す。
-    @MainActor
-    private func recordInterruptToggleMeasurement(app: XCUIApplication, name: String) {
-        let toggleButton = app.buttons["developer_menu_toggle_interrupts_fake_reading"]
-        let measurement = toggleButton.exists
-            ? "ISSUE64 \(name) toggleFrame=\(toggleButton.frame) isHittable=\(toggleButton.isHittable) navigationBarFrame=\(app.navigationBars.firstMatch.frame) windowFrame=\(app.windows.firstMatch.frame)"
-            : "ISSUE64 \(name) toggle does not exist"
-        print(measurement)
-        let textAttachment = XCTAttachment(string: measurement)
-        textAttachment.name = name
-        textAttachment.lifetime = .keepAlways
-        add(textAttachment)
-        attachScreenshot(app: app, name: name)
-    }
-
     /// 起動直後の一覧から開発者メニューを開き、読書を偽の取り込みに切り替え、その取り込みが途中で止まるようにして、一覧に戻る。
     @MainActor
     private func switchToInterruptedFakeReading(app: XCUIApplication) {
@@ -94,12 +79,15 @@ final class ReadingTests: XCTestCase {
         XCTAssertTrue(app.buttons["developer_menu_toggle_fake_reading"].waitForExistence(timeout: 10))
         app.buttons["developer_menu_toggle_fake_reading"].tap()
         assertEventually(element: app.staticTexts["developer_menu_uses_fake_reading_state"], predicateFormat: "label == %@", argument: "オン")
-        // 途中で止める切り替えは一覧の下にあり、画面に入っていないことがあるため、上へ送ってから押す。
-        recordInterruptToggleMeasurement(app: app, name: "measure-before-swipe")
-        app.swipeUp()
-        XCTAssertTrue(app.buttons["developer_menu_toggle_interrupts_fake_reading"].waitForExistence(timeout: 10))
-        recordInterruptToggleMeasurement(app: app, name: "measure-before-tap")
-        app.buttons["developer_menu_toggle_interrupts_fake_reading"].tap()
+        let interruptToggleButton = app.buttons["developer_menu_toggle_interrupts_fake_reading"]
+        // 途中で止める切り替えが押せる位置に無い時だけ、上へ送る。押せる位置にある時にも送ると、ボタンがナビゲーションバーの下まで進み、
+        // 押しても切り替わらない回がある (CI の iPhone 17 で 15 回のうち 2 回。https://github.com/bannzai/doquiz/actions/runs/44671240674 )。
+        // 上限の 5 回は、メニューの 5 つの section を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
+        for _ in 0..<5 where !(interruptToggleButton.exists && interruptToggleButton.isHittable) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(interruptToggleButton.waitForExistence(timeout: 10))
+        interruptToggleButton.tap()
         assertEventually(element: app.staticTexts["developer_menu_interrupts_fake_reading_state"], predicateFormat: "label == %@", argument: "オン")
         app.navigationBars.buttons.firstMatch.tap()
     }
