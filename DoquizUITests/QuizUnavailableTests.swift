@@ -32,9 +32,9 @@ final class QuizUnavailableTests: XCTestCase {
     @MainActor
     private func leaveAndReturn(app: XCUIApplication) {
         XCUIDevice.shared.press(.home)
-        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 10))
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: sameScreenChangeWaitTimeout))
         app.activate()
-        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: sameScreenChangeWaitTimeout))
     }
 
     /// 一覧から開発者メニューを開き、端末内のモデルが使えるかを `quizAvailability` (開発者メニューの確かめ方の名前) に切り替えて、一覧に戻る。
