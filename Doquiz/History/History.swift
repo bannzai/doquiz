@@ -68,6 +68,21 @@ func historyJudgementText(questionKind: QuestionKind, isCorrect: Bool) -> String
     }
 }
 
+/// 履歴の一覧の問いに出す、いちばん新しい回答の判定の文と、その回答が合っていると判定されたかを返す。
+///
+/// まだ答えていない問いは、文が「まだ答えていません」で、判定は nil。
+func historyLatestJudgement(question: Question) -> (text: String, isCorrect: Bool?) {
+    guard let latestAnswer = historyAnswers(question: question).last else {
+        return (text: "まだ答えていません", isCorrect: nil)
+    }
+    return (text: historyJudgementText(questionKind: question.kind, isCorrect: latestAnswer.isCorrect), isCorrect: latestAnswer.isCorrect)
+}
+
+/// 履歴の一覧の問いに出す、答える画面を開くボタンの文言を返す。まだ答えていない問いは「答える」、答えたことのある問いは「もう一度答える」。
+func historyReanswerButtonTitle(question: Question) -> String {
+    question.answers.isEmpty ? "答える" : "もう一度答える"
+}
+
 /// 履歴の問いに答え直しを始められるかを返す。
 ///
 /// 穴埋めと記述は判定に端末内のモデルが要るため、`availability` が使えない時は始められない。

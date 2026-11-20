@@ -22,6 +22,7 @@ struct QuizQuestionView: View {
     /// 答えずにこの画面を離れるボタンを押した時に呼ぶ操作。
     let leave: () -> Void
     /// 答える前から、離れるボタンを出すか。false の時は、答えの判定か保存に失敗した後にだけ出す。
+    /// true の時も、判定している途中は出さない (離れた後に回答が保存されて、「答えずに」離れたことにならないため)。
     let canLeaveBeforeAnswering: Bool
     /// 回答を保存する、アプリの保存先の context。
     @Environment(\.modelContext) private var modelContext
@@ -134,7 +135,11 @@ struct QuizQuestionView: View {
                         .accessibilityIdentifier("quiz_answer_submit")
                     }
                     // 判定か保存が失敗し続ける時に、この画面から出られなくならないようにする。
-                    if canLeaveBeforeAnswering || answerFailureGuide != nil {
+                    if quizCanLeaveBeforeNext(
+                        canLeaveBeforeAnswering: canLeaveBeforeAnswering,
+                        isJudging: isJudging,
+                        hasAnswerFailure: answerFailureGuide != nil
+                    ) {
                         Button {
                             leave()
                         } label: {

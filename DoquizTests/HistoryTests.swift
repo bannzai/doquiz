@@ -304,6 +304,26 @@ import Testing
         #expect(historyJudgementText(questionKind: .written, isCorrect: false) == "合っていないと判定しました")
     }
 
+    /// 履歴の一覧の問いには、いちばん新しい回答の判定が出る。まだ答えていない問いには「まだ答えていません」と「答える」が出る。
+    @Test func 履歴の一覧の問いにはいちばん新しい判定が出てまだ答えていない問いにはその旨が出る() {
+        // `answeredQuestion` は、合っていない回答の後に合っている回答がある。
+        #expect(historyLatestJudgement(question: answeredQuestion).text == "合っていました")
+        #expect(historyLatestJudgement(question: answeredQuestion).isCorrect == true)
+        #expect(historyReanswerButtonTitle(question: answeredQuestion) == "もう一度答える")
+        #expect(historyLatestJudgement(question: unansweredQuestion).text == "まだ答えていません")
+        #expect(historyLatestJudgement(question: unansweredQuestion).isCorrect == nil)
+        #expect(historyReanswerButtonTitle(question: unansweredQuestion) == "答える")
+    }
+
+    /// 問いに答える画面の離れるボタンは、判定している途中はどの場合も出ない。それ以外は、答える前から離れられる画面か、判定か保存に失敗した後に出る。
+    @Test func 答える前に離れるボタンは判定している途中には出ない() {
+        #expect(quizCanLeaveBeforeNext(canLeaveBeforeAnswering: true, isJudging: false, hasAnswerFailure: false))
+        #expect(!quizCanLeaveBeforeNext(canLeaveBeforeAnswering: true, isJudging: true, hasAnswerFailure: false))
+        #expect(!quizCanLeaveBeforeNext(canLeaveBeforeAnswering: false, isJudging: false, hasAnswerFailure: false))
+        #expect(quizCanLeaveBeforeNext(canLeaveBeforeAnswering: false, isJudging: false, hasAnswerFailure: true))
+        #expect(!quizCanLeaveBeforeNext(canLeaveBeforeAnswering: false, isJudging: true, hasAnswerFailure: true))
+    }
+
     /// 端末内のモデルが使える時は、4 種類のどの問いにも答え直しを始められる。
     @Test func 端末内のモデルが使える時はどの種類の問いにも答え直せる() {
         for questionKind in QuestionKind.allCases {

@@ -29,9 +29,9 @@ final class HistoryTests: XCTestCase {
     }
 
     /// 起動直後の一覧から開発者メニューで見本のデータを入れ、クイズの切り替えを `fakeQuizBehaviorTapCount` 回押して (押した後の表示が `fakeQuizBehaviorLabel` であることを確かめる)、
-    /// 一覧に戻って見本の本「潮見町の灯台日誌」の画面から履歴を開く。
+    /// 一覧に戻って名前が `bookTitle` の見本の本の画面から履歴を開く。
     @MainActor
-    private func openSampleBookHistory(app: XCUIApplication, fakeQuizBehaviorTapCount: Int, fakeQuizBehaviorLabel: String) {
+    private func openSampleBookHistory(app: XCUIApplication, bookTitle: String, fakeQuizBehaviorTapCount: Int, fakeQuizBehaviorLabel: String) {
         // GitHub の runner の Simulator は起動直後の描画が遅いことがあるため、待ちの上限を長めに取る (ScreenshotTests と同じ値)。
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
@@ -47,8 +47,8 @@ final class HistoryTests: XCTestCase {
         assertEventually(object: app.staticTexts["developer_menu_fake_quiz_behavior_state"], predicateFormat: "label == %@", argument: fakeQuizBehaviorLabel)
         app.navigationBars.buttons.firstMatch.tap()
 
-        XCTAssertTrue(bookListRow(app: app, bookTitle: "潮見町の灯台日誌").waitForExistence(timeout: 30))
-        bookListRow(app: app, bookTitle: "潮見町の灯台日誌").tap()
+        XCTAssertTrue(bookListRow(app: app, bookTitle: bookTitle).waitForExistence(timeout: 30))
+        bookListRow(app: app, bookTitle: bookTitle).tap()
         XCTAssertTrue(app.buttons["history_entrance"].waitForExistence(timeout: 30))
         app.buttons["history_entrance"].tap()
         XCTAssertTrue(app.staticTexts["history_book_title"].waitForExistence(timeout: 30))
@@ -72,7 +72,7 @@ final class HistoryTests: XCTestCase {
     @MainActor
     func test本の画面から履歴を開いて読書の記録を開くと問いと回答と判定が出る() {
         let app = launchAppWithInMemoryStore()
-        openSampleBookHistory(app: app, fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
+        openSampleBookHistory(app: app, bookTitle: "潮見町の灯台日誌", fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
 
         XCTAssertEqual(app.staticTexts["history_book_title"].label, "潮見町の灯台日誌")
         XCTAssertEqual(app.buttons.matching(identifier: "history_reading_session").count, 2)
@@ -126,7 +126,7 @@ final class HistoryTests: XCTestCase {
     @MainActor
     func test履歴の問いに答え直すと判定と模範の答えと根拠が出て回答が1件増える() {
         let app = launchAppWithInMemoryStore()
-        openSampleBookHistory(app: app, fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
+        openSampleBookHistory(app: app, bookTitle: "潮見町の灯台日誌", fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
 
         app.buttons.matching(identifier: "history_reading_session").element(boundBy: 0).tap()
         XCTAssertTrue(app.staticTexts["reading_session_history_counts"].waitForExistence(timeout: 30))
@@ -175,7 +175,7 @@ final class HistoryTests: XCTestCase {
     @MainActor
     func test端末内のモデルが使えない時は穴埋めの答え直しを始められず四択は始められる() {
         let app = launchAppWithInMemoryStore()
-        openSampleBookHistory(app: app, fakeQuizBehaviorTapCount: 3, fakeQuizBehaviorLabel: "モデルが使えない")
+        openSampleBookHistory(app: app, bookTitle: "潮見町の灯台日誌", fakeQuizBehaviorTapCount: 3, fakeQuizBehaviorLabel: "モデルが使えない")
 
         XCTAssertFalse(app.staticTexts["history_reanswer_unavailable_guide"].exists)
         XCTAssertEqual(app.staticTexts.matching(identifier: "history_question_text").element(boundBy: 3).label, "三枝は霧笛を＿＿おきに鳴らした")
@@ -199,7 +199,7 @@ final class HistoryTests: XCTestCase {
     @MainActor
     func test読書の記録を消すと履歴から消えて本を消すと本の一覧から消える() {
         let app = launchAppWithInMemoryStore()
-        openSampleBookHistory(app: app, fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
+        openSampleBookHistory(app: app, bookTitle: "潮見町の灯台日誌", fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
 
         app.buttons.matching(identifier: "history_reading_session").element(boundBy: 0).tap()
         XCTAssertTrue(app.buttons["reading_session_delete"].waitForExistence(timeout: 30))
@@ -244,5 +244,29 @@ final class HistoryTests: XCTestCase {
         ] {
             assertEventually(object: app.staticTexts[countIdentifier], predicateFormat: "label == %@", argument: "1")
         }
+    }
+
+    /// 読書の記録が 1 件だけの本でその記録を消すと、履歴に「まだ読書の記録がありません」が出て、本は一覧に残る。
+    @MainActor
+    func test読書の記録が1件だけの本でその記録を消すと記録が無いことの案内が出る() {
+        let app = launchAppWithInMemoryStore()
+        openSampleBookHistory(app: app, bookTitle: "はじめての堆肥づくり", fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
+
+        XCTAssertEqual(app.staticTexts["history_book_title"].label, "はじめての堆肥づくり")
+        XCTAssertEqual(app.buttons.matching(identifier: "history_reading_session").count, 1)
+        XCTAssertFalse(app.staticTexts["history_empty_guide"].exists)
+        app.buttons.matching(identifier: "history_reading_session").element(boundBy: 0).tap()
+        XCTAssertTrue(app.buttons["reading_session_delete"].waitForExistence(timeout: 30))
+        app.buttons["reading_session_delete"].tap()
+        XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 30))
+        app.alerts.buttons["消す"].tap()
+
+        XCTAssertTrue(app.staticTexts["history_empty_guide"].waitForExistence(timeout: 30))
+        XCTAssertEqual(app.staticTexts["history_empty_guide"].label, "まだ読書の記録がありません")
+        XCTAssertEqual(app.buttons.matching(identifier: "history_reading_session").count, 0)
+        XCTAssertEqual(app.staticTexts.matching(identifier: "history_question_text").count, 0)
+        app.buttons["history_close"].tap()
+        XCTAssertTrue(app.staticTexts["book_title"].waitForExistence(timeout: 30))
+        XCTAssertEqual(app.staticTexts["book_reading_summary"].label, "まだ読んでいません")
     }
 }

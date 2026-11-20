@@ -185,22 +185,15 @@ struct HistoryView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("history_question_text")
             HStack {
-                if let latestAnswer = historyAnswers(question: question).last {
-                    Text(verbatim: historyJudgementText(questionKind: question.kind, isCorrect: latestAnswer.isCorrect))
-                        .font(.footnote.bold())
-                        .foregroundStyle(latestAnswer.isCorrect ? doquizCorrectColor : doquizIncorrectColor)
-                        .accessibilityIdentifier("history_question_judgement")
-                } else {
-                    Text(verbatim: "まだ答えていません")
-                        .font(.footnote.bold())
-                        .foregroundStyle(doquizSecondaryTextColor)
-                        .accessibilityIdentifier("history_question_judgement")
-                }
+                Text(verbatim: historyLatestJudgement(question: question).text)
+                    .font(.footnote.bold())
+                    .foregroundStyle(judgementColor(isCorrect: historyLatestJudgement(question: question).isCorrect))
+                    .accessibilityIdentifier("history_question_judgement")
                 Spacer()
                 Button {
                     beginReanswering(question: question)
                 } label: {
-                    Text(verbatim: question.answers.isEmpty ? "答える" : "もう一度答える")
+                    Text(verbatim: historyReanswerButtonTitle(question: question))
                         .font(.footnote.bold())
                         .foregroundStyle(doquizAccentColor)
                         .frame(minHeight: 44)
@@ -218,6 +211,18 @@ struct HistoryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizBorderColor, lineWidth: 1))
+    }
+
+    /// 判定の文の色を返す。合っている時・合っていない時・まだ答えていない時 (nil) で分ける。
+    private func judgementColor(isCorrect: Bool?) -> Color {
+        switch isCorrect {
+        case .some(true):
+            doquizCorrectColor
+        case .some(false):
+            doquizIncorrectColor
+        case .none:
+            doquizSecondaryTextColor
+        }
     }
 
     /// `question` の答え直しを始める。穴埋めと記述で端末内のモデルが使えない時は、始めずにその案内を出す。
