@@ -20,7 +20,7 @@ bannzai（以下「提供者」といいます。）は、提供者の提供す�
 - **画面の画像は保存しません。** 読書中に取り込んだ画面の画像は、端末内で文字認識（Apple の Vision フレームワーク）にかけて本文を抽出するためだけに使い、画像そのものは保存しません。保存するのは抽出した本文だけです。
 - **本文を外部の AI サービスに送信しません。** 問いの作成と、穴埋めおよび記述の回答の判定は、端末内で動作するモデル（Apple の Foundation Models フレームワーク）で行います。Apple のサーバーで処理する Private Cloud Compute は使いません。
 - **取り込みは画面全体が対象です。** 取り込みは、ユーザーが「読書を始める」を押し、iOS が表示する画面共有の選択画面で画面全体を選んだ時に始まり、「読書を終える」を押すと止まります。その間に画面に表示された文字は、読書アプリ以外のものも本文として抽出され、端末内に保存されることがあります。
-- **端末のバックアップに含まれることがあります。** 端末内に保存した情報は、ユーザーが端末の iCloud バックアップ等を有効にしている場合、ユーザー自身のバックアップに含まれることがあります。バックアップは Apple がユーザーに提供する機能であり、その取扱いは Apple のプライバシーポリシー（ https://www.apple.com/jp/legal/privacy/ ）によります。本サービスは、これらの情報を iCloud（CloudKit）で同期しません。
+- **端末のバックアップに含まれることがあります。** 端末内に保存した情報は、ユーザーが端末の iCloud バックアップ等を有効にしている場合、ユーザー自身のバックアップに含まれることがあります。バックアップは Apple がユーザーに提供する機能であり、その取扱いは Apple のプライバシーポリシー（ <https://www.apple.com/jp/legal/privacy/> ）によります。本サービスは、これらの情報を iCloud（CloudKit）で同期しません。
 - 提供者は、これらの情報のバックアップを行いません。端末の変更・初期化・アプリの削除により情報が失われた場合、提供者は復旧できません。
 
 ### 外部のサービスに送信される情報
@@ -31,17 +31,17 @@ bannzai（以下「提供者」といいます。）は、提供者の提供す�
 
 RevenueCat が受け取る情報は、RevenueCat の公式の文書（いずれも 2026年11月20日に確認）によると次のとおりです。
 
-- **購入の履歴**: 「RevenueCat collects purchase history from users」（出典: https://www.revenuecat.com/docs/platform-resources/apple-platform-resources/apple-app-privacy ）。取引の情報として「Last seen time that the end user used your app or digital product; Apple receipt file」が挙げられています（出典: https://www.revenuecat.com/privacy ）。
-- **匿名の利用者 ID**: 本サービスは利用者 ID を指定しないため、RevenueCat の SDK が無作為の ID を作成して端末内に保持します。「RevenueCat will generate a new random App User ID (prefixed with $RCAnonymousID:) for you, and will cache it on the device」「In the event that the user deletes and reinstalls the app, the cache will be cleared and a new random anonymous App User ID will be generated」（出典: https://www.revenuecat.com/docs/customers/identifying-customers ）。
-- **端末の技術的な情報**: 「technical information related to an end user’s mobile device or computer, such as device type, operating system」（出典: https://www.revenuecat.com/privacy ）。
-- **言語・地域の設定と通貨コード**: 「RevenueCat does not collect precise or coarse location data, only locale and currency code」（出典: https://www.revenuecat.com/docs/platform-resources/apple-platform-resources/apple-app-privacy ）。位置情報は収集されません。
+- **購入の履歴**: 「RevenueCat collects purchase history from users」（出典: <https://www.revenuecat.com/docs/platform-resources/apple-platform-resources/apple-app-privacy> ）。取引の情報として「Last seen time that the end user used your app or digital product; Apple receipt file」が挙げられています（出典: <https://www.revenuecat.com/privacy> ）。
+- **匿名の利用者 ID**: 本サービスは利用者 ID を指定しないため、RevenueCat の SDK が無作為の ID を作成して端末内に保持します。「RevenueCat will generate a new random App User ID (prefixed with $RCAnonymousID:) for you, and will cache it on the device」「In the event that the user deletes and reinstalls the app, the cache will be cleared and a new random anonymous App User ID will be generated」（出典: <https://www.revenuecat.com/docs/customers/identifying-customers> ）。
+- **端末の技術的な情報**: 「technical information related to an end user’s mobile device or computer, such as device type, operating system」（出典: <https://www.revenuecat.com/privacy> ）。
+- **言語・地域の設定と通貨コード**: 「RevenueCat does not collect precise or coarse location data, only locale and currency code」（出典: <https://www.revenuecat.com/docs/platform-resources/apple-platform-resources/apple-app-privacy> ）。位置情報は収集されません。
 
-RevenueCat は、これらの情報を提供者の委託を受けた処理者として取り扱い（「We are not the Data Controllers of this data and act as Data Processors」）、米国の Amazon Web Services 上に保存します（「stored securely on Amazon Web Services (“AWS”) in the USA」。出典はいずれも https://www.revenuecat.com/privacy ）。RevenueCat における情報の取扱いは、RevenueCat, Inc. のプライバシーポリシー（ https://www.revenuecat.com/privacy ）によります。
+RevenueCat は、これらの情報を提供者の委託を受けた処理者として取り扱い（「We are not the Data Controllers of this data and act as Data Processors」）、米国の Amazon Web Services 上に保存します（「stored securely on Amazon Web Services (“AWS”) in the USA」。出典はいずれも <https://www.revenuecat.com/privacy> ）。RevenueCat における情報の取扱いは、RevenueCat, Inc. のプライバシーポリシー（ <https://www.revenuecat.com/privacy> ）によります。
 
 本文・問い・回答などの「端末内にのみ保存する情報」は、RevenueCat に送信しません。広告のための識別子（IDFA）は利用せず、購入の履歴を広告や他社のアプリをまたいだ追跡に利用しません。
 
 #### Apple（決済）
-アプリ内購入の決済は Apple Inc. が処理します。提供者は、クレジットカード情報等の決済情報を取得しません。Apple における情報の取扱いは、Apple のプライバシーポリシー（ https://www.apple.com/jp/legal/privacy/ ）によります。
+アプリ内購入の決済は Apple Inc. が処理します。提供者は、クレジットカード情報等の決済情報を取得しません。Apple における情報の取扱いは、Apple のプライバシーポリシー（ <https://www.apple.com/jp/legal/privacy/> ）によります。
 
 ### 提供者が収集する情報
 本サービスはアカウント登録を必要とせず、提供者がユーザーの個人情報をサーバーで収集・保管することはありません。ユーザーがメールで問い合わせを行った場合に限り、そのメールアドレスと問い合わせ内容を取得します。
@@ -67,7 +67,7 @@ RevenueCat は、これらの情報を提供者の委託を受けた処理者と
 
 ## 保存期間
 - 端末内にのみ保存する情報: ユーザーがアプリを端末から削除するまで、端末内に保存されます。提供者は保有しません。
-- RevenueCat が受け取る購入に関する情報: 提供者が RevenueCat の利用を終えるまで RevenueCat に保存されます（RevenueCat のデータ処理に関する契約の定め「Personal Data will be retained until termination or expiry of the Agreement」。出典: https://www.revenuecat.com/dpa 、2026年11月20日に確認）。
+- RevenueCat が受け取る購入に関する情報: 提供者が RevenueCat の利用を終えるまで RevenueCat に保存されます（RevenueCat のデータ処理に関する契約の定め「Personal Data will be retained until termination or expiry of the Agreement」。出典: <https://www.revenuecat.com/dpa> 、2026年11月20日に確認）。
 - お問い合わせのメール: お問い合わせへの対応に必要な期間保存し、不要になった時点で削除します。
 
 ## 個人情報の開示・訂正・利用停止・消去
