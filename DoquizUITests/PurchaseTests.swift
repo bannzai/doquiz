@@ -36,16 +36,20 @@ final class PurchaseTests: XCTestCase {
         app.buttons["developer_menu_entrance"].tap()
         XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         let cycleButton = app.buttons["developer_menu_cycle_fake_purchase_behavior"]
-        // 切り替えのボタンはメニューのいちばん下にあり、画面に入っていない間は要素が無いため、押せる位置に来るまで上へ送る。
+        let behaviorState = app.staticTexts["developer_menu_fake_purchase_behavior_state"]
+        // 切り替えのボタンと今の動きの行はメニューのいちばん下に並んでいて、画面に入っていない間は要素が無い。
+        // ボタンのすぐ下の「今の動き」の行が画面に入るまで上へ送る (ボタンだけが画面に入った位置で止めると、押した後の動きを読めない)。
         // 上限の 6 回は、メニューの 6 つの section を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
-        for _ in 0..<6 where !(cycleButton.exists && cycleButton.isHittable) {
+        for _ in 0..<6 where !(behaviorState.exists && behaviorState.isHittable) {
             app.swipeUp()
         }
+        XCTAssertTrue(behaviorState.waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(cycleButton.waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertEqual(behaviorState.label, "実物")
         for _ in 0..<tapCount {
             cycleButton.tap()
         }
-        assertEventuallyLabel(element: app.staticTexts["developer_menu_fake_purchase_behavior_state"], expectedLabel: fakePurchaseBehaviorLabel)
+        assertEventuallyLabel(element: behaviorState, expectedLabel: fakePurchaseBehaviorLabel)
         app.navigationBars.buttons.firstMatch.tap()
         XCTAssertTrue(app.buttons["purchase_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["purchase_entrance"].tap()
