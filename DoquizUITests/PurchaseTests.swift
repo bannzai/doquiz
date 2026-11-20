@@ -18,11 +18,10 @@ final class PurchaseTests: XCTestCase {
     /// `element` の label が `expectedLabel` になるまで待つ。待ちの上限を過ぎてもならない時はテストを失敗にする。
     @MainActor
     private func assertEventuallyLabel(element: XCUIElement, expectedLabel: String) {
-        // 上限の 30 秒は、GitHub の runner の Simulator で表示の更新が遅れることがあるため (QuizTests と同じ値)。
         XCTAssertEqual(
             XCTWaiter().wait(
                 for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", expectedLabel), object: element)],
-                timeout: 30
+                timeout: sameScreenChangeWaitTimeout
             ),
             .completed,
             "\(element) の label が \(expectedLabel) にならなかった (表示: \(element.exists ? element.label : "要素が無い"))"
@@ -35,20 +34,20 @@ final class PurchaseTests: XCTestCase {
     private func openPurchaseWithFakePurchase(app: XCUIApplication, tapCount: Int, fakePurchaseBehaviorLabel: String) {
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
-        XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         let cycleButton = app.buttons["developer_menu_cycle_fake_purchase_behavior"]
         // 切り替えのボタンはメニューのいちばん下にあり、画面に入っていない間は要素が無いため、押せる位置に来るまで上へ送る。
         // 上限の 6 回は、メニューの 6 つの section を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
         for _ in 0..<6 where !(cycleButton.exists && cycleButton.isHittable) {
             app.swipeUp()
         }
-        XCTAssertTrue(cycleButton.waitForExistence(timeout: 30))
+        XCTAssertTrue(cycleButton.waitForExistence(timeout: sameScreenChangeWaitTimeout))
         for _ in 0..<tapCount {
             cycleButton.tap()
         }
         assertEventuallyLabel(element: app.staticTexts["developer_menu_fake_purchase_behavior_state"], expectedLabel: fakePurchaseBehaviorLabel)
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.buttons["purchase_entrance"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["purchase_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["purchase_entrance"].tap()
     }
 
@@ -67,7 +66,7 @@ final class PurchaseTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         openPurchaseWithFakePurchase(app: app, tapCount: 1, fakePurchaseBehaviorLabel: "商品を返す")
 
-        XCTAssertTrue(app.buttons["purchase_button"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["purchase_button"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 3)
         let annualRow = packageRow(app: app, text: "年額")
         XCTAssertTrue(annualRow.label.contains("¥5,000"))
@@ -92,14 +91,14 @@ final class PurchaseTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["purchase_renewal_note"].exists)
 
         app.buttons["purchase_button"].tap()
-        XCTAssertTrue(app.staticTexts["purchase_state_title"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.staticTexts["purchase_state_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.staticTexts["purchase_state_title"].label, "購入済みです")
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 0)
         XCTAssertFalse(app.buttons["purchase_button"].exists)
         attachScreenshot(app: app, name: "purchase-purchased")
 
         app.buttons["purchase_close_button"].tap()
-        XCTAssertTrue(app.buttons["purchase_entrance"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["purchase_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 
     /// 商品を取得できない時は、商品の行も値段も購入のボタンも出さず、取得できなかった案内と、取得し直す入口が出る。
@@ -110,7 +109,7 @@ final class PurchaseTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         openPurchaseWithFakePurchase(app: app, tapCount: 2, fakePurchaseBehaviorLabel: "商品を取得できない")
 
-        XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].label.contains("商品の情報を取得できませんでした"))
         XCTAssertTrue(app.buttons["purchase_retry_button"].exists)
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 0)
@@ -120,11 +119,11 @@ final class PurchaseTests: XCTestCase {
         attachScreenshot(app: app, name: "purchase-unavailable")
 
         app.buttons["purchase_retry_button"].tap()
-        XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 0)
 
         app.buttons["purchase_restore_button"].tap()
-        XCTAssertTrue(app.staticTexts["purchase_failure_message"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.staticTexts["purchase_failure_message"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.staticTexts["purchase_failure_message"].label, "復元できる購入が見つかりませんでした")
     }
 }
