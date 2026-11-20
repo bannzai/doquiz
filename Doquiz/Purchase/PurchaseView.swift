@@ -106,16 +106,17 @@ func purchaseOperationResult(operation: () async throws -> PurchaseState) async 
     }
 }
 
-/// 購入の結果 `result` の時に、購入のボタンの上に出す文を返す。
+/// 購入が保留になった時 (保護者の承認を待っている等) に、購入のボタンの上に出す案内。失敗の文とは別に、失敗の色を使わずに出す。
+let purchasePendingGuide = "購入の承認を待っています\n承認されると購入が完了します"
+
+/// 購入の結果 `result` の時に、購入のボタンの上に失敗として出す文を返す。
 ///
 /// 購入できた時と、利用者が購入を取り消した時 (購入していないまま) は、出す文が無いため nil を返す。
-/// 購入が保留になった時は、やり直しを促す失敗の文ではなく、承認を待っていることを返す (同じ商品をもう一度買おうとしないように)。
+/// 購入が保留になった時も nil を返す (失敗ではなく、やり直しを促さないため。保留の時は `purchasePendingGuide` を出す)。
 func purchaseFailureMessage(result: PurchaseOperationResult) -> String? {
     switch result {
-    case .stateChanged, .unchanged:
+    case .stateChanged, .unchanged, .pending:
         nil
-    case .pending:
-        "購入の承認を待っています\n承認されると購入が完了します"
     case .failed:
         "購入できませんでした\n時間をおいて もう一度お試しください"
     }
@@ -155,6 +156,9 @@ struct PurchaseView: View {
     @State private var isProcessing = false
     /// 購入か復元がうまくいかなかった時に出す文。出さない時は nil。
     @State private var failureMessage: String?
+    /// 購入が保留になって、承認を待っているか。待っている間は、保留の案内を出し、購入のボタンを押せなくする (同じ商品の購入をやり直さないように)。
+    /// 取得し直すと false に戻る。承認されて購入の状態が変わると、状態の中身に入れ替わる。
+    @State private var isPurchasePending = false
 
     var body: some View {
         NavigationStack {
@@ -282,6 +286,13 @@ struct PurchaseView: View {
     /// 選んでいる商品 `package` の購入のボタンと、自動で更新されることの説明と、復元の入口。
     private func purchaseActions(package: Package, introEligibilityStatus: IntroEligibilityStatus?) -> some View {
         VStack(alignment: .leading, spacing: 12) {
+            if isPurchasePending {
+                Text(verbatim: purchasePendingGuide)
+                    .font(.footnote)
+                    .foregroundStyle(doquizSecondaryTextColor)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("purchase_pending_guide")
+            }
             if let failureMessage {
                 Text(verbatim: failureMessage)
                     .font(.footnote)
@@ -300,7 +311,9 @@ struct PurchaseView: View {
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
             }
-            .disabled(isProcessing)
+            .disabled(isProcessing || isPurchasePending)
+            // 保留の間は長く押せないままになるため、押せないことが見て分かるように薄くする (処理の途中は短いため薄くしない)。
+            .opacity(isPurchasePending ? 0.4 : 1)
             .accessibilityIdentifier("purchase_button")
             if let renewalNote = purchaseRenewalNote(package: package, introEligibilityStatus: introEligibilityStatus) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -389,6 +402,7 @@ struct PurchaseView: View {
     private func load() async {
         content = .loading
         failureMessage = nil
+        isPurchasePending = false
         content = await loadPurchaseContent(purchaseService: purchaseService)
         if case .packages(let packages, _) = content {
             selectedPackage = packages.first
@@ -406,6 +420,9 @@ struct PurchaseView: View {
         defer { isProcessing = false }
         let result = await purchaseOperationResult { try await purchaseService.purchase(package: package) }
         failureMessage = purchaseFailureMessage(result: result)
+        if result == .pending {
+            isPurchasePending = true
+        }
         showStateContent(result: result)
     }
 

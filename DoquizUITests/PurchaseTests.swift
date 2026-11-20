@@ -122,9 +122,10 @@ final class PurchaseTests: XCTestCase {
 
     /// 利用者が購入を取り消した時は、失敗の文を出さず、3 つの商品が出たままである。
     /// 購入に失敗した時と復元に失敗した時は、画面を閉じずに、購入のボタンの上にそれぞれの文を出す。
-    /// 購入に失敗した時の画面を `purchase-failed` の名前で添付する。
+    /// 購入が保留になった時 (保護者の承認を待っている場面) は、失敗の文ではなく保留の案内を出し、購入のボタンを押せなくする (復元は押せる)。
+    /// 購入に失敗した時の画面を `purchase-failed`、保留になった時の画面を `purchase-pending` の名前で添付する。
     @MainActor
-    func test購入を取り消した時は何も出さず失敗した時は失敗の文を出す() {
+    func test購入を取り消した時は何も出さず失敗した時は失敗の文を出し保留の時は案内を出す() {
         let app = launchAppWithInMemoryStore()
         openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 5, fakePurchaseBehaviorLabel: "購入を取り消す")
 
@@ -160,6 +161,20 @@ final class PurchaseTests: XCTestCase {
             .completed
         )
         XCTAssertFalse(app.staticTexts["purchase_state_title"].exists)
+        app.buttons["purchase_close_button"].tap()
+
+        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "購入と復元に失敗する", tapCount: 1, fakePurchaseBehaviorLabel: "購入が保留になる")
+        XCTAssertTrue(app.buttons["purchase_button"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertTrue(app.buttons["purchase_button"].isEnabled)
+        XCTAssertFalse(app.staticTexts["purchase_pending_guide"].exists)
+        app.buttons["purchase_button"].tap()
+        XCTAssertTrue(app.staticTexts["purchase_pending_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertTrue(app.staticTexts["purchase_pending_guide"].label.hasPrefix("購入の承認を待っています"))
+        XCTAssertFalse(app.staticTexts["purchase_failure_message"].exists)
+        XCTAssertFalse(app.buttons["purchase_button"].isEnabled)
+        XCTAssertTrue(app.buttons["purchase_restore_button"].isEnabled)
+        XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 3)
+        attachScreenshot(app: app, name: "purchase-pending")
     }
 
     /// 商品を取得できなかった後に「もう一度取得する」を押すと、取得し直す。取得し直している間に購入済みだと知らされた時
@@ -167,7 +182,7 @@ final class PurchaseTests: XCTestCase {
     @MainActor
     func test取得し直している間に購入済みと知らされると購入済みの表示になる() {
         let app = launchAppWithInMemoryStore()
-        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 8, fakePurchaseBehaviorLabel: "取得し直すと購入済みに変わる")
+        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 9, fakePurchaseBehaviorLabel: "取得し直すと購入済みに変わる")
 
         XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertFalse(app.staticTexts["purchase_state_title"].exists)

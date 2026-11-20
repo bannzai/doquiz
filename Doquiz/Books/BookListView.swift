@@ -13,12 +13,10 @@ struct BookListView: View {
     @Environment(\.quizUnavailableGuide) private var quizUnavailableGuide
     /// 本を登録する画面を出しているか。
     @State private var isRegisteringBook = false
-    /// 購入の画面を出しているか。
-    @State private var isShowingPurchase = false
-    /// 購入の画面が使う購入の境界。入口を押すたびに作り直し、画面を出している間は同じものを使う
+    /// 出している購入の画面。出していない間は nil。
+    /// 入口を押すたびに購入の境界を 1 回だけ作って持ち、画面を出している間は同じものを使う
     /// (出している間に一覧が描き直されても、偽の購入が覚えている状態と、状態の変化を流している stream を作り直さないため)。
-    /// 入口を 1 度も押していない間は nil。
-    @State private var purchaseService: (any PurchaseService)?
+    @State private var presentedPurchase: PresentedPurchase?
     #if DEBUG
         /// 開発者メニューで、購入の画面を偽の購入に切り替えている時の動き。値が無い時は実物で購入する。
         @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
@@ -72,8 +70,7 @@ struct BookListView: View {
             .padding(.horizontal, 20)
             if showsPurchaseEntrance(books: books) {
                 Button {
-                    purchaseService = makePurchaseService()
-                    isShowingPurchase = true
+                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: makePurchaseService())
                 } label: {
                     Text(verbatim: "購入のプランを見る")
                         .font(.subheadline)
@@ -96,10 +93,11 @@ struct BookListView: View {
         .sheet(isPresented: $isRegisteringBook) {
             BookRegistrationView()
         }
-        .sheet(isPresented: $isShowingPurchase) {
-            if let purchaseService {
-                PurchaseView(purchaseService: purchaseService)
-            }
+        // 出す購入の画面を item で渡す。sheet の中身が、入口を押した時に作った購入の境界を必ず受け取るようにするため
+        // (`isPresented` と別の `@State` に境界を持つ形は、初めて出す時に sheet の中身が境界を読めず、購入の画面が出なかった。
+        // CI の run 44721692598 で、購入の UI テスト 4 件が入口を押した直後に落ちた)。
+        .sheet(item: $presentedPurchase) { presentedPurchase in
+            PurchaseView(purchaseService: presentedPurchase.purchaseService)
         }
     }
 

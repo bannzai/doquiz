@@ -21,6 +21,8 @@
         case cancelsPurchase
         /// 3 つの商品を返すが、購入と復元に失敗する。
         case failsToPurchaseAndRestore
+        /// 3 つの商品を返すが、購入が保留になる (保護者の承認を待っている場面)。
+        case purchaseBecomesPending
         /// 購入していない利用者として 3 つの商品を返した直後に、購入済みに変わる (端末に持っていた古い状態の後に、新しい状態が届く場面)。
         case becomesPurchasedAfterGettingPackages
         /// 初めの 1 回だけ商品の取得に失敗し、取得し直すと、3 つの商品を返した直後に購入済みに変わる。
@@ -35,6 +37,8 @@
         case isCancelled
         /// 購入に失敗する。
         case fails
+        /// 購入が保留になる (`PurchasePendingError` を投げる)。
+        case isPending
     }
 
     /// 開発者メニューに出す、今の購入の動きの名前を返す。偽の購入に切り替えていない時 (nil) は実物の名前を返す。
@@ -54,6 +58,8 @@
             "購入を取り消す"
         case .failsToPurchaseAndRestore:
             "購入と復元に失敗する"
+        case .purchaseBecomesPending:
+            "購入が保留になる"
         case .becomesPurchasedAfterGettingPackages:
             "開いた後に購入済みに変わる"
         case .failsToGetPackagesOnceThenBecomesPurchased:
@@ -131,6 +137,16 @@
                 purchaseResult: .fails,
                 purchaseStateAfterGettingPackages: nil,
                 restoredPurchaseState: nil
+            )
+        case .purchaseBecomesPending:
+            DeveloperMenuFakePurchaseService(
+                packages: makeDeveloperMenuFakePurchasePackages(),
+                packagesFailureCount: 0,
+                introEligibilityStatus: .eligible,
+                purchaseState: .notPurchased,
+                purchaseResult: .isPending,
+                purchaseStateAfterGettingPackages: nil,
+                restoredPurchaseState: .notPurchased
             )
         case .becomesPurchasedAfterGettingPackages:
             DeveloperMenuFakePurchaseService(
@@ -229,7 +245,7 @@
         }
 
         /// 購入できる時は、購入の状態を、`package` のトライアルを使える時はトライアル中に、使えない時は購入済みに変えて返す。
-        /// 利用者が取り消す時は、状態を変えずに今の状態を返す。購入に失敗する時は、状態を変えずに `DeveloperMenuFakePurchaseFailure` を投げる。
+        /// 利用者が取り消す時は、状態を変えずに今の状態を返す。購入に失敗する時は、状態を変えずに `DeveloperMenuFakePurchaseFailure` を投げる。保留になる時は、状態を変えずに `PurchasePendingError` を投げる。
         /// App Store の購入の確認は出さない。
         func purchase(package: Package) async throws -> PurchaseState {
             switch purchaseResult {
@@ -241,6 +257,8 @@
                 break
             case .fails:
                 throw DeveloperMenuFakePurchaseFailure()
+            case .isPending:
+                throw PurchasePendingError()
             }
             return purchaseState
         }

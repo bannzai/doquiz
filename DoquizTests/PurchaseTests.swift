@@ -299,15 +299,25 @@ struct PurchaseTests {
         #expect(try await purchaseService.state() == .notPurchased)
     }
 
-    /// 購入が保留になった時 (保護者の承認待ち等) は、結果が「保留」になり、失敗の文ではなく承認を待っていることを出す。
-    /// 復元の文の関数は、保留の結果には文を返さない。ほかの error は「失敗した」のままである。
-    @Test func 購入が保留になった時は保留の結果になり承認を待っている文を出す() async {
-        let pendingResult = await purchaseOperationResult { throw PurchasePendingError() }
+    /// 購入が保留になった時 (保護者の承認待ち等) は、結果が「保留」になり、やり直しを促す失敗の文を出さない (保留の案内は別に出す)。
+    /// 状態は購入していないままである。ほかの error は「失敗した」のままである。
+    @Test func 購入が保留になった時は保留の結果になり失敗の文を出さない() async throws {
+        let purchaseService = makeDeveloperMenuFakePurchaseService(behavior: .purchaseBecomesPending)
+
+        let pendingResult = await purchaseOperationResult {
+            try await purchaseService.purchase(package: makeDeveloperMenuFakePurchasePackages()[0])
+        }
 
         #expect(pendingResult == .pending)
-        #expect(purchaseFailureMessage(result: pendingResult) == "購入の承認を待っています\n承認されると購入が完了します")
+        #expect(purchaseFailureMessage(result: pendingResult) == nil)
         #expect(restoreFailureMessage(result: pendingResult) == nil)
+        #expect(try await purchaseService.state() == .notPurchased)
         #expect(await purchaseOperationResult { throw DeveloperMenuFakePurchaseFailure() } == .failed)
+    }
+
+    /// 保留の案内は、承認を待っていることを書き、失敗ややり直しを書かない。
+    @Test func 保留の案内は承認を待っていることを書く() {
+        #expect(purchasePendingGuide == "購入の承認を待っています\n承認されると購入が完了します")
     }
 
     /// 復元できた時は、結果が復元の後の状態になり、出す文は無い。
@@ -604,7 +614,7 @@ struct PurchaseTests {
 
     // MARK: - 開発者メニューの切り替え
 
-    /// 開発者メニューの購入の動きは、実物 → 商品を返す → 商品を取得できない → トライアル中 → 購入済み → 購入を取り消す → 購入と復元に失敗する → 開いた後に購入済みに変わる → 取得し直すと購入済みに変わる → 実物、と一巡する。
+    /// 開発者メニューの購入の動きは、実物 → 商品を返す → 商品を取得できない → トライアル中 → 購入済み → 購入を取り消す → 購入と復元に失敗する → 購入が保留になる → 開いた後に購入済みに変わる → 取得し直すと購入済みに変わる → 実物、と一巡する。
     @Test func 開発者メニューの購入の動きは一巡する() {
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: nil) == .returnsPackages)
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .returnsPackages) == .failsToGetPackages)
@@ -612,7 +622,8 @@ struct PurchaseTests {
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .inTrial) == .purchased)
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .purchased) == .cancelsPurchase)
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .cancelsPurchase) == .failsToPurchaseAndRestore)
-        #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .failsToPurchaseAndRestore) == .becomesPurchasedAfterGettingPackages)
+        #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .failsToPurchaseAndRestore) == .purchaseBecomesPending)
+        #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .purchaseBecomesPending) == .becomesPurchasedAfterGettingPackages)
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .becomesPurchasedAfterGettingPackages) == .failsToGetPackagesOnceThenBecomesPurchased)
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .failsToGetPackagesOnceThenBecomesPurchased) == nil)
     }
@@ -626,6 +637,7 @@ struct PurchaseTests {
         #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .purchased) == "購入済み")
         #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .cancelsPurchase) == "購入を取り消す")
         #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .failsToPurchaseAndRestore) == "購入と復元に失敗する")
+        #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .purchaseBecomesPending) == "購入が保留になる")
         #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .becomesPurchasedAfterGettingPackages) == "開いた後に購入済みに変わる")
         #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .failsToGetPackagesOnceThenBecomesPurchased) == "取得し直すと購入済みに変わる")
     }
