@@ -86,6 +86,8 @@ struct BookView: View {
                             .foregroundStyle(doquizAccentColor)
                             .frame(minHeight: 44)
                     }
+                    // 読書を始めている途中に履歴で本を消すと、消した本の読書が始まるため、その間は押せなくする。
+                    .disabled(isStartingReading)
                     .accessibilityIdentifier("history_entrance")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
