@@ -107,8 +107,9 @@ final class QuizTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         endReadingWithFakeQuiz(app: app, fakeQuizBehaviorTapCount: 1, fakeQuizBehaviorLabel: "問いを返す")
 
+        // 問いを作っている間の表示は偽のクイズで 3 秒しか出ず、見つけた後の確かめが遅れると問いに進んでいることがあるため、
+        // 問いの番号の表示が無いことはここで確かめない (2 つの表示は `QuizView` の同じ if 文の別の分岐で、同時には出ない)。
         XCTAssertTrue(app.staticTexts["quiz_preparing"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        XCTAssertFalse(app.staticTexts["quiz_position"].exists)
         attachScreenshot(app: app, name: "quiz-preparing")
 
         XCTAssertTrue(app.staticTexts["quiz_position"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
