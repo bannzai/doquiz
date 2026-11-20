@@ -28,6 +28,7 @@ jobs:
         with:
           persist-credentials: false
       - run: bash scripts/test/test-select-physical-device.sh
+      - run: bash scripts/test/test-write-secrets-xcconfig.sh
 
   # public リポジトリのため macOS runner は無料。
   # iOS 27 の SDK が要るため、Xcode 27 が入っている xcode-27 の image を使う (macos-26 の image は Xcode 26 まで)。
@@ -40,6 +41,13 @@ jobs:
         with:
           persist-credentials: false
       - run: xcodebuild -version
+      # RevenueCat の公開 SDK キーを、Doquiz.xcconfig が読み込む Secrets.xcconfig に書き出す。
+      # secret が無い時 (登録前・fork からの PR) は空の値になり、アプリは RevenueCat の SDK を初期化しない
+      # (テストは偽の購入で動かすため、キーが無くても通る)。
+      - name: RevenueCat の公開 SDK キーを書き出す
+        env:
+          REVENUECAT_PUBLIC_API_KEY_IOS: ${{ secrets.REVENUECAT_PUBLIC_API_KEY_IOS }}
+        run: bash scripts/write-secrets-xcconfig.sh
       - name: Build
         run: |
           set -o pipefail
@@ -54,6 +62,14 @@ jobs:
           xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
             -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO build
+      # (一時) xcodebuild が解決した package の版と revision を取り出す。Package.resolved をコミットしたらこの step を消す。
+      - name: Package.resolved を残す
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: package-resolved
+          path: Doquiz.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          if-no-files-found: ignore
       - name: Test
         run: |
           set -o pipefail

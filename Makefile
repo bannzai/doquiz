@@ -17,10 +17,15 @@ DEVELOPMENT_TEAM ?= $(FASTLANE_TEAM_ID)
 # build-ios と test は同じ DerivedData を使うため、-j 指定でも並列に起動させない。
 .NOTPARALLEL:
 
-.PHONY: build-ios ios device install-device test clean
+.PHONY: secrets-xcconfig build-ios ios device install-device test clean
+
+# 環境変数 REVENUECAT_PUBLIC_API_KEY_IOS (.envrc が export する) を、Doquiz.xcconfig が読み込む git 管理外の Secrets.xcconfig に書き出す。
+# 環境変数が空の時は空の値を書き、アプリは RevenueCat の SDK を初期化しない。
+secrets-xcconfig:
+	bash scripts/write-secrets-xcconfig.sh
 
 # Simulator 向けビルド。generic destination のため simulator を起動せずにビルドできる。
-build-ios:
+build-ios: secrets-xcconfig
 	xcodebuild -project $(XCODEPROJ) -scheme $(SCHEME) -configuration $(CONFIGURATION) -derivedDataPath $(DERIVED_DATA) \
 		-destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 
@@ -33,7 +38,7 @@ ios: build-ios
 	xcrun simctl launch "$$simulator_udid" $(BUNDLE_ID)
 
 # 実機向けビルド。provisioning profile の自動生成とデバイス登録を CLI から行う。
-device:
+device: secrets-xcconfig
 	@[ -n "$(DEVELOPMENT_TEAM)" ] || { echo "Error: 開発チームが分かりません (FASTLANE_TEAM_ID を export するか DEVELOPMENT_TEAM=<チーム ID> を指定してください)" >&2; exit 1; }
 	xcodebuild -project $(XCODEPROJ) -scheme $(SCHEME) -configuration $(CONFIGURATION) -derivedDataPath $(DERIVED_DATA) \
 		-destination 'generic/platform=iOS' -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
@@ -53,7 +58,7 @@ install-device: device
 	xcrun devicectl device install app --device "$$device" "$(DEVICE_APP)"; \
 	xcrun devicectl device process launch --device "$$device" $(BUNDLE_ID)
 
-test:
+test: secrets-xcconfig
 	@set -e; \
 	simulator_udid="$(SIMULATOR_UDID)"; \
 	[ -n "$$simulator_udid" ] || { echo "Error: sim-boot で Simulator を解決できません (SIMULATOR_UDID=<UDID> を指定してください)" >&2; exit 1; }; \
