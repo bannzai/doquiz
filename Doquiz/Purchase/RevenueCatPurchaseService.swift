@@ -99,6 +99,9 @@ struct RevenueCatPurchaseService: PurchaseService {
         guard Purchases.isConfigured else {
             throw RevenueCatNotConfiguredError()
         }
+        // 取り方は SDK の既定 (端末に持っている状態があれば古くても返す `CacheFetchPolicy.cachedOrFetched`) のままにする。
+        // 毎回取り直す `.fetchCurrent` は、取り直しの結果だけを返し (SDK 5.103.2 の `CustomerInfoManager`)、
+        // 通信できない時に、購入済みの利用者の状態を返せなくなるため。
         return purchaseState(
             premiumEntitlementInfo: try await Purchases.shared.customerInfo().entitlements[revenueCatPremiumEntitlementIdentifier]
         )

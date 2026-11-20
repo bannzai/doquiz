@@ -85,7 +85,8 @@ struct PurchaseView: View {
                 case .unavailable:
                     unavailableContent
                 case .inTrial:
-                    stateContent(title: "トライアル中です", guide: "無料の期間が終わると 選んだプランで自動で更新されます")
+                    // 更新されるとは書かない。トライアルの途中で更新を止めた利用者も、期間が終わるまではトライアル中のままのため。
+                    stateContent(title: "トライアル中です", guide: "いまは無料で試している期間です")
                 case .purchased:
                     stateContent(title: "購入済みです", guide: "ご購入ありがとうございます")
                 }
