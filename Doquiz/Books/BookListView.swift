@@ -15,6 +15,10 @@ struct BookListView: View {
     @State private var isRegisteringBook = false
     /// 購入の画面を出しているか。
     @State private var isShowingPurchase = false
+    /// 購入の画面が使う購入の境界。入口を押すたびに作り直し、画面を出している間は同じものを使う
+    /// (出している間に一覧が描き直されても、偽の購入が覚えている状態と、状態の変化を流している stream を作り直さないため)。
+    /// 入口を 1 度も押していない間は nil。
+    @State private var purchaseService: (any PurchaseService)?
     #if DEBUG
         /// 開発者メニューで、購入の画面を偽の購入に切り替えている時の動き。値が無い時は実物で購入する。
         @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
@@ -68,6 +72,7 @@ struct BookListView: View {
             .padding(.horizontal, 20)
             if showsPurchaseEntrance(books: books) {
                 Button {
+                    purchaseService = makePurchaseService()
                     isShowingPurchase = true
                 } label: {
                     Text(verbatim: "購入のプランを見る")
@@ -92,7 +97,9 @@ struct BookListView: View {
             BookRegistrationView()
         }
         .sheet(isPresented: $isShowingPurchase) {
-            PurchaseView(purchaseService: makePurchaseService())
+            if let purchaseService {
+                PurchaseView(purchaseService: purchaseService)
+            }
         }
     }
 

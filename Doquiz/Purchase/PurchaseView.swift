@@ -86,17 +86,21 @@ enum PurchaseOperationResult: Equatable {
     case stateChanged(PurchaseState)
     /// 購入していないままだった (利用者が購入を取り消した・復元できる購入が無かった)。
     case unchanged
+    /// 購入が保留になった (保護者の承認を待っている等)。失敗ではなく、承認されると購入が完了する。
+    case pending
     /// 操作に失敗した。
     case failed
 }
 
 /// 購入か復元の操作 `operation` (操作の後の購入の状態を返す) を実行して、結果を返す。
 ///
-/// `operation` が error を投げた時は、error を投げずに `.failed` を返す。
+/// `operation` が `PurchasePendingError` を投げた時は `.pending` を、ほかの error を投げた時は `.failed` を返す (error は外へ投げない)。
 func purchaseOperationResult(operation: () async throws -> PurchaseState) async -> PurchaseOperationResult {
     do {
         let purchaseState = try await operation()
         return purchaseState == .notPurchased ? .unchanged : .stateChanged(purchaseState)
+    } catch is PurchasePendingError {
+        return .pending
     } catch {
         return .failed
     }
@@ -105,19 +109,23 @@ func purchaseOperationResult(operation: () async throws -> PurchaseState) async 
 /// 購入の結果 `result` の時に、購入のボタンの上に出す文を返す。
 ///
 /// 購入できた時と、利用者が購入を取り消した時 (購入していないまま) は、出す文が無いため nil を返す。
+/// 購入が保留になった時は、やり直しを促す失敗の文ではなく、承認を待っていることを返す (同じ商品をもう一度買おうとしないように)。
 func purchaseFailureMessage(result: PurchaseOperationResult) -> String? {
     switch result {
     case .stateChanged, .unchanged:
         nil
+    case .pending:
+        "購入の承認を待っています\n承認されると購入が完了します"
     case .failed:
         "購入できませんでした\n時間をおいて もう一度お試しください"
     }
 }
 
 /// 復元の結果 `result` の時に、購入のボタンの上に出す文を返す。復元できた時は、出す文が無いため nil を返す。
+/// 保留は購入だけで起きる結果で、復元では起きないため、出す文は無い。
 func restoreFailureMessage(result: PurchaseOperationResult) -> String? {
     switch result {
-    case .stateChanged:
+    case .stateChanged, .pending:
         nil
     case .unchanged:
         "復元できる購入が見つかりませんでした"

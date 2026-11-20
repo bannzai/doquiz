@@ -299,6 +299,17 @@ struct PurchaseTests {
         #expect(try await purchaseService.state() == .notPurchased)
     }
 
+    /// 購入が保留になった時 (保護者の承認待ち等) は、結果が「保留」になり、失敗の文ではなく承認を待っていることを出す。
+    /// 復元の文の関数は、保留の結果には文を返さない。ほかの error は「失敗した」のままである。
+    @Test func 購入が保留になった時は保留の結果になり承認を待っている文を出す() async {
+        let pendingResult = await purchaseOperationResult { throw PurchasePendingError() }
+
+        #expect(pendingResult == .pending)
+        #expect(purchaseFailureMessage(result: pendingResult) == "購入の承認を待っています\n承認されると購入が完了します")
+        #expect(restoreFailureMessage(result: pendingResult) == nil)
+        #expect(await purchaseOperationResult { throw DeveloperMenuFakePurchaseFailure() } == .failed)
+    }
+
     /// 復元できた時は、結果が復元の後の状態になり、出す文は無い。
     @Test func 復元できた時は状態が変わった結果になり文を出さない() async {
         let result = await purchaseOperationResult { try await makeDeveloperMenuFakePurchaseService(behavior: .returnsPackages).restore() }

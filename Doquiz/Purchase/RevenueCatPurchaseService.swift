@@ -67,7 +67,7 @@ struct RevenueCatPurchaseService: PurchaseService {
         return await Purchases.shared.checkTrialOrIntroDiscountEligibility(packages: packages).mapValues(\.status)
     }
 
-    /// SDK を初期化していない時は `RevenueCatNotConfiguredError` を投げる。
+    /// SDK を初期化していない時は `RevenueCatNotConfiguredError` を、購入が保留になった時は `PurchasePendingError` を投げる。
     func purchase(package: Package) async throws -> PurchaseState {
         guard Purchases.isConfigured else {
             throw RevenueCatNotConfiguredError()
@@ -81,6 +81,10 @@ struct RevenueCatPurchaseService: PurchaseService {
         } catch ErrorCode.purchaseCancelledError {
             // 取り消した時に customerInfo を取得できないと、SDK はこの error を投げる。
             return try await state()
+        } catch ErrorCode.paymentPendingError {
+            // App Store が購入を保留にした時 (保護者の承認待ち等)、SDK はこの error を投げる
+            // (SDK 5.103.2 の `StoreKit2TransactionListener` が `.pending` の結果で `ErrorUtils.paymentDeferredError()` を投げる)。
+            throw PurchasePendingError()
         }
     }
 

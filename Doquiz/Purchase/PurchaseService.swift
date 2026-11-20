@@ -1,5 +1,10 @@
 import RevenueCat
 
+/// 購入が保留になった (保護者の承認を待っている等で、まだ購入が完了していない) ことを表す error。
+///
+/// 失敗ではなく、承認されると購入が完了して、購入の状態の変化 (`PurchaseService.stateUpdates()`) に流れる。
+struct PurchasePendingError: Error {}
+
 /// 購入 (商品の取得・購入・復元・購入の状態の取得) の境界。
 ///
 /// 実物は RevenueCat の SDK を呼ぶ `RevenueCatPurchaseService`。iOS Simulator と CI では App Store の商品を取得できないため、
@@ -18,7 +23,8 @@ protocol PurchaseService {
 
     /// `package` を購入し、購入の後の状態を返す。
     ///
-    /// 利用者が購入を取り消した時は error を投げず、変わっていない今の状態を返す。購入に失敗した時は error を投げる。
+    /// 利用者が購入を取り消した時は error を投げず、変わっていない今の状態を返す。
+    /// 購入が保留になった時は `PurchasePendingError` を、購入に失敗した時はほかの error を投げる。
     /// 冪等ではない: 呼ぶたびに購入の確認を利用者に出す。
     func purchase(package: Package) async throws -> PurchaseState
 
