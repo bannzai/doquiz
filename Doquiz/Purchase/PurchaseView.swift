@@ -399,12 +399,22 @@ struct PurchaseView: View {
     }
 
     /// 購入の状態と商品を取得し直して、画面の中身を入れ替える。商品を出す時は、並びの最初の商品を選んだ状態にする。
+    ///
+    /// 呼んだ task が取り消されている時 (「もう一度取得する」で始め直された・画面が閉じられた) は、画面を変えない。
+    /// 取り消されたことは、取得の前と後の両方で確かめる (始め直した側の取得の結果を、遅れて動いた古い取得で上書きしないため)。
     private func load() async {
+        guard !Task.isCancelled else {
+            return
+        }
         content = .loading
         failureMessage = nil
         isPurchasePending = false
-        content = await loadPurchaseContent(purchaseService: purchaseService)
-        if case .packages(let packages, _) = content {
+        let loadedContent = await loadPurchaseContent(purchaseService: purchaseService)
+        guard !Task.isCancelled else {
+            return
+        }
+        content = loadedContent
+        if case .packages(let packages, _) = loadedContent {
             selectedPackage = packages.first
         } else {
             selectedPackage = nil
