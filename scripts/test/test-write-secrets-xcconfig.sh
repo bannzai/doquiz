@@ -67,5 +67,24 @@ run_script "appl_Fake_Key_9" "$work_directory/underscore.xcconfig"
 assert_equal "_ と数字を含む値は exit 0" "$?" "0"
 assert_equal "_ と数字を含む値は、そのまま書き出す" "$(cat "$work_directory/underscore.xcconfig")" "REVENUECAT_PUBLIC_API_KEY_IOS = appl_Fake_Key_9"
 
+run_script 'appl_$(OTHER_SETTING)' "$work_directory/expansion.xcconfig"
+assert_equal '$(…) を含む値 (xcconfig がほかの設定の値に置き換える) は exit 1' "$?" "1"
+assert_equal '$(…) を含む値では出力先を作らない' "$([ -e "$work_directory/expansion.xcconfig" ] && echo exists || echo missing)" "missing"
+
+run_script "appl_Fake=Key" "$work_directory/equal.xcconfig"
+assert_equal "= を含む値は exit 1" "$?" "1"
+
+run_script 'appl_"Fake"' "$work_directory/quote.xcconfig"
+assert_equal '" を含む値は exit 1' "$?" "1"
+
+# 出力先を省いた時は、スクリプトの 1 つ上のディレクトリの Secrets.xcconfig に書く。
+# リポジトリの直下の Secrets.xcconfig に触れないよう、スクリプトを一時ディレクトリの scripts/ に写して実行する。
+mkdir -p "$work_directory/repository/scripts"
+cp "$script" "$work_directory/repository/scripts/write-secrets-xcconfig.sh"
+REVENUECAT_PUBLIC_API_KEY_IOS="appl_DefaultPath" bash "$work_directory/repository/scripts/write-secrets-xcconfig.sh" > "$work_directory/default-path.log" 2>&1
+assert_equal "出力先を省いた時は exit 0" "$?" "0"
+assert_equal "出力先を省いた時は、スクリプトの 1 つ上のディレクトリの Secrets.xcconfig に書く" "$(cat "$work_directory/repository/Secrets.xcconfig")" "REVENUECAT_PUBLIC_API_KEY_IOS = appl_DefaultPath"
+assert_equal "出力先を省いた時は、scripts/ の中に書かない" "$([ -e "$work_directory/repository/scripts/Secrets.xcconfig" ] && echo exists || echo missing)" "missing"
+
 echo "passed: $pass, failed: $fail"
 [ "$fail" -eq 0 ]

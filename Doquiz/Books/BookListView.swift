@@ -1,7 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// 読む本を選ぶ画面。登録済みの本の一覧と、新しい本を登録する入口と、購入の画面の入口を出す。アプリを開いた直後に出る。
+/// 読む本を選ぶ画面。登録済みの本の一覧と、新しい本を登録する入口を出す。アプリを開いた直後に出る。
+/// 利用者が読書を始めた後は、購入の画面の入口も出す。
 /// 端末内のモデルが使えない間は、クイズを出せないことと理由の案内を一覧の上に出す。
 ///
 /// 本を選んだ時に本の画面へ進むため、`NavigationStack` の中に置く。
@@ -65,17 +66,23 @@ struct BookListView: View {
             }
             .accessibilityIdentifier("book_registration_entrance")
             .padding(.horizontal, 20)
-            Button {
-                isShowingPurchase = true
-            } label: {
-                Text(verbatim: "購入のプランを見る")
-                    .font(.subheadline)
-                    .foregroundStyle(doquizAccentColor)
-                    .frame(maxWidth: .infinity, minHeight: 44)
+            if showsPurchaseEntrance(books: books) {
+                Button {
+                    isShowingPurchase = true
+                } label: {
+                    Text(verbatim: "購入のプランを見る")
+                        .font(.subheadline)
+                        .foregroundStyle(doquizAccentColor)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .accessibilityIdentifier("purchase_entrance")
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+            } else {
+                // 入口を出さない間も、登録のボタンの下を、入口を足す前と同じだけ空ける。
+                Spacer()
+                    .frame(height: 24)
             }
-            .accessibilityIdentifier("purchase_entrance")
-            .padding(.horizontal, 20)
-            .padding(.bottom, 12)
         }
         .background(doquizBackgroundColor)
         .navigationDestination(for: Book.self) { book in

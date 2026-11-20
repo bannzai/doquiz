@@ -53,6 +53,52 @@ func loadPurchaseContent(purchaseService: any PurchaseService) async -> Purchase
     }
 }
 
+/// 購入か復元の操作の結果。
+enum PurchaseOperationResult: Equatable {
+    /// トライアル中か購入済みになった。
+    case stateChanged(PurchaseState)
+    /// 購入していないままだった (利用者が購入を取り消した・復元できる購入が無かった)。
+    case unchanged
+    /// 操作に失敗した。
+    case failed
+}
+
+/// 購入か復元の操作 `operation` (操作の後の購入の状態を返す) を実行して、結果を返す。
+///
+/// `operation` が error を投げた時は、error を投げずに `.failed` を返す。
+func purchaseOperationResult(operation: () async throws -> PurchaseState) async -> PurchaseOperationResult {
+    do {
+        let purchaseState = try await operation()
+        return purchaseState == .notPurchased ? .unchanged : .stateChanged(purchaseState)
+    } catch {
+        return .failed
+    }
+}
+
+/// 購入の結果 `result` の時に、購入のボタンの上に出す文を返す。
+///
+/// 購入できた時と、利用者が購入を取り消した時 (購入していないまま) は、出す文が無いため nil を返す。
+func purchaseFailureMessage(result: PurchaseOperationResult) -> String? {
+    switch result {
+    case .stateChanged, .unchanged:
+        nil
+    case .failed:
+        "購入できませんでした\n時間をおいて もう一度お試しください"
+    }
+}
+
+/// 復元の結果 `result` の時に、購入のボタンの上に出す文を返す。復元できた時は、出す文が無いため nil を返す。
+func restoreFailureMessage(result: PurchaseOperationResult) -> String? {
+    switch result {
+    case .stateChanged:
+        nil
+    case .unchanged:
+        "復元できる購入が見つかりませんでした"
+    case .failed:
+        "復元できませんでした\n時間をおいて もう一度お試しください"
+    }
+}
+
 /// 購入の画面。月額・年額・買い切りの商品を選んで購入する入口と、購入を復元する入口を出す。
 ///
 /// 値段・更新の間隔・トライアルの長さは、`purchaseService` から取得した商品の値だけを出す。取得できない時は値段を出さず、取得し直す導線を出す。
@@ -308,15 +354,9 @@ struct PurchaseView: View {
         isProcessing = true
         failureMessage = nil
         defer { isProcessing = false }
-        do {
-            let purchaseState = try await purchaseService.purchase(package: package)
-            guard purchaseState != .notPurchased else {
-                return
-            }
-            content = purchaseContent(purchaseState: purchaseState, packages: [], introEligibilityStatuses: [:])
-        } catch {
-            failureMessage = "購入できませんでした\n時間をおいて もう一度お試しください"
-        }
+        let result = await purchaseOperationResult { try await purchaseService.purchase(package: package) }
+        failureMessage = purchaseFailureMessage(result: result)
+        showStateContent(result: result)
     }
 
     /// 購入を復元し、復元できた時は画面の中身を復元の後の状態に入れ替える。
@@ -326,16 +366,17 @@ struct PurchaseView: View {
         isProcessing = true
         failureMessage = nil
         defer { isProcessing = false }
-        do {
-            let purchaseState = try await purchaseService.restore()
-            guard purchaseState != .notPurchased else {
-                failureMessage = "復元できる購入が見つかりませんでした"
-                return
-            }
-            content = purchaseContent(purchaseState: purchaseState, packages: [], introEligibilityStatuses: [:])
-        } catch {
-            failureMessage = "復元できませんでした\n時間をおいて もう一度お試しください"
+        let result = await purchaseOperationResult { try await purchaseService.restore() }
+        failureMessage = restoreFailureMessage(result: result)
+        showStateContent(result: result)
+    }
+
+    /// 購入か復元の結果 `result` がトライアル中か購入済みになった時だけ、画面の中身をその状態の中身に入れ替える。
+    private func showStateContent(result: PurchaseOperationResult) {
+        guard case .stateChanged(let purchaseState) = result else {
+            return
         }
+        content = purchaseContent(purchaseState: purchaseState, packages: [], introEligibilityStatuses: [:])
     }
 }
 

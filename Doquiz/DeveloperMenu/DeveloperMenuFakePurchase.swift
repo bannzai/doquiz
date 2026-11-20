@@ -17,6 +17,20 @@
         case inTrial
         /// 利用者が購入済みである。
         case purchased
+        /// 3 つの商品を返すが、利用者が購入を取り消す (購入しても購入していないままになる)。
+        case cancelsPurchase
+        /// 3 つの商品を返すが、購入と復元に失敗する。
+        case failsToPurchaseAndRestore
+    }
+
+    /// 偽の購入で、商品を購入した時に起きること。
+    enum DeveloperMenuFakePurchaseResult {
+        /// 購入できる。
+        case succeeds
+        /// 利用者が購入を取り消す。
+        case isCancelled
+        /// 購入に失敗する。
+        case fails
     }
 
     /// 開発者メニューに出す、今の購入の動きの名前を返す。偽の購入に切り替えていない時 (nil) は実物の名前を返す。
@@ -32,6 +46,10 @@
             "トライアル中"
         case .purchased:
             "購入済み"
+        case .cancelsPurchase:
+            "購入を取り消す"
+        case .failsToPurchaseAndRestore:
+            "購入と復元に失敗する"
         }
     }
 
@@ -51,6 +69,7 @@
                 packages: makeDeveloperMenuFakePurchasePackages(),
                 introEligibilityStatus: .eligible,
                 purchaseState: .notPurchased,
+                purchaseResult: .succeeds,
                 restoredPurchaseState: .purchased
             )
         case .failsToGetPackages:
@@ -58,6 +77,7 @@
                 packages: nil,
                 introEligibilityStatus: .unknown,
                 purchaseState: .notPurchased,
+                purchaseResult: .succeeds,
                 restoredPurchaseState: .notPurchased
             )
         case .inTrial:
@@ -65,6 +85,7 @@
                 packages: makeDeveloperMenuFakePurchasePackages(),
                 introEligibilityStatus: .ineligible,
                 purchaseState: .inTrial,
+                purchaseResult: .succeeds,
                 restoredPurchaseState: .inTrial
             )
         case .purchased:
@@ -72,12 +93,29 @@
                 packages: makeDeveloperMenuFakePurchasePackages(),
                 introEligibilityStatus: .ineligible,
                 purchaseState: .purchased,
+                purchaseResult: .succeeds,
                 restoredPurchaseState: .purchased
+            )
+        case .cancelsPurchase:
+            DeveloperMenuFakePurchaseService(
+                packages: makeDeveloperMenuFakePurchasePackages(),
+                introEligibilityStatus: .eligible,
+                purchaseState: .notPurchased,
+                purchaseResult: .isCancelled,
+                restoredPurchaseState: .notPurchased
+            )
+        case .failsToPurchaseAndRestore:
+            DeveloperMenuFakePurchaseService(
+                packages: makeDeveloperMenuFakePurchasePackages(),
+                introEligibilityStatus: .eligible,
+                purchaseState: .notPurchased,
+                purchaseResult: .fails,
+                restoredPurchaseState: nil
             )
         }
     }
 
-    /// 偽の購入が、商品の取得を失敗させる時に投げる error。
+    /// 偽の購入が、商品の取得・購入・復元を失敗させる時に投げる error。
     struct DeveloperMenuFakePurchaseFailure: Error {}
 
     /// 決めた商品と状態を返す、偽の `PurchaseService`。RevenueCat の SDK も App Store も呼ばない。
@@ -91,19 +129,24 @@
         private let introEligibilityStatus: IntroEligibilityStatus
         /// 利用者の今の購入の状態。購入と復元で変わる。
         private var purchaseState: PurchaseState
-        /// 復元した後の購入の状態。
-        private let restoredPurchaseState: PurchaseState
+        /// 商品を購入した時に起きること。
+        private let purchaseResult: DeveloperMenuFakePurchaseResult
+        /// 復元した後の購入の状態。nil の時は、復元に失敗する。
+        private let restoredPurchaseState: PurchaseState?
 
-        /// 返す商品 `packages` (nil の時は取得に失敗する)、利用者がトライアルを使えるか、初めの購入の状態、復元した後の購入の状態を決めて作る。
+        /// 返す商品 `packages` (nil の時は取得に失敗する)、利用者がトライアルを使えるか、初めの購入の状態、商品を購入した時に起きること、
+        /// 復元した後の購入の状態 (nil の時は復元に失敗する) を決めて作る。
         init(
             packages: [Package]?,
             introEligibilityStatus: IntroEligibilityStatus,
             purchaseState: PurchaseState,
-            restoredPurchaseState: PurchaseState
+            purchaseResult: DeveloperMenuFakePurchaseResult,
+            restoredPurchaseState: PurchaseState?
         ) {
             fakePackages = packages
             self.introEligibilityStatus = introEligibilityStatus
             self.purchaseState = purchaseState
+            self.purchaseResult = purchaseResult
             self.restoredPurchaseState = restoredPurchaseState
         }
 
@@ -120,14 +163,27 @@
             Dictionary(uniqueKeysWithValues: packages.map { ($0, introEligibilityStatus) })
         }
 
-        /// 購入の状態を、`package` のトライアルを使える時はトライアル中に、使えない時は購入済みに変えて返す。App Store の購入の確認は出さない。
+        /// 購入できる時は、購入の状態を、`package` のトライアルを使える時はトライアル中に、使えない時は購入済みに変えて返す。
+        /// 利用者が取り消す時は、状態を変えずに今の状態を返す。購入に失敗する時は、状態を変えずに `DeveloperMenuFakePurchaseFailure` を投げる。
+        /// App Store の購入の確認は出さない。
         func purchase(package: Package) async throws -> PurchaseState {
-            purchaseState = purchaseTrialLengthText(package: package, introEligibilityStatus: introEligibilityStatus) == nil ? .purchased : .inTrial
+            switch purchaseResult {
+            case .succeeds:
+                purchaseState = purchaseTrialLengthText(package: package, introEligibilityStatus: introEligibilityStatus) == nil ? .purchased : .inTrial
+            case .isCancelled:
+                break
+            case .fails:
+                throw DeveloperMenuFakePurchaseFailure()
+            }
             return purchaseState
         }
 
         /// 購入の状態を、作る時に決めた復元した後の状態に変えて返す。
+        /// 復元した後の状態が nil の時は、状態を変えずに `DeveloperMenuFakePurchaseFailure` を投げる。
         func restore() async throws -> PurchaseState {
+            guard let restoredPurchaseState else {
+                throw DeveloperMenuFakePurchaseFailure()
+            }
             purchaseState = restoredPurchaseState
             return purchaseState
         }

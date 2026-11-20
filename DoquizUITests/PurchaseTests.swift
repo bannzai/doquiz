@@ -28,13 +28,22 @@ final class PurchaseTests: XCTestCase {
         )
     }
 
-    /// 起動直後の一覧から開発者メニューを開き、購入の動きの切り替えを `tapCount` 回押して `fakePurchaseBehaviorLabel` の動きにし、
-    /// 一覧に戻って購入の画面を開く。
+    /// 本の一覧から開発者メニューを開き、見本のデータ (読書の記録がある本) を入れ、購入の動きの切り替えを `tapCount` 回押して
+    /// `initialFakePurchaseBehaviorLabel` の動きから `fakePurchaseBehaviorLabel` の動きにし、一覧に戻って購入の画面を開く。
+    ///
+    /// 見本のデータを入れるのは、購入の画面への入口が、読書の記録が 1 件でもある時だけ本の一覧に出るため。
     @MainActor
-    private func openPurchaseWithFakePurchase(app: XCUIApplication, tapCount: Int, fakePurchaseBehaviorLabel: String) {
+    private func openPurchaseWithFakePurchase(
+        app: XCUIApplication,
+        initialFakePurchaseBehaviorLabel: String,
+        tapCount: Int,
+        fakePurchaseBehaviorLabel: String
+    ) {
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
         XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        app.buttons["developer_menu_replace_sample_data"].tap()
+        assertEventuallyLabel(element: app.staticTexts["developer_menu_answer_count"], expectedLabel: "7")
         let cycleButton = app.buttons["developer_menu_cycle_fake_purchase_behavior"]
         let behaviorState = app.staticTexts["developer_menu_fake_purchase_behavior_state"]
         // 切り替えのボタンと今の動きの行はメニューのいちばん下に並んでいて、画面に入っていない間は要素が無い。
@@ -45,7 +54,7 @@ final class PurchaseTests: XCTestCase {
         }
         XCTAssertTrue(behaviorState.waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(cycleButton.waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        XCTAssertEqual(behaviorState.label, "実物")
+        XCTAssertEqual(behaviorState.label, initialFakePurchaseBehaviorLabel)
         for _ in 0..<tapCount {
             cycleButton.tap()
         }
@@ -65,10 +74,14 @@ final class PurchaseTests: XCTestCase {
     /// 初めは並びの最初の年額を選んでいて、購入のボタンと更新の説明が年額のトライアルと値段になっている。
     /// 買い切りを選ぶと、ボタンが「購入する」に変わり、自動で更新される説明が消える。購入すると、商品が消えて購入済みの表示になる。
     /// 3 つの商品が出ている画面を `purchase-packages`、購入済みの画面を `purchase-purchased` の名前で添付する。
+    /// 読書の記録が無い間 (起動した直後の、保存データが空の一覧) は、購入の画面への入口が本の一覧に出ない。
+    /// 読書の記録がある本ができると、入口が出る。入口が出ている一覧を `book-list-purchase-entrance` の名前で添付する。
     @MainActor
     func test商品を取得できた時は3つの商品が出て購入すると購入済みになる() {
         let app = launchAppWithInMemoryStore()
-        openPurchaseWithFakePurchase(app: app, tapCount: 1, fakePurchaseBehaviorLabel: "商品を返す")
+        XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
+        XCTAssertFalse(app.buttons["purchase_entrance"].exists)
+        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 1, fakePurchaseBehaviorLabel: "商品を返す")
 
         XCTAssertTrue(app.buttons["purchase_button"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 3)
@@ -103,6 +116,50 @@ final class PurchaseTests: XCTestCase {
 
         app.buttons["purchase_close_button"].tap()
         XCTAssertTrue(app.buttons["purchase_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertEqual(app.buttons["purchase_entrance"].label, "購入のプランを見る")
+        attachScreenshot(app: app, name: "book-list-purchase-entrance")
+    }
+
+    /// 利用者が購入を取り消した時は、失敗の文を出さず、3 つの商品が出たままである。
+    /// 購入に失敗した時と復元に失敗した時は、画面を閉じずに、購入のボタンの上にそれぞれの文を出す。
+    /// 購入に失敗した時の画面を `purchase-failed` の名前で添付する。
+    @MainActor
+    func test購入を取り消した時は何も出さず失敗した時は失敗の文を出す() {
+        let app = launchAppWithInMemoryStore()
+        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 5, fakePurchaseBehaviorLabel: "購入を取り消す")
+
+        XCTAssertTrue(app.buttons["purchase_button"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        app.buttons["purchase_button"].tap()
+        // 取り消した後は画面が変わらないため、変わるのを待てない。偽の購入はすぐ返るので、押した後にボタンが押せる状態へ戻るのを待ってから確かめる。
+        XCTAssertEqual(
+            XCTWaiter().wait(
+                for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: app.buttons["purchase_button"])],
+                timeout: sameScreenChangeWaitTimeout
+            ),
+            .completed
+        )
+        XCTAssertFalse(app.staticTexts["purchase_failure_message"].exists)
+        XCTAssertFalse(app.staticTexts["purchase_state_title"].exists)
+        XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 3)
+        app.buttons["purchase_close_button"].tap()
+
+        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "購入を取り消す", tapCount: 1, fakePurchaseBehaviorLabel: "購入と復元に失敗する")
+        XCTAssertTrue(app.buttons["purchase_button"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        app.buttons["purchase_button"].tap()
+        XCTAssertTrue(app.staticTexts["purchase_failure_message"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertTrue(app.staticTexts["purchase_failure_message"].label.hasPrefix("購入できませんでした"))
+        XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 3)
+        attachScreenshot(app: app, name: "purchase-failed")
+
+        app.buttons["purchase_restore_button"].tap()
+        XCTAssertEqual(
+            XCTWaiter().wait(
+                for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label BEGINSWITH %@", "復元できませんでした"), object: app.staticTexts["purchase_failure_message"])],
+                timeout: sameScreenChangeWaitTimeout
+            ),
+            .completed
+        )
+        XCTAssertFalse(app.staticTexts["purchase_state_title"].exists)
     }
 
     /// 商品を取得できない時は、商品の行も値段も購入のボタンも出さず、取得できなかった案内と、取得し直す入口が出る。
@@ -111,7 +168,7 @@ final class PurchaseTests: XCTestCase {
     @MainActor
     func test商品を取得できない時は値段を出さず取得し直す入口が出る() {
         let app = launchAppWithInMemoryStore()
-        openPurchaseWithFakePurchase(app: app, tapCount: 2, fakePurchaseBehaviorLabel: "商品を取得できない")
+        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 2, fakePurchaseBehaviorLabel: "商品を取得できない")
 
         XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].label.contains("商品の情報を取得できませんでした"))
