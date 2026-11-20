@@ -18,7 +18,7 @@ Accepted
 - agent は、このリポジトリのビルド・テスト・Simulator・ブラウザでの動作確認を外部マシンで行う。作業用の Mac で xcodebuild・Simulator・ブラウザを起動しない
 - リポジトリが public の間は GitHub Actions と simtunnel を使う
   - ビルドと単体テスト・UI テスト: PR の CI (`.github/workflows/ci.yml`、runner は `xcode-27`)
-  - 画面の見た目: UI テストが添付したスクリーンショットを CI の artifact (`screenshots`) から取り出して見る
+  - 画面の見た目: UI テストが添付したスクリーンショットを CI の artifact (名前が `screenshots-` で始まるもの) から取り出して見る
   - 画面を操作しながらの確認: simtunnel (`.github/workflows/simulator-session.yml`。runner は `xcode-27`)。Secrets が登録されていない間は使えないため、その間は UI テストとスクリーンショットで確かめる
 - リポジトリが private に変わったら Devin の macOS セッションを使う (GitHub-hosted の macOS runner は private では有料のため)
 - 外部マシンで確かめられない項目 (他のアプリの画面の取り込み、端末内モデルでのクイズ生成、実際の書籍の縦書きの OCR 精度) は、取り込み・OCR・クイズ生成を差し替えられる境界にして、CI では固定の画像と偽の生成器で確かめる。実物での確認は「ユーザー作業の一覧」issue の実機での確認に回す

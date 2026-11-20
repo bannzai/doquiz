@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>doquiz - 読んだ直後に理解を確かめる読書クイズ</title>
+<meta name="description" content="doquiz は、電子書籍を読み終えた直後に、読んだ範囲から理解を確かめるクイズを出す iOS アプリです。読書中の画面から本文を取り込み、クイズは端末の中で作ります。本文をサーバーに送りません。" />
+<link rel="canonical" href="https://bannzai.github.io/doquiz/" />
+<meta name="theme-color" content="#FFFFFF" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="doquiz" />
+<meta property="og:title" content="doquiz - 読んだ直後に理解を確かめる読書クイズ" />
+<meta property="og:description" content="電子書籍を読み終えた直後に、読んだ範囲から理解を確かめるクイズを出す iOS アプリ。クイズは端末の中で作り、本文をサーバーに送りません。" />
+<meta property="og:url" content="https://bannzai.github.io/doquiz/" />
+<meta property="og:image" content="https://bannzai.github.io/doquiz/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ja_JP" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="doquiz - 読んだ直後に理解を確かめる読書クイズ" />
+<meta name="twitter:description" content="電子書籍を読み終えた直後に、読んだ範囲から理解を確かめるクイズを出す iOS アプリ。" />
+<meta name="twitter:image" content="https://bannzai.github.io/doquiz/og.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "doquiz",
+  "description": "電子書籍を読み終えた直後に、読んだ範囲から理解を確かめるクイズを出す iOS アプリ。読書中の画面から本文を取り込み、クイズは端末の中で作る。",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "iOS 27",
+  "url": "https://bannzai.github.io/doquiz/",
+  "image": "https://bannzai.github.io/doquiz/og.png",
+  "author": { "@type": "Person", "name": "bannzai" }
+}
+</script>
+<style>
+  /* 色・角の丸みは主要画面のモック (documents/design/mock-2026-11-18/index.html) の値に合わせている */
+  :root {
+    --ink: #15181C;
+    --sub: #4A5260;
+    --accent: #0F6B5C;
+    --accent-soft: #EEF6F4;
+    --line: #D5D9E0;
+    --surface: #F1F4F6;
+    --right: #1D4ED8;
+    --right-soft: #EEF3FE;
+    --paper: #FFFFFF;
+    --sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Noto Sans CJK JP", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Hiragino Mincho ProN", "Noto Serif JP", "Noto Serif CJK JP", "Yu Mincho", serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .container { max-width: 1040px; margin: 0 auto; padding: 0 32px; }
+
+  header { padding: 24px 0; border-bottom: 1px solid var(--line); }
+  header .container { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .brand { font-size: 20px; font-weight: 700; color: var(--ink); text-decoration: none; }
+  nav.top { display: flex; gap: 24px; }
+  nav.top a { font-size: 14px; font-weight: 500; color: var(--sub); text-decoration: none; }
+  nav.top a:hover { color: var(--accent); }
+
+  .hero { padding: 72px 0 88px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 390px); gap: 64px; align-items: center; }
+  .hero h1 { font-size: 44px; line-height: 1.4; font-weight: 700; }
+  .hero .lead { margin-top: 24px; font-size: 17px; color: var(--sub); max-width: 30em; }
+  .status { margin-top: 32px; display: inline-block; padding: 12px 20px; border: 1.5px solid var(--accent); border-radius: 12px; font-size: 15px; font-weight: 700; color: var(--accent); }
+  .env { margin-top: 12px; font-size: 13px; color: var(--sub); }
+
+  /* アプリの画面の画像がまだ無いため クイズの画面をマークアップで描く */
+  .quiz { border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; background: var(--paper); }
+  .quiz .meta { display: flex; justify-content: space-between; font-size: 14px; font-weight: 500; color: var(--sub); }
+  .quiz .question { font-size: 18px; font-weight: 700; line-height: 1.6; }
+  .quiz ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .quiz li { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 15px; line-height: 1.5; color: var(--sub); }
+  .quiz li.chosen { border: 2px solid var(--right); background: var(--right-soft); color: var(--ink); font-weight: 700; }
+  .quiz .result { padding: 16px; border-radius: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+  .quiz .judge { font-size: 17px; font-weight: 700; color: var(--right); }
+  .quiz .caption { font-size: 13px; color: var(--sub); }
+  .quiz blockquote { font-family: var(--serif); font-size: 15px; font-weight: 500; line-height: 1.8; }
+
+  section { padding: 80px 0; border-top: 1px solid var(--line); }
+  section h2 { font-size: 28px; font-weight: 700; line-height: 1.5; }
+  section .lead { margin-top: 12px; color: var(--sub); font-size: 16px; max-width: 36em; }
+
+  .cards { margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; list-style: none; }
+  .card { padding: 20px; border: 1px solid var(--line); border-radius: 12px; }
+  .card h3 { font-size: 18px; font-weight: 700; line-height: 1.5; }
+  .card p { margin-top: 8px; font-size: 15px; color: var(--sub); }
+  .card .price { margin-top: 8px; font-size: 24px; font-weight: 700; color: var(--ink); }
+  .card.featured { border: 2px solid var(--accent); background: var(--accent-soft); }
+  .note { margin-top: 24px; font-size: 14px; color: var(--sub); max-width: 44em; }
+
+  .support p { margin-top: 16px; font-size: 16px; color: var(--sub); }
+  .support .mail { margin-top: 24px; display: inline-flex; align-items: center; justify-content: center; min-height: 54px; padding: 0 24px; border-radius: 12px; background: var(--accent); color: #FFFFFF; font-size: 17px; font-weight: 700; text-decoration: none; }
+  .support .mail:focus-visible { outline-offset: 4px; border-radius: 12px; }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0 48px; font-size: 14px; color: var(--sub); }
+  footer .container { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px 40px; }
+  footer .links { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+  footer .links a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+  footer .links a:hover { text-decoration: underline; }
+  footer .copyright { display: flex; align-items: center; min-height: 44px; }
+
+  @media (max-width: 860px) {
+    .container { padding: 0 20px; }
+    .hero { grid-template-columns: minmax(0, 1fr); gap: 40px; padding: 40px 0 56px; }
+    .hero h1 { font-size: 32px; }
+    section { padding: 56px 0; }
+    section h2 { font-size: 22px; }
+    nav.top { display: none; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a class="brand" href="#top">doquiz</a>
+      <nav class="top" aria-label="ページ内リンク">
+        <a href="#how">使い方</a>
+        <a href="#privacy">本文の扱い</a>
+        <a href="#price">料金</a>
+        <a href="#support">サポート</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="container hero">
+      <div>
+        <h1>読んだ直後に<br />理解を確かめる</h1>
+        <p class="lead">doquiz は、電子書籍を読み終えた直後に、読んだ範囲から理解を確かめるクイズを出す iOS アプリです。ハイライトやメモを取らなくても、読むだけで問いが届きます。</p>
+        <p class="status">App Store で公開の準備中</p>
+        <p class="env">iOS 27 以降 · Apple Intelligence を使える端末</p>
+      </div>
+
+      <div class="quiz" role="img" aria-label="クイズの画面の例 四択の問いに答えると 判定と根拠にした本文が出る">
+        <div class="meta"><span>問い 2 / 5</span><span>四択</span></div>
+        <p class="question">覚えた直後に思い出す練習をすると記憶が残りやすいのはなぜですか</p>
+        <ul>
+          <li>読む回数が増えるから</li>
+          <li class="chosen">思い出す負荷が記憶の経路を強めるから</li>
+          <li>眠る前の時間を使えるから</li>
+          <li>書いた文字が目に残るから</li>
+        </ul>
+        <div class="result">
+          <p class="judge">合っています</p>
+          <p class="caption">根拠にした本文</p>
+          <blockquote>思い出そうと努めること自体が、記憶をたどる道を太くする。読み返すだけでは、この道は使われない。</blockquote>
+        </div>
+      </div>
+    </div>
+
+    <section id="how">
+      <div class="container">
+        <h2>読むだけでクイズが届く</h2>
+        <p class="lead">読む本を選んで読書を始めたら、あとはいつもの読書アプリで読むだけです。</p>
+        <ol class="cards">
+          <li class="card">
+            <h3>読書を始める</h3>
+            <p>読む本を選んで「読書を始める」を押し、画面全体の取り込みを始めます。</p>
+          </li>
+          <li class="card">
+            <h3>いつものアプリで読む</h3>
+            <p>読書アプリに切り替えて読みます。ページが変わるたびに、画面の文字を抽出して残します。画像は残しません。</p>
+          </li>
+          <li class="card">
+            <h3>読み終えたら答える</h3>
+            <p>「読書を終える」を押すと、読んだ範囲から問いを作ります。答えると、判定と模範の答え、根拠にした本文が出ます。</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="questions">
+      <div class="container">
+        <h2>問いは 4 種類</h2>
+        <p class="lead">本ごとに、出題する問いの種類を選び、どんな問いがほしいかを書いておけます。</p>
+        <ul class="cards">
+          <li class="card">
+            <h3>四択</h3>
+            <p>選択肢から答えを選びます。</p>
+          </li>
+          <li class="card">
+            <h3>要約の正誤</h3>
+            <p>示された要約が本文に合っているかを答えます。</p>
+          </li>
+          <li class="card">
+            <h3>穴埋め</h3>
+            <p>空欄に入る言葉を入力します。</p>
+          </li>
+          <li class="card">
+            <h3>記述</h3>
+            <p>自分の言葉で、文で答えます。</p>
+          </li>
+        </ul>
+        <p class="note">問いの作成と、穴埋め・記述の判定は端末内のモデルが行うため、誤りを含むことがあります。どの問いにも根拠にした本文の引用を添えるので、本文と見比べて確かめられます。</p>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <div class="container">
+        <h2>本文をサーバーに送りません</h2>
+        <p class="lead">読んでいる本の中身を、サーバーに送りません。</p>
+        <ul class="cards">
+          <li class="card">
+            <h3>画面の画像は保存しません</h3>
+            <p>取り込んだ画面は本文の抽出にだけ使い、保存するのは抽出した本文だけです。</p>
+          </li>
+          <li class="card">
+            <h3>クイズは端末の中で作ります</h3>
+            <p>問いの作成と判定は端末内のモデルで行い、本文を外部の AI サービスに送りません。</p>
+          </li>
+          <li class="card">
+            <h3>アカウントは要りません</h3>
+            <p>登録もログインもなく、本文・問い・回答はこの端末に保存します。</p>
+          </li>
+        </ul>
+        <p class="note">端末の iCloud バックアップを有効にしている場合、保存した内容があなた自身のバックアップに入ることがあります。購入の管理のために外部のサービスへ送る情報は、<a href="./PrivacyPolicy-ja">プライバシーポリシー</a>に書いています。</p>
+      </div>
+    </section>
+
+    <section id="price">
+      <div class="container">
+        <h2>読書 20 回まで無料</h2>
+        <p class="lead">購入しなくても、読書を 20 回まで無料で試せます。その先は、次のいずれかで続けられます。</p>
+        <ul class="cards">
+          <li class="card featured">
+            <h3>年額</h3>
+            <p class="price">5,000 円</p>
+            <p>最初の 1 週間は無料<br />その後 1 年ごとに自動で更新</p>
+          </li>
+          <li class="card">
+            <h3>月額</h3>
+            <p class="price">500 円</p>
+            <p>最初の 1 週間は無料<br />その後 1 か月ごとに自動で更新</p>
+          </li>
+          <li class="card">
+            <h3>買い切り</h3>
+            <p class="price">20,000 円</p>
+            <p>1 回の支払いで続けて使えます<br />無料のお試しはありません</p>
+          </li>
+        </ul>
+        <p class="note">日本の App Store での価格です。無料のお試しを利用できる回数は Apple の定めにより限られ (同じサブスクリプションのグループにつき 1 人 1 回)、続けない時はお試しが終わる 24 時間以上前までに解約してください。購入の前に、アプリ内の購入の画面に表示される内容をご確認ください。販売の条件は<a href="./SpecifiedCommercialTransactionAct-ja">特定商取引法に基づく表記</a>に書いています。</p>
+      </div>
+    </section>
+
+    <section class="support" id="support">
+      <div class="container">
+        <h2>サポート・お問い合わせ</h2>
+        <p>使い方のご質問、不具合のご報告、ご要望は、メールでお送りください。</p>
+        <a class="mail" href="mailto:bannzai.app@gmail.com">bannzai.app@gmail.com</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="links">
+        <a href="./Terms-ja">利用規約</a>
+        <a href="./PrivacyPolicy-ja">プライバシーポリシー</a>
+        <a href="./SpecifiedCommercialTransactionAct-ja">特定商取引法に基づく表記</a>
+      </div>
+      <div class="copyright">© bannzai</div>
+    </div>
+  </footer>
+</body>
+</html>
