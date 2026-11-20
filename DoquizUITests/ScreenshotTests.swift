@@ -16,11 +16,10 @@ final class ScreenshotTests: XCTestCase {
     /// `element` が画面から無くなるまで待つ。待ちの上限を過ぎても残っている時はテストを失敗にする。
     @MainActor
     private func assertDisappears(element: XCUIElement) {
-        // 上限の 10 秒は、起動の待ち (30 秒) と違い、同じ画面の中の表示の更新だけを待つため短くしている (DeveloperMenuTests と同じ値)。
         XCTAssertEqual(
             XCTWaiter().wait(
                 for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)],
-                timeout: 10
+                timeout: sameScreenChangeWaitTimeout
             ),
             .completed,
             "\(element) が画面に残っている"
@@ -41,10 +40,10 @@ final class ScreenshotTests: XCTestCase {
         // CI の実測 (https://github.com/bannzai/doquiz/actions/runs/43983732332) では、起動を含むテスト全体が 57 秒で、この上限の中で表示された。
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         app.buttons["book_registration_entrance"].tap()
-        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         typeTextAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: title)
         app.buttons["book_registration_submit"].tap()
-        XCTAssertTrue(bookRow(app: app, title: title).waitForExistence(timeout: 10))
+        XCTAssertTrue(bookRow(app: app, title: title).waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 
     /// 名前が `title` の本を登録し、その本の画面から出題の設定を開いて、保存のボタンが出るまで待つ。
@@ -58,9 +57,9 @@ final class ScreenshotTests: XCTestCase {
     /// 本の画面から出題の設定を開いて、保存のボタンが出るまで待つ。
     @MainActor
     private func openQuestionSettings(app: XCUIApplication) {
-        XCTAssertTrue(app.buttons["question_settings_entrance"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["question_settings_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["question_settings_entrance"].tap()
-        XCTAssertTrue(app.buttons["question_settings_save"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["question_settings_save"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 
     /// 出題の設定の画面の、出題への希望の入力欄を返す。
@@ -99,7 +98,7 @@ final class ScreenshotTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         app.buttons["book_registration_entrance"].tap()
-        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertFalse(app.buttons["book_registration_submit"].isEnabled)
 
         typeTextAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: "潮見町の灯台日誌")
@@ -107,7 +106,7 @@ final class ScreenshotTests: XCTestCase {
         attachScreenshot(app: app, name: "book-registration")
         app.buttons["book_registration_submit"].tap()
 
-        XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").waitForExistence(timeout: 10))
+        XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").count, 1)
         XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").label.contains("まだ読んでいません"))
         XCTAssertFalse(app.staticTexts["book_list_empty_guide"].exists)
@@ -121,7 +120,7 @@ final class ScreenshotTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         app.buttons["book_registration_entrance"].tap()
-        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         typeTextAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: "登録しない本")
 
         app.buttons["book_registration_cancel"].tap()
@@ -139,7 +138,7 @@ final class ScreenshotTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         registerBook(app: app, title: "潮見町の灯台日誌")
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
-        XCTAssertTrue(app.buttons["question_settings_entrance"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["question_settings_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.staticTexts["book_title"].label, "潮見町の灯台日誌")
         XCTAssertEqual(app.staticTexts["book_reading_summary"].label, "まだ読んでいません")
         attachScreenshot(app: app, name: "book")
@@ -204,11 +203,11 @@ final class ScreenshotTests: XCTestCase {
         let app = launchAppWithInMemoryStore()
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
-        XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["developer_menu_replace_sample_data"].tap()
         app.navigationBars.buttons.firstMatch.tap()
 
-        XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").waitForExistence(timeout: 10))
+        XCTAssertTrue(bookRow(app: app, title: "潮見町の灯台日誌").waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.buttons.matching(identifier: "book_list_row").count, 2)
         XCTAssertTrue(app.buttons.matching(identifier: "book_list_row").element(boundBy: 0).label.contains("はじめての堆肥づくり"))
         XCTAssertTrue(app.buttons.matching(identifier: "book_list_row").element(boundBy: 1).label.contains("潮見町の灯台日誌"))
@@ -217,7 +216,7 @@ final class ScreenshotTests: XCTestCase {
         attachScreenshot(app: app, name: "book-list-with-readings")
 
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
-        XCTAssertTrue(app.staticTexts["book_reading_summary"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["book_reading_summary"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.staticTexts["book_reading_summary"].label.hasPrefix("読書 2 回 ・ 最後に読んだのは"))
         attachScreenshot(app: app, name: "book-with-readings")
     }
