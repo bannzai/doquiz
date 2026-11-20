@@ -71,7 +71,7 @@ func purchaseOperationResult(operation: () async throws -> PurchaseState) async 
         let purchaseState = try await operation()
         return purchaseState == .notPurchased ? .unchanged : .stateChanged(purchaseState)
     } catch {
-        return .failed
+        return .unchanged
     }
 }
 
@@ -80,20 +80,20 @@ func purchaseOperationResult(operation: () async throws -> PurchaseState) async 
 /// 購入できた時と、利用者が購入を取り消した時 (購入していないまま) は、出す文が無いため nil を返す。
 func purchaseFailureMessage(result: PurchaseOperationResult) -> String? {
     switch result {
-    case .stateChanged, .unchanged:
+    case .stateChanged:
         nil
-    case .failed:
+    case .unchanged:
         "購入できませんでした\n時間をおいて もう一度お試しください"
+    case .failed:
+        nil
     }
 }
 
 /// 復元の結果 `result` の時に、購入のボタンの上に出す文を返す。復元できた時は、出す文が無いため nil を返す。
 func restoreFailureMessage(result: PurchaseOperationResult) -> String? {
     switch result {
-    case .stateChanged:
+    case .stateChanged, .unchanged:
         nil
-    case .unchanged:
-        "復元できる購入が見つかりませんでした"
     case .failed:
         "復元できませんでした\n時間をおいて もう一度お試しください"
     }
