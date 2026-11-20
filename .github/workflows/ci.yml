@@ -32,10 +32,24 @@ jobs:
   # public リポジトリのため macOS runner は無料。
   # iOS 27 の SDK が要るため、Xcode 27 が入っている xcode-27 の image を使う (macos-26 の image は Xcode 26 まで)。
   # https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md
+  #
+  # テストを 2 台の runner に分けて並べる。job の時間の 6〜7 割が UI テストで、1 台の中で 2 つの Simulator に分けて並べると
+  # 逆に遅くなった (runner は 3 コア。https://github.com/bannzai/doquiz/pull/77 の計測) ため、runner を分ける。
+  # - separated-ui-tests: SEPARATED_UI_TEST_CLASSES の UI テストだけ
+  # - other-tests: それ以外の全部 (単体テストと、残りの UI テスト。class を足すと、こちらで動く)
   build-and-test:
     runs-on: xcode-27
-    # 45 分は、履歴の UI テスト 4 件を足す前の Test の step が約 25 分 (run 44597468063)、足した 4 件が約 5 分 (run 44599776324) かかった実測に、
-    # Build の約 1 分と、UI テストが落ちた時の後始末の約 3.5 分 (同 run) を足して、余りを持たせた値。
+    strategy:
+      # 片方が落ちても、もう片方の結果とスクリーンショットを残す。
+      fail-fast: false
+      matrix:
+        tests:
+          - separated-ui-tests
+          - other-tests
+    env:
+      # 時間のかかる UI テストの class。2 台の所要時間が近くなるように選ぶ。
+      SEPARATED_UI_TEST_CLASSES: QuizTests HistoryTests
+      TESTS: ${{ matrix.tests }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,6 +65,7 @@ jobs:
       # iOS Simulator の SDK には ScreenCaptureKit が無く、画面の取り込みの実物 (Doquiz/ScreenCapture/ScreenCaptureKitScreenCapture.swift) は
       # 実機向けのビルドでしかコンパイルされないため、実機向けにもビルドする (署名はしない)。
       - name: Build (実機向け)
+        if: ${{ matrix.tests == 'separated-ui-tests' }}
         run: |
           set -o pipefail
           xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
@@ -59,8 +74,17 @@ jobs:
       - name: Test
         run: |
           set -o pipefail
+          selection=()
+          for class in $SEPARATED_UI_TEST_CLASSES; do
+            if [ "$TESTS" = separated-ui-tests ]; then
+              selection+=("-only-testing:DoquizUITests/$class")
+            else
+              selection+=("-skip-testing:DoquizUITests/$class")
+            fi
+          done
           xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
             -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            "${selection[@]}" \
             -resultBundlePath tmp/TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO test
       # UI テストが添付した画面のスクリーンショットを取り出す (AGENTS.md「検証方法」の画面の確認に使う)。
@@ -76,13 +100,13 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: screenshots
+          name: screenshots-${{ matrix.tests }}
           path: tmp/screenshots
           if-no-files-found: ignore
       - name: テスト結果を残す
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: test-results
+          name: test-results-${{ matrix.tests }}
           path: tmp/TestResults.xcresult
           if-no-files-found: ignore
