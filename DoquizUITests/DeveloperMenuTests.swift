@@ -18,7 +18,6 @@ final class DeveloperMenuTests: XCTestCase {
             expectedCounts
         ) {
             let countText = app.staticTexts[countIdentifier]
-            // 上限の 10 秒は、起動の待ち (30 秒) と違い、同じ画面の中の表示の更新だけを待つため短くしている。
             XCTAssertEqual(
                 XCTWaiter().wait(
                     for: [
@@ -27,7 +26,7 @@ final class DeveloperMenuTests: XCTestCase {
                             object: countText
                         )
                     ],
-                    timeout: 10
+                    timeout: sameScreenChangeWaitTimeout
                 ),
                 .completed,
                 "\(countIdentifier) の件数が \(expectedCount) にならなかった (表示: \(countText.exists ? countText.label : "要素が無い"))"
@@ -44,7 +43,7 @@ final class DeveloperMenuTests: XCTestCase {
         // GitHub の runner の Simulator は起動直後の描画が遅いことがあるため、待ちの上限を長めに取る (ScreenshotTests と同じ値)。
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
-        XCTAssertTrue(app.buttons["developer_menu_delete_all_saved_data"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["developer_menu_delete_all_saved_data"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
 
         app.buttons["developer_menu_delete_all_saved_data"].tap()
         assertSavedCounts(app: app, expectedCounts: ["0", "0", "0", "0", "0"])
