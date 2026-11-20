@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// 本の画面。一覧で選んだ本の名前、読書の回数と最後に読んだ時期、その本の出題の設定への入口、「読書を始める」を出す。
+/// 本の画面。一覧で選んだ本の名前、読書の回数と最後に読んだ時期、その本の出題の設定への入口、履歴への入口、「読書を始める」を出す。
 /// 端末内のモデルが使えない間は、クイズを出せないことと理由の案内を出し、「読書を始める」を押せなくする。
 ///
 /// 「読書を始める」から「読書を終える」までの読書を動かす。初めて読書を始める時だけ同意の説明を出し、
@@ -11,6 +11,8 @@ struct BookView: View {
     let book: Book
     /// 読書の記録とページを保存する、アプリの保存先の context。
     @Environment(\.modelContext) private var modelContext
+    /// この画面を閉じて本の一覧に戻る操作。履歴で本を消した後に使う。
+    @Environment(\.dismiss) private var dismiss
     /// 端末内のモデルが使えない時の案内の文。使える時は nil。nil でない間は「読書を始める」を押せなくする
     /// (クイズを作れないのに画面を取り込んで本文を保存することを避けるため)。
     @Environment(\.quizUnavailableGuide) private var quizUnavailableGuide
@@ -29,6 +31,10 @@ struct BookView: View {
     #endif
     /// 出題の設定の画面を出しているか。
     @State private var isEditingQuestionSettings = false
+    /// 履歴の画面を出しているか。
+    @State private var isShowingHistory = false
+    /// 履歴の画面で本を消したか。消した後は、この画面を閉じ終わるまでの間に消した本の値を読まないよう、中身を出さない。
+    @State private var isBookDeleted = false
     /// 同意の説明を出しているか。
     @State private var isShowingScreenCaptureConsent = false
     /// 取り込みを始めている途中か (画面共有の選択画面を出している間など)。
@@ -50,30 +56,43 @@ struct BookView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(verbatim: book.title)
-                        .font(.title.bold())
-                        .foregroundStyle(doquizTextColor)
-                        .accessibilityIdentifier("book_title")
-                    Text(verbatim: bookReadingSummary(book: book, currentDateTime: Date()))
-                        .font(.subheadline)
-                        .foregroundStyle(doquizSecondaryTextColor)
-                        .accessibilityIdentifier("book_reading_summary")
+            if !isBookDeleted {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(verbatim: book.title)
+                            .font(.title.bold())
+                            .foregroundStyle(doquizTextColor)
+                            .accessibilityIdentifier("book_title")
+                        Text(verbatim: bookReadingSummary(book: book, currentDateTime: Date()))
+                            .font(.subheadline)
+                            .foregroundStyle(doquizSecondaryTextColor)
+                            .accessibilityIdentifier("book_reading_summary")
+                    }
+                    Button {
+                        isEditingQuestionSettings = true
+                    } label: {
+                        Text(verbatim: "出題の設定を変える")
+                            .font(.headline)
+                            .foregroundStyle(doquizAccentColor)
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizAccentColor, lineWidth: 1.5))
+                    }
+                    .accessibilityIdentifier("question_settings_entrance")
+                    Button {
+                        isShowingHistory = true
+                    } label: {
+                        Text(verbatim: "この本の履歴を見る")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(doquizAccentColor)
+                            .frame(minHeight: 44)
+                    }
+                    // 読書を始めている途中に履歴で本を消すと、消した本の読書が始まるため、その間は押せなくする。
+                    .disabled(isStartingReading)
+                    .accessibilityIdentifier("history_entrance")
                 }
-                Button {
-                    isEditingQuestionSettings = true
-                } label: {
-                    Text(verbatim: "出題の設定を変える")
-                        .font(.headline)
-                        .foregroundStyle(doquizAccentColor)
-                        .frame(maxWidth: .infinity, minHeight: 52)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizAccentColor, lineWidth: 1.5))
-                }
-                .accessibilityIdentifier("question_settings_entrance")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
         }
         .safeAreaInset(edge: .bottom) {
             VStack(alignment: .leading, spacing: 10) {
@@ -104,7 +123,8 @@ struct BookView: View {
                         .frame(maxWidth: .infinity, minHeight: 54)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isStartingReading || quizUnavailableGuide != nil)
+                // 履歴で本を消した後は、この画面が閉じ終わるまでの間に、消した本の読書を始めないようにする。
+                .disabled(isStartingReading || isBookDeleted || quizUnavailableGuide != nil)
                 // 押せないことが色でも分かるよう、端末内のモデルが使えない間はボタンを薄くする。
                 .opacity(quizUnavailableGuide == nil ? 1 : 0.4)
                 .accessibilityIdentifier("reading_start")
@@ -140,6 +160,30 @@ struct BookView: View {
                 )
             }
         )
+        // 本を消した時は、履歴が閉じ切ってからこの画面を閉じる (閉じている途中の覆いの下で、画面を戻さないため)。
+        .fullScreenCover(
+            isPresented: $isShowingHistory,
+            onDismiss: {
+                if isBookDeleted {
+                    dismiss()
+                }
+            },
+            content: {
+                if !isBookDeleted {
+                    HistoryView(
+                        book: book,
+                        makeQuizEngine: makeQuizEngineForReading,
+                        close: {
+                            isShowingHistory = false
+                        },
+                        leaveDeletedBook: {
+                            isBookDeleted = true
+                            isShowingHistory = false
+                        }
+                    )
+                }
+            }
+        )
         // 同意の説明を出している間に端末内のモデルが使えなくなった時は、説明を閉じる。同意されていないまま閉じるため、読書は始まらない。
         // 同意の説明を閉じた時の処理の中で使えるかを確かめる形にしていないのは、その形では同意の後に読書が始まることを
         // UI テストで確かめたため (https://github.com/bannzai/doquiz/actions/runs/44525376320)。
@@ -167,7 +211,7 @@ struct BookView: View {
         }
     }
 
-    /// 読書を終えた後のクイズで使う `QuizEngine` を作る。開発者メニューで偽のクイズに切り替えている時は、選んだ動きをする偽のクイズを返す。
+    /// 読書を終えた後のクイズと、履歴の答え直しで使う `QuizEngine` を作る。開発者メニューで偽のクイズに切り替えている時は、選んだ動きをする偽のクイズを返す。
     private func makeQuizEngineForReading() -> any QuizEngine {
         #if DEBUG
             if let fakeQuizBehavior {

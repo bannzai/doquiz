@@ -29,3 +29,11 @@ let doquizPanelBackgroundColor = Color(red: 0xF1 / 255, green: 0xF4 / 255, blue:
 
 /// 枠の線の色。本の行・入力欄・選んでいない問いの種類の枠に使う。
 let doquizBorderColor = Color(red: 0xD5 / 255, green: 0xD9 / 255, blue: 0xE0 / 255)
+
+/// 本から引用した本文に使う書体 (明朝)。アプリの文と本の文を見分けるため、本の文だけこの書体にする (`documents/DIRECTION.md`「デザインの方向」)。
+///
+/// iOS に入っている明朝の書体 (ヒラギノ明朝 ProN)。文字の大きさの設定に合わせて変わるよう、subheadline に合わせる。
+let doquizBookTextFont = Font.custom("HiraMinProN-W6", size: 15, relativeTo: .subheadline)
+
+/// 消す操作の文字に使う色 (赤)。主要画面のモック (`documents/design/mock-2026-11-18/History.dc.html`) の「この本と読書の記録を消す」の色。
+let doquizDestructiveColor = Color(red: 0xB4 / 255, green: 0x23 / 255, blue: 0x18 / 255)
