@@ -9,6 +9,9 @@ let revenueCatPublicAPIKeyInfoDictionaryKey = "REVENUECAT_PUBLIC_API_KEY_IOS"
 /// 購入した利用者に付く、RevenueCat の entitlement の識別子。RevenueCat のプロジェクトの設定と同じ値にする。
 let revenueCatPremiumEntitlementIdentifier = "premium"
 
+/// 利用者に出す商品をまとめた、RevenueCat の offering の識別子。RevenueCat のプロジェクトの設定と同じ値にする。
+let revenueCatOfferingIdentifier = "default"
+
 /// RevenueCat の SDK を初期化していない (公開 SDK キーが無い) のに、購入の処理を呼んだことを表す error。
 struct RevenueCatNotConfiguredError: Error {}
 
@@ -46,14 +49,14 @@ func configureRevenueCat(publicAPIKey: String?) {
 ///
 /// SDK を初期化していない時 (`configureRevenueCat(publicAPIKey:)` に nil を渡した時) は、どの処理も SDK を呼ばない。
 struct RevenueCatPurchaseService: PurchaseService {
-    /// RevenueCat の今の offering の商品を、offering の並びのまま返す。今の offering が無い時は空の配列を返す。
+    /// RevenueCat の offering `revenueCatOfferingIdentifier` の商品を、offering の並びのまま返す。その offering が無い時は空の配列を返す。
     /// SDK を初期化していない時は `RevenueCatNotConfiguredError` を投げる。
     func packages() async throws -> [Package] {
         guard Purchases.isConfigured else {
             throw RevenueCatNotConfiguredError()
         }
-        // 今の offering が無い時に出す商品は無いため、空の配列にする (画面は商品を取得できない時の表示になる)。
-        return try await Purchases.shared.offerings().current?.availablePackages ?? []
+        // offering が無い時に出す商品は無いため、空の配列にする (画面は商品を取得できない時の表示になる)。
+        return try await Purchases.shared.offerings().offering(identifier: revenueCatOfferingIdentifier)?.availablePackages ?? []
     }
 
     /// SDK を初期化していない時は、どの商品も確かめられないため空の辞書を返す。
