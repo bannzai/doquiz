@@ -34,7 +34,7 @@ jobs:
   # https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md
   #
   # テストを 2 台の runner に分けて並べる。job の時間の 6〜7 割が UI テストで、1 台の中で 2 つの Simulator に分けて並べると
-  # 逆に遅くなった (runner は 3 コア。https://github.com/bannzai/doquiz/pull/77 の計測) ため、runner を分ける。
+  # 逆に遅くなった (runner は 3 コア。run 44746443594 の計測。https://github.com/bannzai/doquiz/issues/76 ) ため、runner を分ける。
   # - separated-ui-tests: SEPARATED_UI_TEST_CLASSES の UI テストだけ
   # - other-tests: それ以外の全部 (単体テストと、残りの UI テスト。class を足すと、こちらで動く)
   build-and-test:
@@ -50,6 +50,9 @@ jobs:
       # 時間のかかる UI テストの class。2 台の所要時間が近くなるように選ぶ。
       SEPARATED_UI_TEST_CLASSES: QuizTests HistoryTests
       TESTS: ${{ matrix.tests }}
+    # 45 分は、分けた後の job の実測 (run 44776580430 の 3 回で 18〜28 分。同じ時間帯の分ける前の job は 28〜39 分) のうち
+    # 遅い方の 28 分に、UI テストが落ちた時の後始末の約 3.5 分 (run 44599776324) を足し、分ける前の job が遅い時間帯に
+    # 50 分まで伸びた (run 44735398775) のと同じ割合で伸びても止まらないように余りを持たせた値。
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
