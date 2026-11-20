@@ -140,7 +140,8 @@ struct PurchaseView: View {
     @State private var loadRequestCount = 0
     /// 画面に出している中身。
     @State private var content = PurchaseContent.loading
-    /// 利用者が選んでいる商品。商品を出していない間は nil。
+    /// 利用者が選んでいる商品。商品を出している間だけ読む。取得し直すたびに決め直し、商品を出さない中身を取得した時は nil にする
+    /// (購入・復元・状態の変化で状態の中身に入れ替えた後は、前に選んだ商品が残るが、読まれない)。
     @State private var selectedPackage: Package?
     /// 購入か復元の処理の途中か。途中の間は、購入と復元のボタンを押せなくする。
     @State private var isProcessing = false
