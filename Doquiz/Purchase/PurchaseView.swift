@@ -80,7 +80,7 @@ struct PurchaseView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .accessibilityIdentifier("purchase_loading")
-                case let .packages(packages, introEligibilityStatuses):
+                case .packages(let packages, let introEligibilityStatuses):
                     packagesContent(packages: packages, introEligibilityStatuses: introEligibilityStatuses)
                 case .unavailable:
                     unavailableContent
@@ -293,7 +293,7 @@ struct PurchaseView: View {
         content = .loading
         failureMessage = nil
         content = await loadPurchaseContent(purchaseService: purchaseService)
-        if case let .packages(packages, _) = content {
+        if case .packages(let packages, _) = content {
             selectedPackage = packages.first
         } else {
             selectedPackage = nil

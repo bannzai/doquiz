@@ -101,7 +101,7 @@ struct PurchaseTests {
             )
         )
 
-        guard case let .packages(contentPackages, introEligibilityStatuses) = purchaseContent else {
+        guard case .packages(let contentPackages, let introEligibilityStatuses) = purchaseContent else {
             Issue.record("商品を出す中身にならなかった: \(purchaseContentName(purchaseContent: purchaseContent))")
             return
         }
@@ -318,7 +318,7 @@ struct PurchaseTests {
     }
 
     /// アプリの Info.plist の公開 SDK キーの値は、ビルド設定で置き換わっている (置き換える前の `$(...)` のままではない)。
-    @Test func InfoPlistの公開SDKキーはビルド設定で置き換わっている() {
+    @Test func アプリのInfoPlistの公開SDKキーはビルド設定で置き換わっている() {
         #expect(isPublicAPIKeyInfoDictionaryValueExpanded())
     }
 
@@ -332,7 +332,7 @@ struct PurchaseTests {
 
     /// 単体テストの起動では RevenueCat の SDK を初期化しない。初期化していない間、実物の購入は SDK を呼ばずに、
     /// 商品と状態の取得で error を投げ、トライアルを使えるかを 1 つも返さず、画面は取得できなかった時の中身になる。
-    @Test func SDKを初期化していない時は実物の購入が取得できなかった時の中身になる() async {
+    @Test func 実物の購入はSDKを初期化していない時に取得できなかった時の中身になる() async {
         #expect(Purchases.isConfigured == false)
         let purchaseService = RevenueCatPurchaseService()
 
