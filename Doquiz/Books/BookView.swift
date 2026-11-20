@@ -123,7 +123,8 @@ struct BookView: View {
                         .frame(maxWidth: .infinity, minHeight: 54)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isStartingReading || quizUnavailableGuide != nil)
+                // 履歴で本を消した後は、この画面が閉じ終わるまでの間に、消した本の読書を始めないようにする。
+                .disabled(isStartingReading || isBookDeleted || quizUnavailableGuide != nil)
                 // 押せないことが色でも分かるよう、端末内のモデルが使えない間はボタンを薄くする。
                 .opacity(quizUnavailableGuide == nil ? 1 : 0.4)
                 .accessibilityIdentifier("reading_start")
