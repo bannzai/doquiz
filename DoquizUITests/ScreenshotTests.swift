@@ -2,7 +2,7 @@ import XCTest
 
 /// 読む本を選ぶ画面・本の登録・本の画面・出題の設定を操作して確かめ、画面のスクリーンショットをテスト結果に添付する UI テスト。
 ///
-/// 添付した画像は、CI の artifact `screenshots` から取り出して見た目を確かめるのに使う。
+/// 添付した画像は、CI の artifact (名前が `screenshots-` で始まるもの) から取り出して見た目を確かめるのに使う。
 final class ScreenshotTests: XCTestCase {
     /// 今の画面を `name` の名前でテスト結果に添付する。
     @MainActor
