@@ -1,0 +1,89 @@
+name: ci-experiment
+
+# https://github.com/bannzai/doquiz/issues/76 の計測のための一時的な workflow。マージの前に消す。
+on:
+  push:
+    branches:
+      - issue-76
+
+permissions:
+  contents: read # checkout のみ
+
+jobs:
+  # 1 台の runner の中で、UI テストを 2 つの Simulator に分けて並べる。
+  parallel:
+    runs-on: xcode-27
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sysctl hw.ncpu hw.memsize
+      - run: xcrun simctl list devices available
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -parallel-testing-enabled YES -parallel-testing-worker-count 2 \
+            -resultBundlePath tmp/TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO test
+
+  # UI テストを 2 台の runner に分ける。Simulator は、ビルドの前に起動しておく。
+  shard:
+    runs-on: xcode-27
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: heavy
+            build: false
+            selection: >-
+              -only-testing:DoquizUITests/QuizTests
+              -only-testing:DoquizUITests/HistoryTests
+              -only-testing:DoquizUITests/QuizUnavailableTests
+          - name: rest
+            build: true
+            selection: >-
+              -skip-testing:DoquizUITests/QuizTests
+              -skip-testing:DoquizUITests/HistoryTests
+              -skip-testing:DoquizUITests/QuizUnavailableTests
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Simulator を起動しておく
+        run: |
+          date -u
+          xcrun simctl boot 'iPhone 17'
+          date -u
+      - name: Build
+        if: ${{ matrix.build }}
+        run: |
+          set -o pipefail
+          xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: Build (実機向け)
+        if: ${{ matrix.build }}
+        run: |
+          set -o pipefail
+          xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO build
+      - run: xcrun simctl list devices
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            ${{ matrix.selection }} \
+            -resultBundlePath tmp/TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO test
