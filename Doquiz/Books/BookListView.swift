@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// 読む本を選ぶ画面。登録済みの本の一覧と、新しい本を登録する入口を出す。アプリを開いた直後に出る。
+/// 読む本を選ぶ画面。登録済みの本の一覧と、新しい本を登録する入口と、購入の画面の入口を出す。アプリを開いた直後に出る。
 /// 端末内のモデルが使えない間は、クイズを出せないことと理由の案内を一覧の上に出す。
 ///
 /// 本を選んだ時に本の画面へ進むため、`NavigationStack` の中に置く。
@@ -12,6 +12,12 @@ struct BookListView: View {
     @Environment(\.quizUnavailableGuide) private var quizUnavailableGuide
     /// 本を登録する画面を出しているか。
     @State private var isRegisteringBook = false
+    /// 購入の画面を出しているか。
+    @State private var isShowingPurchase = false
+    #if DEBUG
+        /// 開発者メニューで、購入の画面を偽の購入に切り替えている時の動き。値が無い時は実物で購入する。
+        @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
+    #endif
 
     var body: some View {
         VStack(spacing: 0) {
@@ -59,7 +65,17 @@ struct BookListView: View {
             }
             .accessibilityIdentifier("book_registration_entrance")
             .padding(.horizontal, 20)
-            .padding(.bottom, 24)
+            Button {
+                isShowingPurchase = true
+            } label: {
+                Text(verbatim: "購入のプランを見る")
+                    .font(.subheadline)
+                    .foregroundStyle(doquizAccentColor)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .accessibilityIdentifier("purchase_entrance")
+            .padding(.horizontal, 20)
+            .padding(.bottom, 12)
         }
         .background(doquizBackgroundColor)
         .navigationDestination(for: Book.self) { book in
@@ -68,6 +84,19 @@ struct BookListView: View {
         .sheet(isPresented: $isRegisteringBook) {
             BookRegistrationView()
         }
+        .sheet(isPresented: $isShowingPurchase) {
+            PurchaseView(purchaseService: makePurchaseService())
+        }
+    }
+
+    /// 購入の画面で使う `PurchaseService` を作る。開発者メニューで偽の購入に切り替えている時は、選んだ動きをする偽の購入を返す。
+    private func makePurchaseService() -> any PurchaseService {
+        #if DEBUG
+            if let fakePurchaseBehavior {
+                return makeDeveloperMenuFakePurchaseService(behavior: fakePurchaseBehavior)
+            }
+        #endif
+        return RevenueCatPurchaseService()
     }
 
     /// 一覧の本 1 冊分の行。本の名前と、読書の回数・最後に読んだ時期を出す。

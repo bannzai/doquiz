@@ -23,6 +23,15 @@ struct DoquizApp: App {
                 userDefaults.set(DeveloperMenuQuizAvailability.available.rawValue, forKey: developerMenuQuizAvailabilityKey)
             }
         #endif
+        // UI テストの起動 (メモリ内の保存先の起動) と単体テストの起動では、RevenueCat の SDK を初期化しない。
+        // テストが RevenueCat と通信せず、購入の画面を偽の購入だけで確かめるため。
+        if !isStoredInMemoryOnly, !isLaunchedAsUnitTestHost(environment: ProcessInfo.processInfo.environment) {
+            configureRevenueCat(
+                publicAPIKey: revenueCatPublicAPIKey(
+                    infoDictionaryValue: Bundle.main.object(forInfoDictionaryKey: revenueCatPublicAPIKeyInfoDictionaryKey)
+                )
+            )
+        }
         do {
             modelContainer = try makeModelContainer(isStoredInMemoryOnly: isStoredInMemoryOnly)
         } catch {

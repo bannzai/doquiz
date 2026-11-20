@@ -16,7 +16,8 @@
     }
 
     /// 開発者メニュー。実機で本を読まないと作れない状態 (読書の記録や回答がある状態) を作る操作、保存データを全部消す操作、
-    /// 読書を偽の取り込みに切り替える操作、読書を終えた後のクイズを偽のクイズに切り替える操作、端末内のモデルが使えるかを偽の値に切り替える操作を置く。
+    /// 読書を偽の取り込みに切り替える操作、読書を終えた後のクイズを偽のクイズに切り替える操作、端末内のモデルが使えるかを偽の値に切り替える操作、
+    /// 購入の画面を偽の購入に切り替える操作を置く。
     ///
     /// 開発用のビルド (DEBUG) だけに入り、公開用のビルドには入らない。
     /// 操作の結果を画面と UI テストから確かめられるよう、5 つの型の保存データの件数を出す。
@@ -47,6 +48,9 @@
         /// 端末内のモデルが使えるかの確かめ方。アプリの入口の画面 (`ContentView`) が同じ値を読む。
         /// 既定を `.real` にしているのは、切り替えていない開発用のビルドでは実物で確かめるため。
         @AppStorage(developerMenuQuizAvailabilityKey) private var quizAvailability = DeveloperMenuQuizAvailability.real
+        /// 購入の画面を、偽の購入に切り替えている時の動き。本の一覧が購入の画面を出す時に同じ値を読む。
+        /// 値が無い時 (切り替えていない時) は、実物 (RevenueCat の SDK) で購入する。
+        @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
 
         var body: some View {
             List {
@@ -139,7 +143,7 @@
                 } footer: {
                     Text(verbatim: "実物以外の間は 端末内のモデルを呼ばずに 決まった問いと判定が返る")
                 }
-                // メニューのいちばん下に置いているのは、上の行の位置を変えず、既存の UI テストの画面の送り方を変えないため。
+                // 上の section の下に置いているのは、上の行の位置を変えず、既存の UI テストの画面の送り方を変えないため。
                 Section {
                     ForEach(DeveloperMenuQuizAvailability.allCases, id: \.self) { selectableQuizAvailability in
                         Button {
@@ -160,6 +164,25 @@
                     Text(verbatim: "端末内のモデルが使えるか")
                 } footer: {
                     Text(verbatim: "使えないことにすると 本の一覧と本の画面に案内が出て 読書を始められなくなる\n切り替えは 実機で設定を変えた時と同じく ホーム画面へ出て戻った時に効く (使えない間は 5 秒ごとにも確かめ直す)")
+                }
+                // メニューのいちばん下に置いているのは、上の行の位置を変えず、既存の UI テストの画面の送り方を変えないため。
+                Section {
+                    Button {
+                        fakePurchaseBehavior = nextDeveloperMenuFakePurchaseBehavior(behavior: fakePurchaseBehavior)
+                    } label: {
+                        Text(verbatim: "購入を 実物と偽物の動きで順に切り替える")
+                    }
+                    .accessibilityIdentifier("developer_menu_cycle_fake_purchase_behavior")
+                    HStack {
+                        Text(verbatim: "購入の動き")
+                        Spacer()
+                        Text(verbatim: developerMenuFakePurchaseBehaviorLabel(behavior: fakePurchaseBehavior))
+                            .accessibilityIdentifier("developer_menu_fake_purchase_behavior_state")
+                    }
+                } header: {
+                    Text(verbatim: "購入")
+                } footer: {
+                    Text(verbatim: "実物以外の間は RevenueCat と App Store を呼ばずに 決まった商品と購入の状態が返る")
                 }
                 if let failureDescription {
                     Section {
