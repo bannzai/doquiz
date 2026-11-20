@@ -115,9 +115,9 @@ let purchasePendingGuide = "購入の承認を待っています\n承認され�
 /// 購入が保留になった時も nil を返す (失敗ではなく、やり直しを促さないため。保留の時は `purchasePendingGuide` を出す)。
 func purchaseFailureMessage(result: PurchaseOperationResult) -> String? {
     switch result {
-    case .stateChanged, .unchanged, .pending:
+    case .stateChanged, .unchanged:
         nil
-    case .failed:
+    case .failed, .pending:
         "購入できませんでした\n時間をおいて もう一度お試しください"
     }
 }
@@ -311,7 +311,7 @@ struct PurchaseView: View {
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
             }
-            .disabled(isProcessing || isPurchasePending)
+            .disabled(isProcessing)
             // 保留の間は長く押せないままになるため、押せないことが見て分かるように薄くする (処理の途中は短いため薄くしない)。
             .opacity(isPurchasePending ? 0.4 : 1)
             .accessibilityIdentifier("purchase_button")
