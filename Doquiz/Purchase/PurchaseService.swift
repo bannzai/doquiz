@@ -29,5 +29,13 @@ protocol PurchaseService {
     func restore() async throws -> PurchaseState
 
     /// 利用者の今の購入の状態を返す。取得できない時は error を投げる。
+    ///
+    /// 端末に持っている状態を返すことがあり、その後に取り直した新しい状態は `stateUpdates()` に流れる。
     func state() async throws -> PurchaseState
+
+    /// 購入の状態が変わるたびに、新しい状態を流す stream を返す。
+    ///
+    /// 受け取り始めた時点までに知っている状態があれば、初めにそれを流す。同じ状態を続けて流すことがある。
+    /// 状態を知る手段が無い時 (RevenueCat の SDK を初期化していない時) は、何も流さずに終わる stream を返す。
+    func stateUpdates() -> AsyncStream<PurchaseState>
 }

@@ -53,6 +53,33 @@ func loadPurchaseContent(purchaseService: any PurchaseService) async -> Purchase
     }
 }
 
+/// 画面を出している間に、購入の状態が変わったと知らされた時の、画面の扱い。
+enum PurchaseStateUpdateAction: Equatable {
+    /// 画面を変えない。
+    case keep
+    /// 知らされた状態 (トライアル中・購入済み) の中身に入れ替える。
+    case showState
+    /// 購入の状態と商品を取得し直す。
+    case reload
+}
+
+/// 画面に `content` を出している時に、購入の状態が `purchaseState` だと知らされた後の、画面の扱いを返す。
+///
+/// 端末に持っている古い状態で画面を出した後に、新しい状態が届く時のためのもの (購入済みの利用者に商品を出し続けない・期間が終わった利用者に状態だけを出し続けない)。
+/// 出している中身と同じ状態の時と、購入していない利用者に商品か取得できなかった時の中身を出している時は、画面を変えない。
+func purchaseStateUpdateAction(content: PurchaseContent, purchaseState: PurchaseState) -> PurchaseStateUpdateAction {
+    switch (content, purchaseState) {
+    case (.inTrial, .inTrial), (.purchased, .purchased):
+        .keep
+    case (_, .inTrial), (_, .purchased):
+        .showState
+    case (.inTrial, .notPurchased), (.purchased, .notPurchased):
+        .reload
+    case (.loading, .notPurchased), (.packages, .notPurchased), (.unavailable, .notPurchased):
+        .keep
+    }
+}
+
 /// 購入か復元の操作の結果。
 enum PurchaseOperationResult: Equatable {
     /// トライアル中か購入済みになった。
@@ -152,6 +179,18 @@ struct PurchaseView: View {
         }
         .task {
             await load()
+            // 初めの取得を終えてから受け取り始める (`stateUpdates()` は、受け取り始めた時点までの変化も流す)。
+            for await purchaseState in purchaseService.stateUpdates() {
+                switch purchaseStateUpdateAction(content: content, purchaseState: purchaseState) {
+                case .keep:
+                    break
+                case .showState:
+                    failureMessage = nil
+                    content = purchaseContent(purchaseState: purchaseState, packages: [], introEligibilityStatuses: [:])
+                case .reload:
+                    await load()
+                }
+            }
         }
     }
 

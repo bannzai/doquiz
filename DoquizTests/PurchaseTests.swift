@@ -116,6 +116,7 @@ struct PurchaseTests {
                         introEligibilityStatus: .eligible,
                         purchaseState: purchaseState,
                         purchaseResult: .succeeds,
+                        purchaseStateAfterGettingPackages: nil,
                         restoredPurchaseState: purchaseState
                     )
                 )
@@ -133,6 +134,7 @@ struct PurchaseTests {
                 introEligibilityStatus: .ineligible,
                 purchaseState: .notPurchased,
                 purchaseResult: .succeeds,
+                purchaseStateAfterGettingPackages: nil,
                 restoredPurchaseState: .notPurchased
             )
         )
@@ -168,6 +170,7 @@ struct PurchaseTests {
                         introEligibilityStatus: .eligible,
                         purchaseState: .notPurchased,
                         purchaseResult: .succeeds,
+                        purchaseStateAfterGettingPackages: nil,
                         restoredPurchaseState: .notPurchased
                     )
                 )
@@ -186,6 +189,7 @@ struct PurchaseTests {
                         introEligibilityStatus: .unknown,
                         purchaseState: purchaseState,
                         purchaseResult: .succeeds,
+                        purchaseStateAfterGettingPackages: nil,
                         restoredPurchaseState: purchaseState
                     )
                 )
@@ -224,6 +228,7 @@ struct PurchaseTests {
                 introEligibilityStatus: .ineligible,
                 purchaseState: .notPurchased,
                 purchaseResult: .succeeds,
+                purchaseStateAfterGettingPackages: nil,
                 restoredPurchaseState: .notPurchased
             ).purchase(package: makeDeveloperMenuFakePurchasePackages()[0]) == .purchased
         )
@@ -314,6 +319,83 @@ struct PurchaseTests {
         #expect(result == .failed)
         #expect(restoreFailureMessage(result: result) == "復元できませんでした\n時間をおいて もう一度お試しください")
         #expect(try await purchaseService.state() == .notPurchased)
+    }
+
+    // MARK: - 画面を出している間に届く、購入の状態の変化
+
+    /// 商品を出している時に、トライアル中か購入済みだと知らされたら、その状態の中身に入れ替える。購入していないと知らされた時は、画面を変えない。
+    @Test func 商品を出している時に購入済みと知らされたら状態の中身に入れ替える() {
+        let content = PurchaseContent.packages(makeDeveloperMenuFakePurchasePackages(), introEligibilityStatuses: [:])
+
+        #expect(purchaseStateUpdateAction(content: content, purchaseState: .purchased) == .showState)
+        #expect(purchaseStateUpdateAction(content: content, purchaseState: .inTrial) == .showState)
+        #expect(purchaseStateUpdateAction(content: content, purchaseState: .notPurchased) == .keep)
+    }
+
+    /// トライアル中か購入済みの中身を出している時に、購入していないと知らされたら (期間が終わった)、取得し直す。
+    /// 同じ状態だと知らされた時は画面を変えず、もう一方の状態だと知らされた時は、その状態の中身に入れ替える。
+    @Test func 状態の中身を出している時に購入していないと知らされたら取得し直す() {
+        #expect(purchaseStateUpdateAction(content: .purchased, purchaseState: .notPurchased) == .reload)
+        #expect(purchaseStateUpdateAction(content: .inTrial, purchaseState: .notPurchased) == .reload)
+        #expect(purchaseStateUpdateAction(content: .purchased, purchaseState: .purchased) == .keep)
+        #expect(purchaseStateUpdateAction(content: .inTrial, purchaseState: .inTrial) == .keep)
+        #expect(purchaseStateUpdateAction(content: .inTrial, purchaseState: .purchased) == .showState)
+        #expect(purchaseStateUpdateAction(content: .purchased, purchaseState: .inTrial) == .showState)
+    }
+
+    /// 取得できなかった時の中身と取得している間は、購入済みかトライアル中だと知らされたら状態の中身に入れ替え、購入していないと知らされた時は画面を変えない
+    /// (取得できなかった時は、利用者が「もう一度取得する」を押すまで取得し直さない)。
+    @Test func 取得できなかった時の中身を出している時は購入していないと知らされても画面を変えない() {
+        #expect(purchaseStateUpdateAction(content: .unavailable, purchaseState: .notPurchased) == .keep)
+        #expect(purchaseStateUpdateAction(content: .unavailable, purchaseState: .purchased) == .showState)
+        #expect(purchaseStateUpdateAction(content: .loading, purchaseState: .notPurchased) == .keep)
+        #expect(purchaseStateUpdateAction(content: .loading, purchaseState: .inTrial) == .showState)
+    }
+
+    /// 偽の購入は、商品を返した直後に購入の状態が変わる時、変わった後の状態を stream に流し、その後の状態の取得も変わった後の状態を返す。
+    /// 画面を開き直すと (状態を取得し直すと)、購入済みの中身になる。
+    @Test(.timeLimit(.minutes(1)))
+    func 商品を返した直後に変わった購入の状態がstreamに流れる() async throws {
+        let purchaseService = makeDeveloperMenuFakePurchaseService(behavior: .becomesPurchasedAfterGettingPackages)
+        #expect(try await purchaseService.state() == .notPurchased)
+
+        #expect(purchaseContentName(purchaseContent: await loadPurchaseContent(purchaseService: purchaseService)) == "packages")
+
+        var receivedPurchaseStates: [PurchaseState] = []
+        for await purchaseState in purchaseService.stateUpdates() {
+            receivedPurchaseStates.append(purchaseState)
+            break
+        }
+        #expect(receivedPurchaseStates == [.purchased])
+        #expect(try await purchaseService.state() == .purchased)
+        #expect(purchaseContentName(purchaseContent: await loadPurchaseContent(purchaseService: purchaseService)) == "purchased")
+    }
+
+    /// 偽の購入は、購入と復元で状態を変えるたびに、変えた順で stream に流す。
+    @Test(.timeLimit(.minutes(1)))
+    func 購入と復元で変えた購入の状態がstreamに流れる() async throws {
+        let purchaseService = makeDeveloperMenuFakePurchaseService(behavior: .returnsPackages)
+        #expect(try await purchaseService.purchase(package: makeDeveloperMenuFakePurchasePackages()[0]) == .inTrial)
+        #expect(try await purchaseService.restore() == .purchased)
+
+        var receivedPurchaseStates: [PurchaseState] = []
+        for await purchaseState in purchaseService.stateUpdates() {
+            receivedPurchaseStates.append(purchaseState)
+            if receivedPurchaseStates.count == 2 {
+                break
+            }
+        }
+        #expect(receivedPurchaseStates == [.inTrial, .purchased])
+    }
+
+    /// 実物の購入は、SDK を初期化していない時、状態の変化を 1 つも流さずに終わる stream を返す (受け取る側が待ち続けない)。
+    @Test(.timeLimit(.minutes(1)))
+    func 実物の購入はSDKを初期化していない時に何も流さずに終わるstreamを返す() async {
+        var receivedPurchaseStates: [PurchaseState] = []
+        for await purchaseState in RevenueCatPurchaseService().stateUpdates() {
+            receivedPurchaseStates.append(purchaseState)
+        }
+        #expect(receivedPurchaseStates.isEmpty)
     }
 
     // MARK: - 画面に出す文
@@ -469,7 +551,7 @@ struct PurchaseTests {
 
     // MARK: - 開発者メニューの切り替え
 
-    /// 開発者メニューの購入の動きは、実物 → 商品を返す → 商品を取得できない → トライアル中 → 購入済み → 購入を取り消す → 購入と復元に失敗する → 実物、と一巡する。
+    /// 開発者メニューの購入の動きは、実物 → 商品を返す → 商品を取得できない → トライアル中 → 購入済み → 購入を取り消す → 購入と復元に失敗する → 開いた後に購入済みに変わる → 実物、と一巡する。
     @Test func 開発者メニューの購入の動きは一巡する() {
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: nil) == .returnsPackages)
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .returnsPackages) == .failsToGetPackages)
@@ -477,7 +559,8 @@ struct PurchaseTests {
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .inTrial) == .purchased)
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .purchased) == .cancelsPurchase)
         #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .cancelsPurchase) == .failsToPurchaseAndRestore)
-        #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .failsToPurchaseAndRestore) == nil)
+        #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .failsToPurchaseAndRestore) == .becomesPurchasedAfterGettingPackages)
+        #expect(nextDeveloperMenuFakePurchaseBehavior(behavior: .becomesPurchasedAfterGettingPackages) == nil)
     }
 
     /// 開発者メニューに出す購入の動きの名前は、動きごとに違う。
@@ -489,5 +572,6 @@ struct PurchaseTests {
         #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .purchased) == "購入済み")
         #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .cancelsPurchase) == "購入を取り消す")
         #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .failsToPurchaseAndRestore) == "購入と復元に失敗する")
+        #expect(developerMenuFakePurchaseBehaviorLabel(behavior: .becomesPurchasedAfterGettingPackages) == "開いた後に購入済みに変わる")
     }
 }

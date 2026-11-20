@@ -162,6 +162,19 @@ final class PurchaseTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["purchase_state_title"].exists)
     }
 
+    /// 購入していない利用者として商品を出した後に、購入済みだと知らされると (端末に持っていた古い状態の後に新しい状態が届く場面)、
+    /// 開き直さなくても、商品が消えて購入済みの表示に変わる。
+    @MainActor
+    func test商品を出した後に購入済みと知らされると購入済みの表示に変わる() {
+        let app = launchAppWithInMemoryStore()
+        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 7, fakePurchaseBehaviorLabel: "開いた後に購入済みに変わる")
+
+        XCTAssertTrue(app.staticTexts["purchase_state_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertEqual(app.staticTexts["purchase_state_title"].label, "購入済みです")
+        XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 0)
+        XCTAssertFalse(app.buttons["purchase_button"].exists)
+    }
+
     /// 商品を取得できない時は、商品の行も値段も購入のボタンも出さず、取得できなかった案内と、取得し直す入口が出る。
     /// 取得し直しても取得できない間は、同じ案内のままである。復元できる購入が無い時に復元すると、見つからなかった旨が出る。
     /// 商品を取得できない時の画面を `purchase-unavailable` の名前で添付する。

@@ -106,4 +106,21 @@ struct RevenueCatPurchaseService: PurchaseService {
             premiumEntitlementInfo: try await Purchases.shared.customerInfo().entitlements[revenueCatPremiumEntitlementIdentifier]
         )
     }
+
+    /// SDK が購入の情報を取り直すたびに (`Purchases.customerInfoStream`)、その時の購入の状態を流す。
+    /// 受け取る側が受け取るのをやめると、SDK から受け取るのもやめる。SDK を初期化していない時は、何も流さずに終わる stream を返す。
+    func stateUpdates() -> AsyncStream<PurchaseState> {
+        guard Purchases.isConfigured else {
+            return AsyncStream { $0.finish() }
+        }
+        return AsyncStream { continuation in
+            let task = Task {
+                for await customerInfo in Purchases.shared.customerInfoStream {
+                    continuation.yield(purchaseState(premiumEntitlementInfo: customerInfo.entitlements[revenueCatPremiumEntitlementIdentifier]))
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { [task] _ in task.cancel() }
+        }
+    }
 }
