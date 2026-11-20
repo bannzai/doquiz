@@ -19,7 +19,7 @@ struct RevenueCatNotConfiguredError: Error {}
 ///
 /// 値が無い時・文字列でない時・空の時 (`Secrets.xcconfig` が無いビルド) は nil を返す。
 func revenueCatPublicAPIKey(infoDictionaryValue: Any?) -> String? {
-    guard let publicAPIKey = infoDictionaryValue as? String, !publicAPIKey.isEmpty else {
+    guard let publicAPIKey = infoDictionaryValue as? String else {
         return nil
     }
     return publicAPIKey

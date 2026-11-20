@@ -29,7 +29,7 @@ func purchaseContent(
     case .purchased:
         .purchased
     case .notPurchased:
-        packages.isEmpty ? .unavailable : .packages(packages, introEligibilityStatuses: introEligibilityStatuses)
+        .packages(packages, introEligibilityStatuses: introEligibilityStatuses)
     }
 }
 
@@ -263,6 +263,7 @@ struct PurchaseView: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizAccentColor, lineWidth: 1.5))
             }
             .disabled(isProcessing)
+            .hidden()
             .accessibilityIdentifier("purchase_retry_button")
             restoreButton
             Spacer(minLength: 0)

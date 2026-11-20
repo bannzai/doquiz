@@ -17,5 +17,5 @@ func purchaseState(premiumEntitlementInfo: EntitlementInfo?) -> PurchaseState {
     guard let premiumEntitlementInfo, premiumEntitlementInfo.isActive else {
         return .notPurchased
     }
-    return premiumEntitlementInfo.periodType == .trial ? .inTrial : .purchased
+    return .purchased
 }

@@ -128,7 +128,6 @@
 
         /// 購入の状態を、作る時に決めた復元した後の状態に変えて返す。
         func restore() async throws -> PurchaseState {
-            purchaseState = restoredPurchaseState
             return purchaseState
         }
 

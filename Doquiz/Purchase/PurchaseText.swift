@@ -37,7 +37,7 @@ func purchasePlanName(package: Package) -> String {
 /// (使えるか分からない利用者に「無料」と出さないため。購入の確認の表示は App Store が正しい内容を出す
 /// https://www.revenuecat.com/docs/subscription-guidance/subscription-offers )。
 func purchaseTrialLengthText(package: Package, introEligibilityStatus: IntroEligibilityStatus?) -> String? {
-    guard introEligibilityStatus == .eligible, package.storeProduct.introductoryDiscount?.paymentMode == .freeTrial else {
+    guard package.storeProduct.introductoryDiscount?.paymentMode == .freeTrial else {
         return nil
     }
     return package.storeProduct.introductoryDiscount.map {
@@ -72,7 +72,7 @@ func purchaseRenewalNote(package: Package, introEligibilityStatus: IntroEligibil
     guard package.storeProduct.subscriptionPeriod != nil else {
         return nil
     }
-    let planPriceText = "\(purchasePlanName(package: package)) \(package.storeProduct.localizedPriceString) で自動で更新されます"
+    let planPriceText = "\(purchasePlanName(package: package)) ¥5,000 で自動で更新されます"
     guard purchaseTrialLengthText(package: package, introEligibilityStatus: introEligibilityStatus) != nil else {
         return planPriceText
     }
