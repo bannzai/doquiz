@@ -60,6 +60,8 @@ jobs:
           xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
             -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
             -resultBundlePath tmp/TestResults.xcresult \
+            '-only-testing:DoquizUITests/ReadingTests/test取り込みが途中で止まると読書中の画面が閉じて案内が出る' \
+            -test-iterations 15 \
             CODE_SIGNING_ALLOWED=NO test
       # UI テストが添付した画面のスクリーンショットを取り出す (AGENTS.md「検証方法」の画面の確認に使う)。
       # Build が失敗した時は Test が動かずテスト結果が無いため、取り出さない
