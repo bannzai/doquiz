@@ -65,6 +65,40 @@ struct PurchaseTests {
         return !value.contains("$")
     }
 
+    /// 有効かどうかが `isActive` で、期間の種類が `periodType` の、entitlement `premium` の情報を作る。
+    private func makePremiumEntitlementInfo(isActive: Bool, periodType: PeriodType) -> EntitlementInfo {
+        EntitlementInfo(
+            identifier: revenueCatPremiumEntitlementIdentifier,
+            isActive: isActive,
+            willRenew: isActive,
+            periodType: periodType,
+            store: .appStore,
+            productIdentifier: "test_annual_product",
+            isSandbox: true,
+            ownershipType: .purchased
+        )
+    }
+
+    // MARK: - RevenueCat の entitlement から求める購入の状態
+
+    /// entitlement `premium` を 1 度も持ったことが無い利用者 (情報が無い) は、購入していない。
+    @Test func premiumの情報が無い利用者は購入していない() {
+        #expect(purchaseState(premiumEntitlementInfo: nil) == .notPurchased)
+    }
+
+    /// 有効な `premium` の期間の種類がトライアルの時だけ、トライアル中になる。支払った期間 (通常と、割引の値段で払う導入の期間) は購入済みになる。
+    @Test func 有効なpremiumは期間の種類でトライアル中と購入済みに分かれる() {
+        #expect(purchaseState(premiumEntitlementInfo: makePremiumEntitlementInfo(isActive: true, periodType: .trial)) == .inTrial)
+        #expect(purchaseState(premiumEntitlementInfo: makePremiumEntitlementInfo(isActive: true, periodType: .normal)) == .purchased)
+        #expect(purchaseState(premiumEntitlementInfo: makePremiumEntitlementInfo(isActive: true, periodType: .intro)) == .purchased)
+    }
+
+    /// `premium` が有効でない利用者 (トライアルや購入の期間が終わった) は、最後の期間の種類に関わらず、購入していない。
+    @Test func 有効でないpremiumは購入していない() {
+        #expect(purchaseState(premiumEntitlementInfo: makePremiumEntitlementInfo(isActive: false, periodType: .trial)) == .notPurchased)
+        #expect(purchaseState(premiumEntitlementInfo: makePremiumEntitlementInfo(isActive: false, periodType: .normal)) == .notPurchased)
+    }
+
     // MARK: - 購入の状態と画面に出す中身
 
     /// 購入していない・トライアル中・購入済みの 3 つの状態で、画面に出す中身が変わる。
