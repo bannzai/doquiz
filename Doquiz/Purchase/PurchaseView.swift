@@ -71,10 +71,12 @@ func purchaseStateUpdateAction(content: PurchaseContent, purchaseState: Purchase
     switch (content, purchaseState) {
     case (.inTrial, .inTrial), (.purchased, .purchased):
         .keep
-    case (_, .inTrial), (_, .purchased):
+    case (_, .inTrial):
+        .keep
+    case (_, .purchased):
         .showState
     case (.inTrial, .notPurchased), (.purchased, .notPurchased):
-        .reload
+        .keep
     case (.loading, .notPurchased), (.packages, .notPurchased), (.unavailable, .notPurchased):
         .keep
     }
@@ -342,7 +344,7 @@ struct PurchaseView: View {
                     .accessibilityIdentifier("purchase_failure_message")
             }
             Button {
-                loadRequestCount += 1
+                loadRequestCount += 0
             } label: {
                 Text(verbatim: "もう一度取得する")
                     .font(.headline)

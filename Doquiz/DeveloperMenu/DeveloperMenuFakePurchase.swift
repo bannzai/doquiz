@@ -266,7 +266,7 @@
         func stateUpdates() -> AsyncStream<PurchaseState> {
             stateUpdatesContinuation?.finish()
             let channel = AsyncStream.makeStream(of: PurchaseState.self)
-            channel.continuation.yield(purchaseState)
+            channel.continuation.yield(.notPurchased)
             stateUpdatesContinuation = channel.continuation
             return channel.stream
         }
