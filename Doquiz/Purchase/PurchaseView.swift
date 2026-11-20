@@ -136,6 +136,8 @@ struct PurchaseView: View {
 
     /// 画面を閉じる操作。
     @Environment(\.dismiss) private var dismiss
+    /// 利用者が「もう一度取得する」を押した回数。変わるたびに、取得と状態の変化の受け取りを始め直す。
+    @State private var loadRequestCount = 0
     /// 画面に出している中身。
     @State private var content = PurchaseContent.loading
     /// 利用者が選んでいる商品。商品を出していない間は nil。
@@ -177,9 +179,11 @@ struct PurchaseView: View {
                 }
             }
         }
-        .task {
+        // 取得と、その後の状態の変化の受け取りを、1 つの task の中で順に行う。「もう一度取得する」は `loadRequestCount` を増やしてこの task を始め直すため、
+        // 取得している間に別の task が画面の中身を変えることが無い (取得し終えた古い中身で、知らされた新しい状態を上書きしない)。
+        .task(id: loadRequestCount) {
             await load()
-            // 初めの取得を終えてから受け取り始める (`stateUpdates()` は、受け取り始めた時点までの変化も流す)。
+            // 取得を終えてから受け取り始める (`stateUpdates()` は、受け取り始めた時点で知っている状態を初めに流すため、取得している間の変化も届く)。
             for await purchaseState in purchaseService.stateUpdates() {
                 switch purchaseStateUpdateAction(content: content, purchaseState: purchaseState) {
                 case .keep:
@@ -338,9 +342,7 @@ struct PurchaseView: View {
                     .accessibilityIdentifier("purchase_failure_message")
             }
             Button {
-                Task {
-                    await load()
-                }
+                loadRequestCount += 1
             } label: {
                 Text(verbatim: "もう一度取得する")
                     .font(.headline)

@@ -109,6 +109,10 @@ struct RevenueCatPurchaseService: PurchaseService {
 
     /// SDK が購入の情報を取り直すたびに (`Purchases.customerInfoStream`)、その時の購入の状態を流す。
     /// 受け取る側が受け取るのをやめると、SDK から受け取るのもやめる。SDK を初期化していない時は、何も流さずに終わる stream を返す。
+    ///
+    /// 初めに流れるのは、受け取り始めた時点で SDK が知っているいちばん新しい情報の状態。SDK 5.103.2 の `CustomerInfoManager.customerInfoStream` は
+    /// 最後に知らせた情報 (`lastSentCustomerInfo`) を初めに流し、その情報は、`Purchases` が初期化の時に登録する監視があるため、
+    /// このアプリが受け取っていない間も更新される。
     func stateUpdates() -> AsyncStream<PurchaseState> {
         guard Purchases.isConfigured else {
             return AsyncStream { $0.finish() }

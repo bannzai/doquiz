@@ -23,6 +23,8 @@
         case failsToPurchaseAndRestore
         /// 購入していない利用者として 3 つの商品を返した直後に、購入済みに変わる (端末に持っていた古い状態の後に、新しい状態が届く場面)。
         case becomesPurchasedAfterGettingPackages
+        /// 初めの 1 回だけ商品の取得に失敗し、取得し直すと、3 つの商品を返した直後に購入済みに変わる。
+        case failsToGetPackagesOnceThenBecomesPurchased
     }
 
     /// 偽の購入で、商品を購入した時に起きること。
@@ -54,6 +56,8 @@
             "購入と復元に失敗する"
         case .becomesPurchasedAfterGettingPackages:
             "開いた後に購入済みに変わる"
+        case .failsToGetPackagesOnceThenBecomesPurchased:
+            "取得し直すと購入済みに変わる"
         }
     }
 
@@ -71,6 +75,7 @@
         case .returnsPackages:
             DeveloperMenuFakePurchaseService(
                 packages: makeDeveloperMenuFakePurchasePackages(),
+                packagesFailureCount: 0,
                 introEligibilityStatus: .eligible,
                 purchaseState: .notPurchased,
                 purchaseResult: .succeeds,
@@ -80,6 +85,7 @@
         case .failsToGetPackages:
             DeveloperMenuFakePurchaseService(
                 packages: nil,
+                packagesFailureCount: 0,
                 introEligibilityStatus: .unknown,
                 purchaseState: .notPurchased,
                 purchaseResult: .succeeds,
@@ -89,6 +95,7 @@
         case .inTrial:
             DeveloperMenuFakePurchaseService(
                 packages: makeDeveloperMenuFakePurchasePackages(),
+                packagesFailureCount: 0,
                 introEligibilityStatus: .ineligible,
                 purchaseState: .inTrial,
                 purchaseResult: .succeeds,
@@ -98,6 +105,7 @@
         case .purchased:
             DeveloperMenuFakePurchaseService(
                 packages: makeDeveloperMenuFakePurchasePackages(),
+                packagesFailureCount: 0,
                 introEligibilityStatus: .ineligible,
                 purchaseState: .purchased,
                 purchaseResult: .succeeds,
@@ -107,6 +115,7 @@
         case .cancelsPurchase:
             DeveloperMenuFakePurchaseService(
                 packages: makeDeveloperMenuFakePurchasePackages(),
+                packagesFailureCount: 0,
                 introEligibilityStatus: .eligible,
                 purchaseState: .notPurchased,
                 purchaseResult: .isCancelled,
@@ -116,6 +125,7 @@
         case .failsToPurchaseAndRestore:
             DeveloperMenuFakePurchaseService(
                 packages: makeDeveloperMenuFakePurchasePackages(),
+                packagesFailureCount: 0,
                 introEligibilityStatus: .eligible,
                 purchaseState: .notPurchased,
                 purchaseResult: .fails,
@@ -125,6 +135,17 @@
         case .becomesPurchasedAfterGettingPackages:
             DeveloperMenuFakePurchaseService(
                 packages: makeDeveloperMenuFakePurchasePackages(),
+                packagesFailureCount: 0,
+                introEligibilityStatus: .eligible,
+                purchaseState: .notPurchased,
+                purchaseResult: .succeeds,
+                purchaseStateAfterGettingPackages: .purchased,
+                restoredPurchaseState: .purchased
+            )
+        case .failsToGetPackagesOnceThenBecomesPurchased:
+            DeveloperMenuFakePurchaseService(
+                packages: makeDeveloperMenuFakePurchasePackages(),
+                packagesFailureCount: 1,
                 introEligibilityStatus: .eligible,
                 purchaseState: .notPurchased,
                 purchaseResult: .succeeds,
@@ -155,13 +176,16 @@
         private let purchaseStateAfterGettingPackages: PurchaseState?
         /// 復元した後の購入の状態。nil の時は、復元に失敗する。
         private let restoredPurchaseState: PurchaseState?
-        /// 購入の状態が変わるたびに新しい状態を流す stream と、その流し口。受け取る側は 1 つだけを想定している。
-        private let stateUpdatesChannel = AsyncStream.makeStream(of: PurchaseState.self)
+        /// いちばん新しく返した `stateUpdates()` の stream の流し口。まだ 1 度も返していない時は nil。
+        private var stateUpdatesContinuation: AsyncStream<PurchaseState>.Continuation?
+        /// 商品の取得に、あと何回失敗するか。作る時に決めた回数から、失敗するたびに 1 ずつ減る。
+        private var remainingPackagesFailureCount: Int
 
-        /// 返す商品 `packages` (nil の時は取得に失敗する)、利用者がトライアルを使えるか、初めの購入の状態、商品を購入した時に起きること、
-        /// 商品を返した直後に変わる購入の状態 (nil の時は変わらない)、復元した後の購入の状態 (nil の時は復元に失敗する) を決めて作る。
+        /// 返す商品 `packages` (nil の時は取得に失敗する)、商品の取得に初めの何回失敗するか、利用者がトライアルを使えるか、初めの購入の状態、
+        /// 商品を購入した時に起きること、商品を返した直後に変わる購入の状態 (nil の時は変わらない)、復元した後の購入の状態 (nil の時は復元に失敗する) を決めて作る。
         init(
             packages: [Package]?,
+            packagesFailureCount: Int,
             introEligibilityStatus: IntroEligibilityStatus,
             purchaseState: PurchaseState,
             purchaseResult: DeveloperMenuFakePurchaseResult,
@@ -169,6 +193,7 @@
             restoredPurchaseState: PurchaseState?
         ) {
             fakePackages = packages
+            remainingPackagesFailureCount = packagesFailureCount
             self.introEligibilityStatus = introEligibilityStatus
             self.purchaseState = purchaseState
             self.purchaseResult = purchaseResult
@@ -176,15 +201,19 @@
             self.restoredPurchaseState = restoredPurchaseState
         }
 
-        /// 購入の状態を `newPurchaseState` に変え、`stateUpdates()` の stream に流す。
+        /// 購入の状態を `newPurchaseState` に変え、いちばん新しく返した `stateUpdates()` の stream に流す。
         private func changePurchaseState(newPurchaseState: PurchaseState) {
             purchaseState = newPurchaseState
-            stateUpdatesChannel.continuation.yield(newPurchaseState)
+            stateUpdatesContinuation?.yield(newPurchaseState)
         }
 
-        /// 作る時に決めた商品を返す。商品が nil の時は `DeveloperMenuFakePurchaseFailure` を投げる。
+        /// 作る時に決めた商品を返す。商品が nil の時と、作る時に決めた「初めに失敗する回数」が残っている間は、`DeveloperMenuFakePurchaseFailure` を投げる。
         /// 「商品を返した直後に変わる購入の状態」を決めている時は、返す前に購入の状態をそれに変えて stream に流す。
         func packages() async throws -> [Package] {
+            guard remainingPackagesFailureCount == 0 else {
+                remainingPackagesFailureCount -= 1
+                throw DeveloperMenuFakePurchaseFailure()
+            }
             guard let fakePackages else {
                 throw DeveloperMenuFakePurchaseFailure()
             }
@@ -231,10 +260,15 @@
             purchaseState
         }
 
-        /// 購入・復元・「商品を返した直後に変わる購入の状態」で状態を変えるたびに、新しい状態を流す stream を返す。
-        /// 受け取り始める前に変えた分も、受け取り始めた時に流れる。何回呼んでも同じ stream を返す。
+        /// 初めに今の購入の状態を流し、その後は購入・復元・「商品を返した直後に変わる購入の状態」で状態を変えるたびに、新しい状態を流す stream を返す
+        /// (実物が、受け取り始めた時点で知っている状態を初めに流すのに合わせている)。
+        /// 呼ぶたびに新しい stream を返し、前に返した stream は終える (状態の変化は、いちばん新しく返した stream にだけ流れる)。
         func stateUpdates() -> AsyncStream<PurchaseState> {
-            stateUpdatesChannel.stream
+            stateUpdatesContinuation?.finish()
+            let channel = AsyncStream.makeStream(of: PurchaseState.self)
+            channel.continuation.yield(purchaseState)
+            stateUpdatesContinuation = channel.continuation
+            return channel.stream
         }
     }
 

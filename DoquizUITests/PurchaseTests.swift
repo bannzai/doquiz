@@ -162,17 +162,21 @@ final class PurchaseTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["purchase_state_title"].exists)
     }
 
-    /// 購入していない利用者として商品を出した後に、購入済みだと知らされると (端末に持っていた古い状態の後に新しい状態が届く場面)、
-    /// 開き直さなくても、商品が消えて購入済みの表示に変わる。
+    /// 商品を取得できなかった後に「もう一度取得する」を押すと、取得し直す。取得し直している間に購入済みだと知らされた時
+    /// (端末に持っていた古い状態の後に新しい状態が届く場面) は、取得し終えた商品で上書きされず、開き直さなくても購入済みの表示になる。
     @MainActor
-    func test商品を出した後に購入済みと知らされると購入済みの表示に変わる() {
+    func test取得し直している間に購入済みと知らされると購入済みの表示になる() {
         let app = launchAppWithInMemoryStore()
-        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 7, fakePurchaseBehaviorLabel: "開いた後に購入済みに変わる")
+        openPurchaseWithFakePurchase(app: app, initialFakePurchaseBehaviorLabel: "実物", tapCount: 8, fakePurchaseBehaviorLabel: "取得し直すと購入済みに変わる")
+
+        XCTAssertTrue(app.staticTexts["purchase_unavailable_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertFalse(app.staticTexts["purchase_state_title"].exists)
+        app.buttons["purchase_retry_button"].tap()
 
         XCTAssertTrue(app.staticTexts["purchase_state_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertEqual(app.staticTexts["purchase_state_title"].label, "購入済みです")
+        XCTAssertFalse(app.staticTexts["purchase_unavailable_guide"].exists)
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 0)
-        XCTAssertFalse(app.buttons["purchase_button"].exists)
     }
 
     /// 商品を取得できない時は、商品の行も値段も購入のボタンも出さず、取得できなかった案内と、取得し直す入口が出る。
