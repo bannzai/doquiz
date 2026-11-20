@@ -35,9 +35,9 @@ jobs:
   # https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md
   build-and-test:
     runs-on: xcode-27
-    # 45 分は、RevenueCat の SDK と購入の UI テスト 2 件を足した実行 (run 44676960359) が 30 分の上限で止まった実測から選んだ。
-    # その実行は Build の 2 つの step に約 4 分 (SDK のビルドで、足す前の約 1 分 15 秒から延びた)、Test の step に 26 分かかった時点で、
-    # UI テストを 4 件残して止まった (落ちたテストは無い。残りは 1 件 15〜30 秒)。合わせて約 33 分に、runner が遅い時の余りを持たせた。
+    # 45 分は、履歴の UI テスト 4 件を足す前の Test の step が約 25 分 (run 44597468063)、足した 4 件が約 5 分 (run 44599776324) かかった実測に、
+    # Build の約 1 分と、UI テストが落ちた時の後始末の約 3.5 分 (同 run) を足して、余りを持たせた値。
+    # RevenueCat の SDK と購入の UI テスト 2 件を足した分は、Build が約 3 分、Test が約 1 分 20 秒延びる (run 44676960359 の実測)。
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -115,6 +115,14 @@ func quizNoQuestionsGuide(capturedPageCount: Int) -> String {
         : "読んだ範囲から問いを作れなかったため\n今回の読書のクイズはありません"
 }
 
+/// 問いに答える画面で、答える前に離れるボタンを出すかを返す。
+///
+/// 判定している途中は、どの場合も出さない (離れた後に回答が保存されるため)。
+/// それ以外は、答える前から離れられる画面 (`canLeaveBeforeAnswering`) か、答えの判定か保存に失敗した後 (`hasAnswerFailure`) に出す。
+func quizCanLeaveBeforeNext(canLeaveBeforeAnswering: Bool, isJudging: Bool, hasAnswerFailure: Bool) -> Bool {
+    !isJudging && (canLeaveBeforeAnswering || hasAnswerFailure)
+}
+
 /// 端末内のモデルが使えない時に、クイズの画面に出す案内の文。
 let quizModelUnavailableGuide = "この iPhone では今 端末内のモデルを使えないため\nクイズを出せません"
 
