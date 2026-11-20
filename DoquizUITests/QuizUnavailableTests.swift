@@ -18,11 +18,10 @@ final class QuizUnavailableTests: XCTestCase {
     /// `element` が `predicateFormat` の条件を満たすまで待つ。待ちの上限を過ぎても満たさない時はテストを失敗にする。
     @MainActor
     private func assertEventually(element: XCUIElement, predicateFormat: String) {
-        // 上限の 10 秒は、起動の待ち (30 秒) と違い、同じ画面の中の表示の更新だけを待つため短くしている (DeveloperMenuTests と同じ値)。
         XCTAssertEqual(
             XCTWaiter().wait(
                 for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: predicateFormat), object: element)],
-                timeout: 10
+                timeout: sameScreenChangeWaitTimeout
             ),
             .completed,
             "\(element) が \(predicateFormat) にならなかった"
@@ -45,18 +44,18 @@ final class QuizUnavailableTests: XCTestCase {
         // GitHub の runner の Simulator は起動直後の描画が遅いことがあるため、待ちの上限を長めに取る (ScreenshotTests と同じ値)。
         XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
         app.buttons["developer_menu_entrance"].tap()
-        XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["developer_menu_replace_sample_data"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         let quizAvailabilityButton = app.buttons["developer_menu_quiz_availability_\(quizAvailability)"]
         // 切り替えのボタンはメニューのいちばん下にあり、画面に入っていない間は要素が無いため、押せる位置に来るまで上へ送る。
         // 上限の 5 回は、メニューの 5 つの section を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
         for _ in 0..<5 where !(quizAvailabilityButton.exists && quizAvailabilityButton.isHittable) {
             app.swipeUp()
         }
-        XCTAssertTrue(quizAvailabilityButton.waitForExistence(timeout: 10))
+        XCTAssertTrue(quizAvailabilityButton.waitForExistence(timeout: sameScreenChangeWaitTimeout))
         quizAvailabilityButton.tap()
         assertEventually(element: quizAvailabilityButton, predicateFormat: "isSelected == true")
         app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 
     /// 起動直後の一覧から、名前が `title` の本を登録して、一覧にその本の行が出るまで待つ。
@@ -64,13 +63,10 @@ final class QuizUnavailableTests: XCTestCase {
     private func registerBook(app: XCUIApplication, title: String) {
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         app.buttons["book_registration_entrance"].tap()
-        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: 10))
-        app.textFields["book_registration_title_field"].tap()
-        // 押した直後は入力欄にまだキーボードの入力先が移っていないことがあり、そのまま打つと失敗するため、移るまで待つ。
-        assertEventually(element: app.textFields["book_registration_title_field"], predicateFormat: "hasKeyboardFocus == true")
-        app.textFields["book_registration_title_field"].typeText(title)
+        XCTAssertTrue(app.textFields["book_registration_title_field"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        typeTextAfterKeyboardFocus(element: app.textFields["book_registration_title_field"], text: title)
         app.buttons["book_registration_submit"].tap()
-        XCTAssertTrue(bookRow(app: app, title: title).waitForExistence(timeout: 10))
+        XCTAssertTrue(bookRow(app: app, title: title).waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 
     /// 一覧の行のうち、名前が `title` の本の行を返す。
@@ -92,7 +88,7 @@ final class QuizUnavailableTests: XCTestCase {
         registerBook(app: app, title: "潮見町の灯台日誌")
         XCTAssertFalse(app.staticTexts["quiz_unavailable_guide"].exists)
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
-        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.buttons["reading_start"].isEnabled)
         XCTAssertFalse(app.staticTexts["quiz_unavailable_guide"].exists)
         app.navigationBars.buttons.firstMatch.tap()
@@ -101,14 +97,14 @@ final class QuizUnavailableTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["quiz_unavailable_guide"].exists)
         leaveAndReturn(app: app)
 
-        XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].label.contains("クイズを出せません"))
         XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].label.contains("Apple Intelligence がオフになっています"))
         XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].label.contains("設定アプリで Apple Intelligence をオンにする"))
         attachScreenshot(app: app, name: "book-list-quiz-unavailable")
 
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
-        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].label.contains("Apple Intelligence がオフになっています"))
         XCTAssertFalse(app.buttons["reading_start"].isEnabled)
         XCTAssertTrue(app.buttons["question_settings_entrance"].isEnabled)
@@ -121,11 +117,11 @@ final class QuizUnavailableTests: XCTestCase {
 
         assertEventually(element: app.staticTexts["quiz_unavailable_guide"], predicateFormat: "exists == false")
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
-        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertFalse(app.staticTexts["quiz_unavailable_guide"].exists)
         XCTAssertTrue(app.buttons["reading_start"].isEnabled)
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.staticTexts["screen_capture_consent_title"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["screen_capture_consent_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 
     /// 使えない理由が違うと、本の一覧と本の画面に出る案内の文が変わり、どの理由でも「読書を始める」を押せない。
@@ -145,7 +141,7 @@ final class QuizUnavailableTests: XCTestCase {
 
             assertEventually(element: app.staticTexts["quiz_unavailable_guide"], predicateFormat: "label CONTAINS '\(guidePart)'")
             bookRow(app: app, title: "潮見町の灯台日誌").tap()
-            XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
+            XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
             XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].label.contains(guidePart))
             XCTAssertFalse(app.buttons["reading_start"].isEnabled)
             attachScreenshot(app: app, name: screenshotName)
@@ -162,15 +158,15 @@ final class QuizUnavailableTests: XCTestCase {
         registerBook(app: app, title: "潮見町の灯台日誌")
         switchQuizAvailability(app: app, quizAvailability: "appleIntelligenceNotEnabled")
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
-        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.buttons["reading_start"].isEnabled)
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
 
         leaveAndReturn(app: app)
 
         assertEventually(element: app.buttons["screen_capture_consent_agree"], predicateFormat: "exists == false")
-        XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["quiz_unavailable_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertFalse(app.staticTexts["reading_guide"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["reading_start"].isEnabled)
     }
