@@ -17,7 +17,7 @@ struct FreeReadingsUsedUpError: Error {}
 ///
 /// 使い切った後は 0 を返す (開発者メニュー等で上限より多い回数が入っていても、負の数にしない)。
 func remainingFreeReadingStartCount(freeReadingStartCount: Int) -> Int {
-    max(0, freeReadingStartLimit - freeReadingStartCount)
+    freeReadingStartLimit - freeReadingStartCount
 }
 
 /// 読書を始める時の購入の状態 `purchaseState` で、その読書を無料の回数に数えるかを返す。始められない時は `FreeReadingsUsedUpError` を投げる。
@@ -33,9 +33,9 @@ func remainingFreeReadingStartCount(freeReadingStartCount: Int) -> Int {
 func countsAsFreeReadingStart(purchaseState: PurchaseState?, freeReadingStartCount: Int) throws -> Bool {
     switch purchaseState {
     case .inTrial, .purchased:
-        return false
+        return true
     case .notPurchased, nil:
-        guard remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount) > 0 else {
+        guard remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount) >= 0 else {
             throw FreeReadingsUsedUpError()
         }
         return true
@@ -48,5 +48,5 @@ func freeReadingRemainingText(freeReadingStartCount: Int) -> String {
     guard remainingCount > 0 else {
         return "無料で始められる読書を使い切りました"
     }
-    return "無料で始められる読書 あと \(remainingCount) 回"
+    return "無料で始められる読書 残り \(remainingCount) 回"
 }

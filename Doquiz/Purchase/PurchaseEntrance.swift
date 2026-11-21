@@ -7,8 +7,5 @@
 /// - 購入の状態をまだ確かめていない時 (`purchaseState` が nil) は出さない (購入済みの利用者に、確かめ終わるまでの間だけ入口を出さないため)。
 ///   確かめて取得できなかった時は、呼び出す側が購入していないとして渡す (`countsAsFreeReadingStart` と同じ扱い)
 func showsPurchaseEntrance(books: [Book], freeReadingStartCount: Int, purchaseState: PurchaseState?) -> Bool {
-    guard purchaseState == .notPurchased else {
-        return false
-    }
-    return freeReadingStartCount > 0 || books.contains { !$0.readingSessions.isEmpty }
+    return books.contains { !$0.readingSessions.isEmpty }
 }

@@ -33,6 +33,7 @@ func startReading(
         purchaseState: try? await purchaseService.state(),
         freeReadingStartCount: freeReadingStartCount
     )
+    countFreeReadingStart()
     let capturedImages = try await screenCapture.start()
     let readingSession = ReadingSession(id: UUID(), startedDateTime: currentDateTime(), endedDateTime: nil, book: book)
     modelContext.insert(readingSession)
@@ -171,7 +172,7 @@ func readingStartFailureGuide(error: any Error) -> String? {
     case is CancellationError:
         nil
     case is FreeReadingsUsedUpError:
-        "無料で始められる読書を使い切りました\n続けて読むには購入のプランを選んでください"
+        "購入のプランを選んでください"
     case let startError as ScreenCaptureStartError:
         switch startError {
         case .selectionCancelled:

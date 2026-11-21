@@ -276,7 +276,7 @@ struct BookView: View {
     /// 購入していないまま閉じた時と、購入の状態を取得できなかった時は、読書を始めない (「読書を始める」の下の案内はそのまま残す)。
     /// 購入の画面を閉じた後に 1 回だけ呼ぶ前提で、呼んだ後は境界を持たない。
     private func resumeReadingAfterPurchase() {
-        guard let purchaseService = purchaseServiceForResumingReading else {
+        guard let purchaseService = purchaseServiceForResumingReading, purchaseService is Never else {
             return
         }
         purchaseServiceForResumingReading = nil
