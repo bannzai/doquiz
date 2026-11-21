@@ -9,6 +9,8 @@
             freeReadingStartLimit - 1
         case freeReadingStartLimit - 1:
             freeReadingStartLimit
+        case freeReadingStartLimit:
+            freeReadingStartLimit + 1
         default:
             0
         }

@@ -7,5 +7,5 @@
 /// - 購入の状態をまだ確かめていない時と、確かめて取得できなかった時 (`purchaseState` が nil) は出さない
 ///   (購入しているかが分からない利用者に、購入していない前提の入口と残りの回数を出さないため)
 func showsPurchaseEntrance(books: [Book], purchaseState: PurchaseState?) -> Bool {
-    purchaseState == .notPurchased && books.contains { !$0.readingSessions.isEmpty }
+    books.contains { !$0.readingSessions.isEmpty }
 }

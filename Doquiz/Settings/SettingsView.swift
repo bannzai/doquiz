@@ -35,10 +35,6 @@ struct SettingsView: View {
                     settingsRowLabel(title: "特定商取引法に基づく表記", systemImage: "arrow.up.right")
                 }
                 .accessibilityIdentifier("settings_specified_commercial_transaction_act_link")
-                Link(destination: contactMailURL()) {
-                    settingsRowLabel(title: "お問い合わせ", systemImage: "envelope")
-                }
-                .accessibilityIdentifier("settings_contact_link")
             } header: {
                 Text(verbatim: "このアプリについて")
             } footer: {
