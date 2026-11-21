@@ -70,7 +70,20 @@ final class PurchaseTests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "identifier == %@ AND label CONTAINS %@", "purchase_package_row", text)).firstMatch
     }
 
+    /// 購入の画面に、利用規約とプライバシーポリシーの入口が、それぞれの名前で出ていることを確かめる。
+    @MainActor
+    private func assertLegalDocumentLinksExist(app: XCUIApplication) {
+        // SwiftUI の `Link` が UI テストでどの種類の要素として見えるかに依らないよう、種類を限らずに identifier で探す。
+        let termsOfUseLink = app.descendants(matching: .any).matching(identifier: "purchase_terms_of_use_link").firstMatch
+        XCTAssertTrue(termsOfUseLink.exists)
+        XCTAssertEqual(termsOfUseLink.label, "利用規約")
+        let privacyPolicyLink = app.descendants(matching: .any).matching(identifier: "purchase_privacy_policy_link").firstMatch
+        XCTAssertTrue(privacyPolicyLink.exists)
+        XCTAssertEqual(privacyPolicyLink.label, "プライバシーポリシー")
+    }
+
     /// 商品を取得できた時は、年額・月額・買い切りの 3 つの行に、取得した値段と更新の間隔とトライアルの長さが出る。
+    /// 商品が出ている画面にも、購入済みの画面にも、利用規約とプライバシーポリシーの入口が出る。
     /// 初めは並びの最初の年額を選んでいて、購入のボタンと更新の説明が年額のトライアルと値段になっている。
     /// 買い切りを選ぶと、ボタンが「購入する」に変わり、自動で更新される説明が消える。購入すると、商品が消えて購入済みの表示になる。
     /// 3 つの商品が出ている画面を `purchase-packages`、購入済みの画面を `purchase-purchased` の名前で添付する。
@@ -100,6 +113,7 @@ final class PurchaseTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["purchase_renewal_note"].label, "無料の期間が終わると年額 ¥5,000 で自動で更新されます")
         XCTAssertTrue(app.buttons["purchase_restore_button"].exists)
         XCTAssertFalse(app.staticTexts["purchase_unavailable_guide"].exists)
+        assertLegalDocumentLinksExist(app: app)
         attachScreenshot(app: app, name: "purchase-packages")
 
         lifetimeRow.tap()
@@ -112,6 +126,7 @@ final class PurchaseTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["purchase_state_title"].label, "購入済みです")
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 0)
         XCTAssertFalse(app.buttons["purchase_button"].exists)
+        assertLegalDocumentLinksExist(app: app)
         attachScreenshot(app: app, name: "purchase-purchased")
 
         app.buttons["purchase_close_button"].tap()
@@ -196,6 +211,7 @@ final class PurchaseTests: XCTestCase {
 
     /// 商品を取得できない時は、商品の行も値段も購入のボタンも出さず、取得できなかった案内と、取得し直す入口が出る。
     /// 取得し直しても取得できない間は、同じ案内のままである。復元できる購入が無い時に復元すると、見つからなかった旨が出る。
+    /// 商品を取得できない時の画面にも、利用規約とプライバシーポリシーの入口が出る。
     /// 商品を取得できない時の画面を `purchase-unavailable` の名前で添付する。
     @MainActor
     func test商品を取得できない時は値段を出さず取得し直す入口が出る() {
@@ -209,6 +225,7 @@ final class PurchaseTests: XCTestCase {
         XCTAssertFalse(app.buttons["purchase_button"].exists)
         XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥")).count, 0)
         XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "無料")).count, 0)
+        assertLegalDocumentLinksExist(app: app)
         attachScreenshot(app: app, name: "purchase-unavailable")
 
         app.buttons["purchase_retry_button"].tap()

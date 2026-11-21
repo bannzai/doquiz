@@ -283,7 +283,7 @@ struct PurchaseView: View {
         .contentShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    /// 選んでいる商品 `package` の購入のボタンと、自動で更新されることの説明と、復元の入口。
+    /// 選んでいる商品 `package` の購入のボタンと、自動で更新されることの説明と、復元の入口と、利用規約とプライバシーポリシーの入口。
     private func purchaseActions(package: Package, introEligibilityStatus: IntroEligibilityStatus?) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             if isPurchasePending {
@@ -325,8 +325,30 @@ struct PurchaseView: View {
                 .foregroundStyle(doquizSecondaryTextColor)
                 .fixedSize(horizontal: false, vertical: true)
             }
-            restoreButton
+            restoreAndLegalDocumentLinks
         }
+    }
+
+    /// 購入を復元する入口と、利用規約とプライバシーポリシーの入口を、横に並べたもの。
+    private var restoreAndLegalDocumentLinks: some View {
+        HStack(spacing: 0) {
+            restoreButton
+            ForEach(LegalDocument.allCases, id: \.self) { legalDocument in
+                Spacer(minLength: 8)
+                legalDocumentLink(legalDocument: legalDocument)
+            }
+        }
+    }
+
+    /// 文書 `legalDocument` の公開ページを開く入口。
+    private func legalDocumentLink(legalDocument: LegalDocument) -> some View {
+        Link(destination: legalDocumentURL(legalDocument: legalDocument)) {
+            Text(verbatim: legalDocumentTitle(legalDocument: legalDocument))
+                .font(.footnote)
+                .foregroundStyle(doquizAccentColor)
+                .frame(minHeight: 44)
+        }
+        .accessibilityIdentifier(legalDocumentAccessibilityIdentifier(legalDocument: legalDocument))
     }
 
     /// 購入を復元する入口。
@@ -345,7 +367,7 @@ struct PurchaseView: View {
         .accessibilityIdentifier("purchase_restore_button")
     }
 
-    /// 商品か購入の状態を取得できなかった時の中身。値段を出さず、取得し直す入口と復元の入口を出す。
+    /// 商品か購入の状態を取得できなかった時の中身。値段を出さず、取得し直す入口と復元の入口と、利用規約とプライバシーポリシーの入口を出す。
     private var unavailableContent: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(verbatim: "いまは購入できません")
@@ -374,14 +396,14 @@ struct PurchaseView: View {
             }
             .disabled(isProcessing)
             .accessibilityIdentifier("purchase_retry_button")
-            restoreButton
+            restoreAndLegalDocumentLinks
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(20)
     }
 
-    /// トライアル中か購入済みの利用者に出す中身。状態の見出し `title` と説明 `guide` を出し、商品は出さない。
+    /// トライアル中か購入済みの利用者に出す中身。状態の見出し `title` と説明 `guide` と、利用規約とプライバシーポリシーの入口を出し、商品は出さない。
     private func stateContent(title: String, guide: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(verbatim: title)
@@ -392,6 +414,11 @@ struct PurchaseView: View {
                 .font(.subheadline)
                 .foregroundStyle(doquizSecondaryTextColor)
                 .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 20) {
+                ForEach(LegalDocument.allCases, id: \.self) { legalDocument in
+                    legalDocumentLink(legalDocument: legalDocument)
+                }
+            }
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
