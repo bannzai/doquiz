@@ -1,0 +1,7 @@
+// Doquiz ターゲットのビルド設定のうち、マシンごとに値が違うものの入口。
+//
+// RevenueCat の公開 SDK キーは git 管理外の Secrets.xcconfig が持つ (書き出すのは scripts/write-secrets-xcconfig.sh)。
+// Secrets.xcconfig が無い時は下の空の値のままビルドでき、アプリは RevenueCat の SDK を初期化しない。
+REVENUECAT_PUBLIC_API_KEY_IOS =
+
+#include? "Secrets.xcconfig"

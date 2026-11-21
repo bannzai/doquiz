@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4D1E20A7C3B94F6E8A5D7B01 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 6F3A20B8D4CA4E7F9B6E8C02 /* RevenueCat */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		795537063D01DF46E1B7476E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		515BE600ACE0EAA8B966B874 /* DoquizUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DoquizUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A6618FCE0722012A04902CBA /* DoquizTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DoquizTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D47CD339E01D308E6F916596 /* Doquiz.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Doquiz.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C6D20EB07FD41A2AE91BF05 /* Doquiz.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Doquiz.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -47,10 +52,22 @@
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		7A4B20C9E5DB4F809C7F9D03 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D1E20A7C3B94F6E8A5D7B01 /* RevenueCat in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
 		2C8468E0137C93F4FA581215 = {
 			isa = PBXGroup;
 			children = (
+				9C6D20EB07FD41A2AE91BF05 /* Doquiz.xcconfig */,
 				1CF6DCA425081F8DAAB13921 /* Doquiz */,
 				2303191BB572444FDE32C19D /* DoquizTests */,
 				E32DDA124D456D11C68C950A /* DoquizUITests */,
@@ -76,6 +93,7 @@
 			buildConfigurationList = FC90939FFFC8D813CA511D23 /* Build configuration list for PBXNativeTarget "Doquiz" */;
 			buildPhases = (
 				D88E476EB852F88167A9678A /* Sources */,
+				7A4B20C9E5DB4F809C7F9D03 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -86,6 +104,7 @@
 			);
 			name = Doquiz;
 			packageProductDependencies = (
+				6F3A20B8D4CA4E7F9B6E8C02 /* RevenueCat */,
 			);
 			productName = Doquiz;
 			productReference = D47CD339E01D308E6F916596 /* Doquiz.app */;
@@ -160,6 +179,9 @@
 			);
 			mainGroup = 2C8468E0137C93F4FA581215;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8B5C20DAF6EC40919D80AE04 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
@@ -330,6 +352,7 @@
 		};
 		7A5C1769B8CE5B821063C0FE /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9C6D20EB07FD41A2AE91BF05 /* Doquiz.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -415,6 +438,7 @@
 		};
 		BDAE475484C4F57E0D90E78A /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9C6D20EB07FD41A2AE91BF05 /* Doquiz.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -502,6 +526,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8B5C20DAF6EC40919D80AE04 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			requirement = {
+				kind = exactVersion;
+				version = 5.103.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6F3A20B8D4CA4E7F9B6E8C02 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8B5C20DAF6EC40919D80AE04 /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCat;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 87909841AA89191EAB9EBB75 /* Project object */;
 }
