@@ -279,7 +279,7 @@ struct BookView: View {
             isStartingReading = false
             switch purchaseState {
             case .inTrial, .purchased:
-                beginReading(purchaseService: purchaseService)
+                break
             case .notPurchased, nil:
                 break
             }
