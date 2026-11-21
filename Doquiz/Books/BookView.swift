@@ -277,11 +277,8 @@ struct BookView: View {
         Task {
             let purchaseState = try? await purchaseService.state()
             isStartingReading = false
-            switch purchaseState {
-            case .inTrial, .purchased:
+            if resumesReadingAfterPurchase(purchaseState: purchaseState) {
                 beginReading(purchaseService: purchaseService)
-            case .notPurchased, nil:
-                break
             }
         }
     }

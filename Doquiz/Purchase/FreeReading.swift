@@ -42,6 +42,19 @@ func countsAsFreeReadingStart(purchaseState: PurchaseState?, freeReadingStartCou
     }
 }
 
+/// 無料の回数を使い切って出した購入の画面を閉じた時の購入の状態 `purchaseState` で、読書をそのまま始めるかを返す。
+///
+/// トライアル中と購入済みの時だけ始める。購入していないまま閉じた時と、購入の状態を取得できなかった時 (nil) は始めない
+/// (取得できない時に始めないのは、`countsAsFreeReadingStart` と同じく購入済みとして通さないため)。
+func resumesReadingAfterPurchase(purchaseState: PurchaseState?) -> Bool {
+    switch purchaseState {
+    case .inTrial, .purchased:
+        true
+    case .notPurchased, nil:
+        false
+    }
+}
+
 /// ホーム (本を選ぶ画面) で、購入の画面への入口に添える、無料で始められる読書の残りの文を返す。
 func freeReadingRemainingText(freeReadingStartCount: Int) -> String {
     let remainingCount = remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount)

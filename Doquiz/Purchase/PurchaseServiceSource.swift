@@ -30,3 +30,12 @@ struct PurchaseServiceSource: DynamicProperty {
         #endif
     }
 }
+
+/// 購入の状態を確かめ直す時に、前に出した購入の画面が使った購入の境界を使い回すかを返す。
+///
+/// `purchaseSheetKindID` はその境界を作った時の作り方の種類、`currentKindID` は今の作り方の種類 (どちらも `PurchaseServiceSource.kindID`)。
+/// 同じ時だけ使い回す (購入の画面で購入した結果を、購入した境界から読むため)。違う時は、開発者メニューで偽の購入の動きを変えた後で、
+/// 前の境界は今の動きを表さないため使い回さない。
+func reusesPurchaseSheetPurchaseService(purchaseSheetKindID: String, currentKindID: String) -> Bool {
+    purchaseSheetKindID == currentKindID
+}

@@ -35,6 +35,30 @@ struct FreeReadingTests {
         #expect(remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount) == expectedRemainingCount)
     }
 
+    /// 無料の回数を使い切って出した購入の画面を閉じた時、トライアル中か購入済みなら読書を始め、
+    /// 購入していない時と購入の状態を取得できなかった時 (nil) は始めない。
+    @Test(arguments: [
+        (PurchaseState?.some(.inTrial), true),
+        (PurchaseState?.some(.purchased), true),
+        (PurchaseState?.some(.notPurchased), false),
+        (PurchaseState?.none, false),
+    ])
+    func 購入の画面を閉じた時はトライアル中か購入済みの時だけ読書を始める(purchaseState: PurchaseState?, expectedResumes: Bool) {
+        #expect(resumesReadingAfterPurchase(purchaseState: purchaseState) == expectedResumes)
+    }
+
+    /// 購入の状態を確かめ直す時は、前に出した購入の画面の境界を、作り方の種類が同じ時だけ使い回し、
+    /// 開発者メニューで偽の購入の動きを変えた後 (種類が違う時) は使い回さない。
+    @Test(arguments: [
+        ("real", "real", true),
+        ("returnsPackages", "returnsPackages", true),
+        ("returnsPackages", "inTrial", false),
+        ("returnsPackages", "real", false),
+    ])
+    func 購入の画面の境界は作り方の種類が同じ時だけ使い回す(purchaseSheetKindID: String, currentKindID: String, expectedReuses: Bool) {
+        #expect(reusesPurchaseSheetPurchaseService(purchaseSheetKindID: purchaseSheetKindID, currentKindID: currentKindID) == expectedReuses)
+    }
+
     /// ホームに出す残りの文は、残りがある間は残りの回数を、使い切った後は使い切ったことを伝える。
     @Test(arguments: [
         (0, "無料で始められる読書 あと 20 回"),

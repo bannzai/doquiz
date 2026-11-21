@@ -149,7 +149,10 @@ struct BookListView: View {
     /// 購入の状態を確かめる時に使う購入の境界を返す。ホームから出した購入の画面の境界があり、作り方が変わっていなければそれを返し、
     /// それ以外は新しく作る。
     private func purchaseServiceForStateCheck() -> any PurchaseService {
-        guard let purchaseSheetPurchaseService, purchaseSheetPurchaseService.kindID == purchaseServiceSource.kindID else {
+        guard
+            let purchaseSheetPurchaseService,
+            reusesPurchaseSheetPurchaseService(purchaseSheetKindID: purchaseSheetPurchaseService.kindID, currentKindID: purchaseServiceSource.kindID)
+        else {
             return purchaseServiceSource.makePurchaseService()
         }
         return purchaseSheetPurchaseService.purchaseService
