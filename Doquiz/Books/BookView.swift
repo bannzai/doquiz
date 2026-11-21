@@ -279,9 +279,17 @@ struct BookView: View {
         Task {
             let purchaseState = try? await purchaseService.state()
             isStartingReading = false
-            if resumesReadingAfterPurchase(purchaseState: purchaseState) {
-                beginReading(purchaseService: purchaseService)
+            guard resumesReadingAfterPurchase(purchaseState: purchaseState) else {
+                return
             }
+            // 購入の画面を出している間に端末内のモデルが使えなくなった時は、読書を始めない
+            // (「読書を始める」を押せなくしているのと同じく、クイズを作れないのに画面を取り込まないため)。
+            // 購入は済んでいるので、使い切ったことの案内は消し、使えないことの案内 (`quizUnavailableGuide`) だけを残す。
+            guard quizUnavailableGuide == nil else {
+                readingGuide = nil
+                return
+            }
+            beginReading(purchaseService: purchaseService)
         }
     }
 
