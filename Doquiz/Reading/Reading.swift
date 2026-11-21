@@ -5,20 +5,34 @@ import SwiftData
 /// 読書を始める。画面の取り込みを始め、始められた時だけ読書の記録を 1 件作って保存する。
 ///
 /// 「読書を始める」を押してから取り込みを始めるまでの処理は、この関数だけに置く (始める前の判定を後から足す場所を 1 か所にするため)。
+/// - 取り込みを始める前に、`purchaseService` から購入の状態を取り、無料で始められる読書の判定 (`countsAsFreeReadingStart`) を通す。
+///   使い切っていてトライアル中でも購入済みでもない時は、取り込みを始めずに `FreeReadingsUsedUpError` を投げ、読書の記録を残さない
 /// - 取り込みを始められなかった時は、`screenCapture.start()` の error をそのまま投げ、読書の記録を残さない
 /// - 読書の記録の保存に失敗した時は、足した読書の記録を取り除き、取り込みを止めてから `save` の error を投げる
+/// - 読書の記録を保存できて、その読書を無料の回数に数える時だけ、`countFreeReadingStart` を 1 回呼ぶ
 ///
 /// 保存先への書き込みは `save` で行う (アプリは `modelContext.save` を渡す。保存の失敗をテストで起こせるよう引数にしている)。
-/// 冪等ではない: 読書 1 回ごとに読書の記録を 1 件作るため、呼ぶたびに取り込みを始め直して読書の記録が 1 件増える。
-/// - Parameter currentDateTime: 今の日時を返す。取り込みが始まった時に 1 回呼び、読書を始めた日時にする
+/// 冪等ではない: 読書 1 回ごとに読書の記録を 1 件作るため、呼ぶたびに取り込みを始め直して読書の記録が 1 件増え、無料の回数に数える時は回数も 1 増える。
+/// - Parameters:
+///   - freeReadingStartCount: これまでに無料で始めた読書の回数
+///   - countFreeReadingStart: 無料で始めた読書の回数を 1 増やす操作
+///   - currentDateTime: 今の日時を返す。取り込みが始まった時に 1 回呼び、読書を始めた日時にする
 /// - Returns: 作った読書の記録と、取り込んだ画面の画像が順に届く流れ
 func startReading(
     book: Book,
+    purchaseService: any PurchaseService,
+    freeReadingStartCount: Int,
+    countFreeReadingStart: () -> Void,
     screenCapture: any ScreenCapture,
     modelContext: ModelContext,
     currentDateTime: () -> Date,
     save: () throws -> Void
 ) async throws -> (readingSession: ReadingSession, capturedImages: AsyncThrowingStream<CGImage, any Error>) {
+    // 購入の状態を取得できない時は nil にして、購入していない利用者と同じに扱う (扱いの理由は `countsAsFreeReadingStart` に書く)。
+    let countsAsFreeReading = try countsAsFreeReadingStart(
+        purchaseState: try? await purchaseService.state(),
+        freeReadingStartCount: freeReadingStartCount
+    )
     let capturedImages = try await screenCapture.start()
     let readingSession = ReadingSession(id: UUID(), startedDateTime: currentDateTime(), endedDateTime: nil, book: book)
     modelContext.insert(readingSession)
@@ -28,6 +42,9 @@ func startReading(
         modelContext.delete(readingSession)
         await screenCapture.stop()
         throw error
+    }
+    if countsAsFreeReading {
+        countFreeReadingStart()
     }
     return (readingSession, capturedImages)
 }
@@ -153,6 +170,8 @@ func readingStartFailureGuide(error: any Error) -> String? {
     switch error {
     case is CancellationError:
         nil
+    case is FreeReadingsUsedUpError:
+        "無料で始められる読書を使い切りました\n続けて読むには購入のプランを選んでください"
     case let startError as ScreenCaptureStartError:
         switch startError {
         case .selectionCancelled:

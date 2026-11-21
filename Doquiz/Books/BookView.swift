@@ -28,7 +28,17 @@ struct BookView: View {
         @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
         /// 開発者メニューで、読書を終えた後のクイズを偽のクイズに切り替えている時の動き。値が無い時は実物でクイズを作る。
         @AppStorage(developerMenuFakeQuizBehaviorKey) private var fakeQuizBehavior: DeveloperMenuFakeQuizBehavior?
+        /// 開発者メニューで、購入を偽の購入に切り替えている時の動き。値が無い時は実物の購入の状態で判定する。
+        @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
     #endif
+    /// これまでに無料で始めた読書の回数。購入もトライアルもしていない状態で読書が始まった時に 1 増やす。
+    /// 既定を 0 にしているのは、保存した値が無い利用者は、まだ無料の読書を 1 回も始めていないため。
+    @AppStorage(freeReadingStartCountKey) private var freeReadingStartCount = 0
+    /// 無料の回数を使い切った利用者が「読書を始める」を押した時に出している購入の画面。出していない間は nil。
+    @State private var presentedPurchase: PresentedPurchase?
+    /// 無料の回数を使い切って出した購入の画面が使った購入の境界。画面を閉じた時に、この境界の購入の状態で読書を始めるかを決め、決めたら nil に戻す。
+    /// `presentedPurchase` と別に持つのは、画面を閉じた時の処理が呼ばれる時には `presentedPurchase` が nil に戻っているため。
+    @State private var purchaseServiceForResumingReading: (any PurchaseService)?
     /// 出題の設定の画面を出しているか。
     @State private var isEditingQuestionSettings = false
     /// 履歴の画面を出しているか。
@@ -192,6 +202,16 @@ struct BookView: View {
                 isShowingScreenCaptureConsent = false
             }
         }
+        // 購入の画面を閉じ切ってから読書を始める (閉じている途中に画面共有の選択画面を重ねないため。同意の説明と同じ)。
+        .sheet(
+            item: $presentedPurchase,
+            onDismiss: {
+                resumeReadingAfterPurchase()
+            },
+            content: { presentedPurchase in
+                PurchaseView(purchaseService: presentedPurchase.purchaseService)
+            }
+        )
         // 読書中の画面とクイズの画面を同じ覆いの中で切り替える (覆いを閉じてから別の覆いを出すと、間に本の画面が見えるため)。
         .fullScreenCover(item: $readingSession) { readingSession in
             ReadingAndQuizView(
@@ -241,21 +261,59 @@ struct BookView: View {
         return VisionPageTextExtractor()
     }
 
+    /// 読書を始めるかを決める時に使う `PurchaseService` を作る。開発者メニューで偽の購入に切り替えている時は、選んだ動きをする偽の購入を返す。
+    private func makePurchaseServiceForReading() -> any PurchaseService {
+        #if DEBUG
+            if let fakePurchaseBehavior {
+                return makeDeveloperMenuFakePurchaseService(behavior: fakePurchaseBehavior)
+            }
+        #endif
+        return RevenueCatPurchaseService()
+    }
+
+    /// 無料の回数を使い切って出した購入の画面を閉じた時に、トライアル中か購入済みになっていれば、その画面が使った購入の境界で読書を始める。
+    ///
+    /// 購入していないまま閉じた時と、購入の状態を取得できなかった時は、読書を始めない (「読書を始める」の下の案内はそのまま残す)。
+    /// 購入の画面を閉じた後に 1 回だけ呼ぶ前提で、呼んだ後は境界を持たない。
+    private func resumeReadingAfterPurchase() {
+        guard let purchaseService = purchaseServiceForResumingReading else {
+            return
+        }
+        purchaseServiceForResumingReading = nil
+        Task {
+            switch try? await purchaseService.state() {
+            case .inTrial, .purchased:
+                beginReading(purchaseService: purchaseService)
+            case .notPurchased, nil:
+                break
+            }
+        }
+    }
+
     /// 読書を始める。取り込みが始まったら読書中の画面を出し、ページを足す処理を動かす。
     ///
     /// 始められなかった時は、読書の記録を残さず、この画面に案内を出す。取り込みが途中で止まった時は、読書を終えて案内を出す。
+    /// 無料の回数を使い切っていてトライアル中でも購入済みでもない時は、取り込みを始めずに購入の画面を出す。
     /// 始めている途中にもう一度呼ばれた時は何もしない。
-    private func beginReading() {
+    /// - Parameter purchaseService: 読書を始めるかを決める購入の境界。購入の画面で購入した後に始める時は、その画面が使った境界を渡す。
+    ///   既定の nil の時は新しく作る (「読書を始める」を押した時は、押した時点の購入の状態で決めるため)
+    private func beginReading(purchaseService: (any PurchaseService)? = nil) {
         guard !isStartingReading else {
             return
         }
         isStartingReading = true
         readingGuide = nil
         let screenCapture = makeScreenCaptureForReading()
+        let purchaseService = purchaseService ?? makePurchaseServiceForReading()
         Task {
             do {
                 let startedReading = try await startReading(
                     book: book,
+                    purchaseService: purchaseService,
+                    freeReadingStartCount: freeReadingStartCount,
+                    countFreeReadingStart: {
+                        freeReadingStartCount += 1
+                    },
                     screenCapture: screenCapture,
                     modelContext: modelContext,
                     currentDateTime: { Date() },
@@ -285,6 +343,10 @@ struct BookView: View {
             } catch {
                 readingGuide = readingStartFailureGuide(error: error)
                 isStartingReading = false
+                if error is FreeReadingsUsedUpError {
+                    purchaseServiceForResumingReading = purchaseService
+                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseService)
+                }
             }
         }
     }
