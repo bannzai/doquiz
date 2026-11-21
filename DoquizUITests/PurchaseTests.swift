@@ -233,7 +233,11 @@ final class PurchaseTests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 0)
         XCTAssertFalse(app.buttons["purchase_button"].exists)
         XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥")).count, 0)
-        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "無料")).count, 0)
+        // 購入の画面の下にあるホームの「無料で始められる読書 あと N 回」(`free_reading_remaining`) は、トライアルの文ではないため数えない。
+        XCTAssertEqual(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@ AND identifier != %@", "無料", "free_reading_remaining")).count,
+            0
+        )
         assertLegalDocumentLinksExist(app: app)
         attachScreenshot(app: app, name: "purchase-unavailable")
 
