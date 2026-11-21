@@ -18,6 +18,10 @@ struct BookListView: View {
     @State private var purchaseState: PurchaseState?
     /// 購入の画面を閉じた回数。閉じるたびに購入の状態を確かめ直すために数える。
     @State private var purchaseSheetDismissCount = 0
+    /// ホームから最後に出した購入の画面が使った購入の境界と、その境界を作った時の作り方の種類 (`PurchaseServiceSource.kindID`)。
+    /// 購入の画面を閉じた後に購入の状態を確かめ直す時は、作り方が変わっていなければこの境界を使う
+    /// (購入の画面で購入した結果を、購入した境界から読むため。偽の購入は、境界ごとに購入の状態を覚えている)。
+    @State private var purchaseSheetPurchaseService: (kindID: String, purchaseService: any PurchaseService)?
     /// 本を登録する画面を出しているか。
     @State private var isRegisteringBook = false
     /// 出している購入の画面。出していない間は nil。
@@ -81,7 +85,9 @@ struct BookListView: View {
                     .padding(.top, 10)
                     .accessibilityIdentifier("free_reading_remaining")
                 Button {
-                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseServiceSource.makePurchaseService())
+                    let purchaseService = purchaseServiceSource.makePurchaseService()
+                    purchaseSheetPurchaseService = (kindID: purchaseServiceSource.kindID, purchaseService: purchaseService)
+                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseService)
                 } label: {
                     Text(verbatim: "購入のプランを見る")
                         .font(.subheadline)
@@ -131,13 +137,22 @@ struct BookListView: View {
         // 開発者メニューで偽の購入の動きを変えた時に、購入の状態を確かめ直す。購入はほかの画面でも済むため、出ている間ずっと同じ値を使わない。
         .task(id: purchaseStateCheckID) {
             // 取得できない時は nil にして、入口と残りの回数を出さない (購入しているかが分からない利用者に、購入していない前提の表示を出さないため)。
-            let checkedPurchaseState = try? await purchaseServiceSource.makePurchaseService().state()
+            let checkedPurchaseState = try? await purchaseServiceForStateCheck().state()
             // 確かめている間に次の確かめ直しが始まった時は、古い結果で上書きしない。
             guard !Task.isCancelled else {
                 return
             }
             purchaseState = checkedPurchaseState
         }
+    }
+
+    /// 購入の状態を確かめる時に使う購入の境界を返す。ホームから出した購入の画面の境界があり、作り方が変わっていなければそれを返し、
+    /// それ以外は新しく作る。
+    private func purchaseServiceForStateCheck() -> any PurchaseService {
+        guard let purchaseSheetPurchaseService, purchaseSheetPurchaseService.kindID == purchaseServiceSource.kindID else {
+            return purchaseServiceSource.makePurchaseService()
+        }
+        return purchaseSheetPurchaseService.purchaseService
     }
 
     /// 購入の状態を確かめ直す時を表す値。購入の画面を閉じた時と、開発者メニューで偽の購入の動きを変えた時に変わる。

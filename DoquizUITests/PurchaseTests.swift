@@ -88,7 +88,8 @@ final class PurchaseTests: XCTestCase {
     /// 買い切りを選ぶと、ボタンが「購入する」に変わり、自動で更新される説明が消える。購入すると、商品が消えて購入済みの表示になる。
     /// 3 つの商品が出ている画面を `purchase-packages`、購入済みの画面を `purchase-purchased` の名前で添付する。
     /// 読書の記録が無い間 (起動した直後の、保存データが空の一覧) は、購入の画面への入口が本の一覧に出ない。
-    /// 読書の記録がある本ができると、入口が出る。入口が出ている一覧を `book-list-purchase-entrance` の名前で添付する。
+    /// 読書の記録がある本ができると、入口が出る。購入して購入の画面を閉じると、購入した境界で購入の状態を確かめ直し、入口と無料の残りの回数が消える。
+    /// 購入の画面を閉じた後の一覧を `book-list-after-purchase` の名前で添付する。
     @MainActor
     func test商品を取得できた時は3つの商品が出て購入すると購入済みになる() {
         let app = launchAppWithInMemoryStore()
@@ -130,9 +131,17 @@ final class PurchaseTests: XCTestCase {
         attachScreenshot(app: app, name: "purchase-purchased")
 
         app.buttons["purchase_close_button"].tap()
-        XCTAssertTrue(app.buttons["purchase_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        XCTAssertEqual(app.buttons["purchase_entrance"].label, "購入のプランを見る")
-        attachScreenshot(app: app, name: "book-list-purchase-entrance")
+        XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertEqual(
+            XCTWaiter().wait(
+                for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["purchase_entrance"])],
+                timeout: sameScreenChangeWaitTimeout
+            ),
+            .completed,
+            "購入した後もホームに購入の画面への入口が残った"
+        )
+        XCTAssertFalse(app.staticTexts["free_reading_remaining"].exists)
+        attachScreenshot(app: app, name: "book-list-after-purchase")
     }
 
     /// 利用者が購入を取り消した時は、失敗の文を出さず、3 つの商品が出たままである。

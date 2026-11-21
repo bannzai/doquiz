@@ -29,6 +29,7 @@ func startReading(
     save: () throws -> Void
 ) async throws -> (readingSession: ReadingSession, capturedImages: AsyncThrowingStream<CGImage, any Error>) {
     // 購入の状態を取得できない時は nil にして、購入していない利用者と同じに扱う (扱いの理由は `countsAsFreeReadingStart` に書く)。
+    // 判定は取り込みを始める前に行う (使い切った時に、取り込みを始めずに投げるため)。結果を使うのは読書の記録を保存できた後なので、変数に持つ。
     let countsAsFreeReading = try countsAsFreeReadingStart(
         purchaseState: try? await purchaseService.state(),
         freeReadingStartCount: freeReadingStartCount
