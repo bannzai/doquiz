@@ -46,9 +46,9 @@ final class PurchaseTests: XCTestCase {
         assertEventuallyLabel(element: app.staticTexts["developer_menu_answer_count"], expectedLabel: "7")
         let cycleButton = app.buttons["developer_menu_cycle_fake_purchase_behavior"]
         let behaviorState = app.staticTexts["developer_menu_fake_purchase_behavior_state"]
-        // 切り替えのボタンと今の動きの行はメニューの上から 7 つ目の section に並んでいて、画面に入っていない間は要素が無い。
+        // 切り替えのボタンと今の動きの行はメニューの上から 6 つ目の section に並んでいて、画面に入っていない間は要素が無い。
         // ボタンのすぐ下の「今の動き」の行が画面に入るまで上へ送る (ボタンだけが画面に入った位置で止めると、押した後の動きを読めない)。
-        // 上限の 6 回は、1 回に 1 つずつしか section を送れなくても、上から 7 つ目の section まで届く回数。
+        // 上限の 6 回は、1 回に 1 つずつしか section を送れなくても上から 6 つ目の section に届く 5 回に、1 回の余裕を足した回数。
         for _ in 0..<6 where !(behaviorState.exists && behaviorState.isHittable) {
             app.swipeUp()
         }

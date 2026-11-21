@@ -31,7 +31,7 @@ final class FreeReadingLimitTests: XCTestCase {
     /// 開発者メニューの `element` が押せる位置に来るまで、メニューを上へ送る。
     ///
     /// 押せる位置にある時にも送ると、要素がナビゲーションバーの下まで進んで押せないことがあるため、押せない時だけ送る (読書の UI テストと同じ送り方)。
-    /// 上限の 8 回は、メニューの 8 つの section を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
+    /// 上限の 8 回は、メニューの section (7 つと、失敗した時だけ出る 1 つ) を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
     @MainActor
     private func scrollDeveloperMenu(app: XCUIApplication, element: XCUIElement) {
         for _ in 0..<8 where !(element.exists && element.isHittable) {
