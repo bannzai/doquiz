@@ -24,9 +24,9 @@ func legalDocumentTitle(legalDocument: LegalDocument) -> String {
 func legalDocumentURL(legalDocument: LegalDocument) -> URL {
     switch legalDocument {
     case .termsOfUse:
-        URL(string: "https://bannzai.github.io/doquiz/Terms-ja.html")!
+        URL(string: "https://bannzai.github.io/doquiz/Terms-en.html")!
     case .privacyPolicy:
-        URL(string: "https://bannzai.github.io/doquiz/PrivacyPolicy-ja.html")!
+        URL(string: "https://bannzai.github.io/doquiz/PrivacyPolicy-en.html")!
     }
 }
 

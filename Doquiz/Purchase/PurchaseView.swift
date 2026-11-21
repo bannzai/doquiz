@@ -333,10 +333,6 @@ struct PurchaseView: View {
     private var restoreAndLegalDocumentLinks: some View {
         HStack(spacing: 0) {
             restoreButton
-            ForEach(LegalDocument.allCases, id: \.self) { legalDocument in
-                Spacer(minLength: 8)
-                legalDocumentLink(legalDocument: legalDocument)
-            }
         }
     }
 
@@ -414,11 +410,6 @@ struct PurchaseView: View {
                 .font(.subheadline)
                 .foregroundStyle(doquizSecondaryTextColor)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 20) {
-                ForEach(LegalDocument.allCases, id: \.self) { legalDocument in
-                    legalDocumentLink(legalDocument: legalDocument)
-                }
-            }
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
