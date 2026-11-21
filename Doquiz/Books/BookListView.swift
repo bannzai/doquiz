@@ -29,7 +29,7 @@ struct BookListView: View {
     /// (出している間に一覧が描き直されても、偽の購入が覚えている状態と、状態の変化を流している stream を作り直さないため)。
     @State private var presentedPurchase: PresentedPurchase?
     /// 購入の画面と、購入の状態を確かめる時に使う購入の境界の作り方。
-    private var purchaseServiceSource = PurchaseServiceSource()
+    private let purchaseServiceSource = PurchaseServiceSource()
 
     var body: some View {
         VStack(spacing: 0) {

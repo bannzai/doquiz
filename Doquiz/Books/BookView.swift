@@ -30,7 +30,9 @@ struct BookView: View {
         @AppStorage(developerMenuFakeQuizBehaviorKey) private var fakeQuizBehavior: DeveloperMenuFakeQuizBehavior?
     #endif
     /// 読書を始めるかを決める時と、無料の回数を使い切った時の購入の画面で使う、購入の境界の作り方。
-    private var purchaseServiceSource = PurchaseServiceSource()
+    /// `let` にしているのは、`var` にすると画面の memberwise initializer がこの private な値を引数に持ち、initializer が private になって他の画面から作れなくなるため
+    /// (CodeQL のビルド https://github.com/bannzai/doquiz/actions/runs/44919831595 で「BookView initializer is inaccessible due to private protection level」になった)。
+    private let purchaseServiceSource = PurchaseServiceSource()
     /// これまでに無料で始めた読書の回数。購入もトライアルもしていない状態で読書が始まった時に 1 増やす。
     /// 既定を 0 にしているのは、保存した値が無い利用者は、まだ無料の読書を 1 回も始めていないため。
     @AppStorage(freeReadingStartCountKey) private var freeReadingStartCount = 0

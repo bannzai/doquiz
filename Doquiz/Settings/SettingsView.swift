@@ -10,7 +10,7 @@ struct SettingsView: View {
     /// 入口を押すたびに購入の境界を 1 回だけ作って持ち、画面を出している間は同じものを使う (理由は本の一覧の同じ値に書く)。
     @State private var presentedPurchase: PresentedPurchase?
     /// 購入の画面で使う購入の境界の作り方。
-    private var purchaseServiceSource = PurchaseServiceSource()
+    private let purchaseServiceSource = PurchaseServiceSource()
 
     var body: some View {
         List {
