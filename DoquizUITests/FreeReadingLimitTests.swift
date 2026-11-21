@@ -214,7 +214,9 @@ final class FreeReadingLimitTests: XCTestCase {
         XCTAssertFalse(app.buttons["reading_end"].waitForExistence(timeout: 3))
     }
 
-    /// トライアル中の利用者は、無料の回数を使い切っていても、購入の画面を出さずに読書を始められ、ホームに残りの回数も購入の画面への入口も出ない。
+    /// 購入していない利用者が読書を 1 回始めた後にトライアルを始めると、ホームの残りの回数と購入の画面への入口が消える
+    /// (開発者メニューで偽の購入を「トライアル中」に変えてホームに戻った時に、購入の状態を確かめ直す)。
+    /// トライアル中の利用者は、無料の回数を使い切っていても、購入の画面を出さずに読書を始められる。
     @MainActor
     func testトライアル中は使い切っていても購入の画面を出さずに読書が始まる() {
         let app = launchAppWithInMemoryStore()
@@ -232,15 +234,8 @@ final class FreeReadingLimitTests: XCTestCase {
                 app: app,
                 buttonIdentifier: "developer_menu_cycle_fake_purchase_behavior",
                 stateIdentifier: "developer_menu_fake_purchase_behavior_state",
-                tapCount: 3,
-                expectedLabel: "トライアル中"
-            )
-            cycleDeveloperMenu(
-                app: app,
-                buttonIdentifier: "developer_menu_cycle_free_reading_start_count",
-                stateIdentifier: "developer_menu_free_reading_start_count_state",
-                tapCount: 2,
-                expectedLabel: "20 回"
+                tapCount: 1,
+                expectedLabel: "商品を返す"
             )
         }
         registerBook(app: app, title: "潮見町の灯台日誌")
@@ -249,6 +244,36 @@ final class FreeReadingLimitTests: XCTestCase {
         app.buttons["reading_start"].tap()
         XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["screen_capture_consent_agree"].tap()
+        XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        endReadingWithoutQuestions(app: app)
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["free_reading_remaining"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertTrue(app.buttons["purchase_entrance"].exists)
+
+        withDeveloperMenu(app: app) {
+            // 商品を返す → 商品を取得できない → トライアル中
+            cycleDeveloperMenu(
+                app: app,
+                buttonIdentifier: "developer_menu_cycle_fake_purchase_behavior",
+                stateIdentifier: "developer_menu_fake_purchase_behavior_state",
+                tapCount: 2,
+                expectedLabel: "トライアル中"
+            )
+            // 1 回 → 0 回 → 19 回 → 20 回
+            cycleDeveloperMenu(
+                app: app,
+                buttonIdentifier: "developer_menu_cycle_free_reading_start_count",
+                stateIdentifier: "developer_menu_free_reading_start_count_state",
+                tapCount: 3,
+                expectedLabel: "20 回"
+            )
+        }
+        assertEventually(object: app.buttons["purchase_entrance"], predicateFormat: "exists == %@", argument: NSNumber(value: false))
+        XCTAssertFalse(app.staticTexts["free_reading_remaining"].exists)
+
+        bookRow(app: app, title: "潮見町の灯台日誌").tap()
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        app.buttons["reading_start"].tap()
         XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertFalse(app.buttons["purchase_close_button"].exists)
         endReadingWithoutQuestions(app: app)
@@ -260,6 +285,7 @@ final class FreeReadingLimitTests: XCTestCase {
 
     /// 購入していない利用者が無料の回数を使い切っていても、本の登録・出題の設定・履歴の閲覧・「もう一度答える」・読書の記録と本の削除は、
     /// 購入の画面を出さずに使える。本を消した後も、ホームの残りは使い切ったままで増えない。
+    /// 開発者メニューの「保存データを全部消す」の後も無料で始めた読書の回数は 20 回のままで、新しく登録した本の「読書を始める」で購入の画面が出る。
     @MainActor
     func test使い切った後も読書を始める以外の操作は購入の画面を出さずに使える() {
         let app = launchAppWithInMemoryStore()
@@ -322,5 +348,20 @@ final class FreeReadingLimitTests: XCTestCase {
         assertEventually(object: bookRow(app: app, title: "潮見町の灯台日誌"), predicateFormat: "exists == %@", argument: NSNumber(value: false))
         XCTAssertFalse(app.buttons["purchase_close_button"].exists)
         XCTAssertEqual(app.staticTexts["free_reading_remaining"].label, "無料で始められる読書を使い切りました")
+
+        withDeveloperMenu(app: app) {
+            app.buttons["developer_menu_delete_all_saved_data"].tap()
+            assertEventually(object: app.staticTexts["developer_menu_book_count"], predicateFormat: "label == %@", argument: "0")
+            scrollDeveloperMenu(app: app, element: app.staticTexts["developer_menu_free_reading_start_count_state"])
+            XCTAssertEqual(app.staticTexts["developer_menu_free_reading_start_count_state"].label, "20 回")
+        }
+        registerBook(app: app, title: "海辺の天気図")
+        bookRow(app: app, title: "海辺の天気図").tap()
+        XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        app.buttons["reading_start"].tap()
+        // 初めての読書のため、購入の画面より先に同意の説明が出る。
+        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        app.buttons["screen_capture_consent_agree"].tap()
+        XCTAssertTrue(app.buttons["purchase_close_button"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 }

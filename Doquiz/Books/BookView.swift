@@ -28,9 +28,9 @@ struct BookView: View {
         @AppStorage(developerMenuInterruptsFakeReadingKey) private var interruptsFakeReading = false
         /// 開発者メニューで、読書を終えた後のクイズを偽のクイズに切り替えている時の動き。値が無い時は実物でクイズを作る。
         @AppStorage(developerMenuFakeQuizBehaviorKey) private var fakeQuizBehavior: DeveloperMenuFakeQuizBehavior?
-        /// 開発者メニューで、購入を偽の購入に切り替えている時の動き。値が無い時は実物の購入の状態で判定する。
-        @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
     #endif
+    /// 読書を始めるかを決める時と、無料の回数を使い切った時の購入の画面で使う、購入の境界の作り方。
+    private var purchaseServiceSource = PurchaseServiceSource()
     /// これまでに無料で始めた読書の回数。購入もトライアルもしていない状態で読書が始まった時に 1 増やす。
     /// 既定を 0 にしているのは、保存した値が無い利用者は、まだ無料の読書を 1 回も始めていないため。
     @AppStorage(freeReadingStartCountKey) private var freeReadingStartCount = 0
@@ -261,27 +261,23 @@ struct BookView: View {
         return VisionPageTextExtractor()
     }
 
-    /// 読書を始めるかを決める時に使う `PurchaseService` を作る。開発者メニューで偽の購入に切り替えている時は、選んだ動きをする偽の購入を返す。
-    private func makePurchaseServiceForReading() -> any PurchaseService {
-        #if DEBUG
-            if let fakePurchaseBehavior {
-                return makeDeveloperMenuFakePurchaseService(behavior: fakePurchaseBehavior)
-            }
-        #endif
-        return RevenueCatPurchaseService()
-    }
-
     /// 無料の回数を使い切って出した購入の画面を閉じた時に、トライアル中か購入済みになっていれば、その画面が使った購入の境界で読書を始める。
     ///
     /// 購入していないまま閉じた時と、購入の状態を取得できなかった時は、読書を始めない (「読書を始める」の下の案内はそのまま残す)。
     /// 購入の画面を閉じた後に 1 回だけ呼ぶ前提で、呼んだ後は境界を持たない。
+    ///
+    /// 購入の画面を出した時から、購入の状態を確かめ終えるまでは `isStartingReading` を true のままにしておく
+    /// (確かめている間に「読書を始める」を押す・履歴を開いて本を消す・この画面を戻ると、読書が 2 つ重なって始まるか、消した本や閉じた画面で読書が始まるため)。
+    /// 確かめ終えたら false に戻し、待たずに同じ処理の中で `beginReading` を呼ぶ (戻した後に別の操作が割り込まないようにするため)。
     private func resumeReadingAfterPurchase() {
         guard let purchaseService = purchaseServiceForResumingReading else {
             return
         }
         purchaseServiceForResumingReading = nil
         Task {
-            switch try? await purchaseService.state() {
+            let purchaseState = try? await purchaseService.state()
+            isStartingReading = false
+            switch purchaseState {
             case .inTrial, .purchased:
                 beginReading(purchaseService: purchaseService)
             case .notPurchased, nil:
@@ -304,7 +300,7 @@ struct BookView: View {
         isStartingReading = true
         readingGuide = nil
         let screenCapture = makeScreenCaptureForReading()
-        let purchaseService = purchaseService ?? makePurchaseServiceForReading()
+        let purchaseService = purchaseService ?? purchaseServiceSource.makePurchaseService()
         Task {
             do {
                 let startedReading = try await startReading(
@@ -342,10 +338,12 @@ struct BookView: View {
                 }
             } catch {
                 readingGuide = readingStartFailureGuide(error: error)
-                isStartingReading = false
                 if error is FreeReadingsUsedUpError {
+                    // 購入の画面を閉じて購入の状態を確かめ終えるまで、isStartingReading を true のままにする (理由は resumeReadingAfterPurchase に書く)。
                     purchaseServiceForResumingReading = purchaseService
                     presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseService)
+                } else {
+                    isStartingReading = false
                 }
             }
         }

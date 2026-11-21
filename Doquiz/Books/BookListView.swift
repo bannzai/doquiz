@@ -14,7 +14,7 @@ struct BookListView: View {
     /// これまでに無料で始めた読書の回数。本の画面が読書を始めた時に増やす。
     /// 既定を 0 にしているのは、保存した値が無い利用者は、まだ無料の読書を 1 回も始めていないため。
     @AppStorage(freeReadingStartCountKey) private var freeReadingStartCount = 0
-    /// 最後に確かめた購入の状態。まだ確かめ終えていない間は nil で、確かめて取得できなかった時は購入していないにする。
+    /// 最後に確かめた購入の状態。まだ確かめ終えていない間と、確かめて取得できなかった時は nil。
     @State private var purchaseState: PurchaseState?
     /// 購入の画面を閉じた回数。閉じるたびに購入の状態を確かめ直すために数える。
     @State private var purchaseSheetDismissCount = 0
@@ -24,10 +24,8 @@ struct BookListView: View {
     /// 入口を押すたびに購入の境界を 1 回だけ作って持ち、画面を出している間は同じものを使う
     /// (出している間に一覧が描き直されても、偽の購入が覚えている状態と、状態の変化を流している stream を作り直さないため)。
     @State private var presentedPurchase: PresentedPurchase?
-    #if DEBUG
-        /// 開発者メニューで、購入の画面を偽の購入に切り替えている時の動き。値が無い時は実物で購入する。
-        @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
-    #endif
+    /// 購入の画面と、購入の状態を確かめる時に使う購入の境界の作り方。
+    private var purchaseServiceSource = PurchaseServiceSource()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -75,7 +73,7 @@ struct BookListView: View {
             }
             .accessibilityIdentifier("book_registration_entrance")
             .padding(.horizontal, 20)
-            if showsPurchaseEntrance(books: books, freeReadingStartCount: freeReadingStartCount, purchaseState: purchaseState) {
+            if showsPurchaseEntrance(books: books, purchaseState: purchaseState) {
                 Text(verbatim: freeReadingRemainingText(freeReadingStartCount: freeReadingStartCount))
                     .font(.footnote)
                     .foregroundStyle(doquizSecondaryTextColor)
@@ -83,7 +81,7 @@ struct BookListView: View {
                     .padding(.top, 10)
                     .accessibilityIdentifier("free_reading_remaining")
                 Button {
-                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: makePurchaseService())
+                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseServiceSource.makePurchaseService())
                 } label: {
                     Text(verbatim: "購入のプランを見る")
                         .font(.subheadline)
@@ -132,8 +130,8 @@ struct BookListView: View {
         // この画面が出るたび (本の画面・設定の画面・開発者メニューから戻った時を含む) と、購入の画面を閉じた時と、
         // 開発者メニューで偽の購入の動きを変えた時に、購入の状態を確かめ直す。購入はほかの画面でも済むため、出ている間ずっと同じ値を使わない。
         .task(id: purchaseStateCheckID) {
-            // 取得できない時は購入していないにする。扱いの理由は `countsAsFreeReadingStart` に書く (読書を始める時の判定と揃える)。
-            let checkedPurchaseState = (try? await makePurchaseService().state()) ?? .notPurchased
+            // 取得できない時は nil にして、入口と残りの回数を出さない (購入しているかが分からない利用者に、購入していない前提の表示を出さないため)。
+            let checkedPurchaseState = try? await purchaseServiceSource.makePurchaseService().state()
             // 確かめている間に次の確かめ直しが始まった時は、古い結果で上書きしない。
             guard !Task.isCancelled else {
                 return
@@ -144,21 +142,7 @@ struct BookListView: View {
 
     /// 購入の状態を確かめ直す時を表す値。購入の画面を閉じた時と、開発者メニューで偽の購入の動きを変えた時に変わる。
     private var purchaseStateCheckID: String {
-        #if DEBUG
-            "\(purchaseSheetDismissCount)-\(fakePurchaseBehavior?.rawValue ?? "real")"
-        #else
-            "\(purchaseSheetDismissCount)"
-        #endif
-    }
-
-    /// 購入の画面で使う `PurchaseService` を作る。開発者メニューで偽の購入に切り替えている時は、選んだ動きをする偽の購入を返す。
-    private func makePurchaseService() -> any PurchaseService {
-        #if DEBUG
-            if let fakePurchaseBehavior {
-                return makeDeveloperMenuFakePurchaseService(behavior: fakePurchaseBehavior)
-            }
-        #endif
-        return RevenueCatPurchaseService()
+        "\(purchaseSheetDismissCount)-\(purchaseServiceSource.kindID)"
     }
 
     /// 一覧の本 1 冊分の行。本の名前と、読書の回数・最後に読んだ時期を出す。

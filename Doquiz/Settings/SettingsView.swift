@@ -9,16 +9,14 @@ struct SettingsView: View {
     /// 出している購入の画面。出していない間は nil。
     /// 入口を押すたびに購入の境界を 1 回だけ作って持ち、画面を出している間は同じものを使う (理由は本の一覧の同じ値に書く)。
     @State private var presentedPurchase: PresentedPurchase?
-    #if DEBUG
-        /// 開発者メニューで、購入の画面を偽の購入に切り替えている時の動き。値が無い時は実物で購入する。
-        @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
-    #endif
+    /// 購入の画面で使う購入の境界の作り方。
+    private var purchaseServiceSource = PurchaseServiceSource()
 
     var body: some View {
         List {
             Section {
                 Button {
-                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: makePurchaseService())
+                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseServiceSource.makePurchaseService())
                 } label: {
                     settingsRowLabel(title: "購入のプランを見る", systemImage: "chevron.right")
                 }
@@ -68,16 +66,6 @@ struct SettingsView: View {
                 .foregroundStyle(doquizSecondaryTextColor)
                 .accessibilityHidden(true)
         }
-    }
-
-    /// 購入の画面で使う `PurchaseService` を作る。開発者メニューで偽の購入に切り替えている時は、選んだ動きをする偽の購入を返す。
-    private func makePurchaseService() -> any PurchaseService {
-        #if DEBUG
-            if let fakePurchaseBehavior {
-                return makeDeveloperMenuFakePurchaseService(behavior: fakePurchaseBehavior)
-            }
-        #endif
-        return RevenueCatPurchaseService()
     }
 }
 

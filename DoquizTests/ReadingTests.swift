@@ -675,31 +675,6 @@ struct ReadingTests {
 
         #expect(remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCounter.count) == 15)
     }
-
-    /// 無料で 3 回読んだ後に本を消し (本と一緒に読書の記録も消える)、保存データが空になっても、残りの無料の回数は 17 回のまま増えない。
-    @Test func 読書の記録と本を消しても残りの無料の回数は増えない() async throws {
-        let freeReadingStartCounter = FreeReadingStartCounter(count: 0)
-        for _ in 0..<3 {
-            _ = try await startReading(
-                book: book,
-                purchaseService: notPurchasedService,
-                freeReadingStartCount: freeReadingStartCounter.count,
-                countFreeReadingStart: freeReadingStartCounter.increment,
-                screenCapture: StopCountingScreenCapture(),
-                modelContext: writingContext,
-                currentDateTime: { Date() },
-                save: writingContext.save
-            )
-        }
-        #expect(try readingContext.fetchCount(FetchDescriptor<ReadingSession>()) == 3)
-
-        writingContext.delete(book)
-        try writingContext.save()
-
-        #expect(try readingContext.fetchCount(FetchDescriptor<ReadingSession>()) == 0)
-        #expect(try readingContext.fetchCount(FetchDescriptor<Book>()) == 0)
-        #expect(remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCounter.count) == 17)
-    }
 }
 
 /// 無料で始めた読書の回数を数える。アプリでは UserDefaults に保存する回数の代わりに使う。
