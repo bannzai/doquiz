@@ -12,8 +12,7 @@ struct BookListView: View {
     /// 端末内のモデルが使えない時の案内の文。使える時は nil。
     @Environment(\.quizUnavailableGuide) private var quizUnavailableGuide
     /// これまでに無料で始めた読書の回数。本の画面が読書を始めた時に増やす。
-    /// 既定を 0 にしているのは、保存した値が無い利用者は、まだ無料の読書を 1 回も始めていないため。
-    @AppStorage(freeReadingStartCountKey) private var freeReadingStartCount = 0
+    @Environment(FreeReadingStartCount.self) private var freeReadingStartCount
     /// 最後に確かめた購入の状態。まだ確かめ終えていない間と、確かめて取得できなかった時は nil。
     @State private var purchaseState: PurchaseState?
     /// 購入の画面を閉じた回数。閉じるたびに購入の状態を確かめ直すために数える。
@@ -78,12 +77,15 @@ struct BookListView: View {
             .accessibilityIdentifier("book_registration_entrance")
             .padding(.horizontal, 20)
             if showsPurchaseEntrance(books: books, purchaseState: purchaseState) {
-                Text(verbatim: freeReadingRemainingText(freeReadingStartCount: freeReadingStartCount))
-                    .font(.footnote)
-                    .foregroundStyle(doquizSecondaryTextColor)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 10)
-                    .accessibilityIdentifier("free_reading_remaining")
+                // 回数を読み出せなかった時は、残りの回数を出さない (分からない回数を 0 回などに置き換えて出さないため)。入口は出す。
+                if let count = freeReadingStartCount.count {
+                    Text(verbatim: freeReadingRemainingText(freeReadingStartCount: count))
+                        .font(.footnote)
+                        .foregroundStyle(doquizSecondaryTextColor)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 10)
+                        .accessibilityIdentifier("free_reading_remaining")
+                }
                 Button {
                     let purchaseService = purchaseServiceSource.makePurchaseService()
                     purchaseSheetPurchaseService = (kindID: purchaseServiceSource.kindID, purchaseService: purchaseService)
@@ -136,8 +138,8 @@ struct BookListView: View {
         // この画面が出るたび (本の画面・設定の画面・開発者メニューから戻った時を含む) と、購入の画面を閉じた時と、
         // 開発者メニューで偽の購入の動きを変えた時に、購入の状態を確かめ直す。購入はほかの画面でも済むため、出ている間ずっと同じ値を使わない。
         .task(id: purchaseStateCheckID) {
-            // 取得できない時は nil にして、入口と残りの回数を出さない (購入しているかが分からない利用者に、購入していない前提の表示を出さないため)。
-            let checkedPurchaseState = try? await purchaseServiceForStateCheck().state()
+            // 取得をやり直しても取得できない時は nil にして、入口と残りの回数を出さない (購入しているかが分からない利用者に、購入していない前提の表示を出さないため)。
+            let checkedPurchaseState = try? await fetchPurchaseStateRetrying(purchaseService: purchaseServiceForStateCheck())
             // 確かめている間に次の確かめ直しが始まった時は、古い結果で上書きしない。
             guard !Task.isCancelled else {
                 return
@@ -187,4 +189,5 @@ struct BookListView: View {
         BookListView()
     }
     .modelContainer(for: Book.self, inMemory: true)
+    .environment(FreeReadingStartCount(store: makeInMemoryFreeReadingStartCountStore()))
 }

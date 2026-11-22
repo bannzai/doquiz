@@ -590,38 +590,53 @@ struct ReadingTests {
         #expect(try readingContext.fetchCount(FetchDescriptor<ReadingSession>()) == 1)
     }
 
-    /// 購入の状態を取得できない時 (RevenueCat の SDK を初期化していない単体テストの起動) は、購入していない時と同じに扱う。
-    /// 残りがあれば始めて数え、使い切っていれば取り込みを始めない (購入済みとして通さない)。
-    @Test func 購入の状態を取得できない時は購入していない時と同じに扱う() async throws {
-        let startedCapture = StopCountingScreenCapture()
-        let startedCounter = FreeReadingStartCounter(count: 0)
-        _ = try await startReading(
-            book: book,
-            purchaseService: RevenueCatPurchaseService(),
-            freeReadingStartCount: startedCounter.count,
-            countFreeReadingStart: startedCounter.increment,
-            screenCapture: startedCapture,
-            modelContext: writingContext,
-            currentDateTime: { Date() },
-            save: writingContext.save
-        )
-        #expect(startedCapture.startCount == 1)
-        #expect(startedCounter.count == 1)
+    /// 購入の状態を取得できない時 (RevenueCat の SDK を初期化していない単体テストの起動) は、残りの回数があっても使い切っていても、
+    /// 取り込みを始めずに `PurchaseStateUnavailableError` を投げ、読書の記録を残さず、無料の回数を数えない
+    /// (購入していない・購入済みのどちらかに写さない)。
+    @Test(arguments: [0, 20])
+    func 購入の状態を取得できない時は取り込みを始めずに投げる(freeReadingStartCount: Int) async throws {
+        let capture = StopCountingScreenCapture()
+        let freeReadingStartCounter = FreeReadingStartCounter(count: freeReadingStartCount)
 
-        let usedUpCapture = StopCountingScreenCapture()
-        await #expect(throws: FreeReadingsUsedUpError.self) {
+        await #expect(throws: PurchaseStateUnavailableError.self) {
             _ = try await startReading(
                 book: book,
                 purchaseService: RevenueCatPurchaseService(),
-                freeReadingStartCount: 20,
-                countFreeReadingStart: {},
-                screenCapture: usedUpCapture,
+                freeReadingStartCount: freeReadingStartCounter.count,
+                countFreeReadingStart: freeReadingStartCounter.increment,
+                screenCapture: capture,
                 modelContext: writingContext,
                 currentDateTime: { Date() },
                 save: writingContext.save
             )
         }
-        #expect(usedUpCapture.startCount == 0)
+
+        #expect(capture.startCount == 0)
+        #expect(freeReadingStartCounter.count == freeReadingStartCount)
+        try writingContext.save()
+        #expect(try readingContext.fetchCount(FetchDescriptor<ReadingSession>()) == 0)
+    }
+
+    /// 無料の回数を保存できなかった時は、読書の記録を取り除き、取り込みを止めてから、保存の error を投げる (数えずに無料の読書を始めさせないため)。
+    @Test func 無料の回数を保存できなかった時は読書を始めない() async throws {
+        let capture = StopCountingScreenCapture()
+
+        await #expect(throws: SaveFailure.self) {
+            _ = try await startReading(
+                book: book,
+                purchaseService: notPurchasedService,
+                freeReadingStartCount: 0,
+                countFreeReadingStart: { throw SaveFailure() },
+                screenCapture: capture,
+                modelContext: writingContext,
+                currentDateTime: { Date() },
+                save: writingContext.save
+            )
+        }
+
+        #expect(capture.startCount == 1)
+        #expect(capture.stopCount == 1)
+        #expect(try readingContext.fetchCount(FetchDescriptor<ReadingSession>()) == 0)
     }
 
     /// 取り込みを始められなかった時と、読書の記録を保存できなかった時は、無料の回数を数えない (読書が始まっていないため)。

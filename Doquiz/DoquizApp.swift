@@ -8,6 +8,8 @@ struct DoquizApp: App {
     private let modelContainer: ModelContainer
     /// アプリの設定 (同意済みか等) を読み書きする UserDefaults。画面の `@AppStorage` は全部これを使う。
     private let userDefaults: UserDefaults
+    /// これまでに無料で始めた読書の回数。画面には environment で渡す。
+    private let freeReadingStartCount: FreeReadingStartCount
 
     /// 端末内の保存先を開いてアプリを始める。
     ///
@@ -32,6 +34,13 @@ struct DoquizApp: App {
                 )
             )
         }
+        // UI テストの起動と単体テストの起動では、端末の Keychain に触れず、0 回から始まるメモリ内の保存先を使う
+        // (UI テストが起動のたびに同じ回数から始まり、端末に回数を残さないため。保存データと UserDefaults と同じ扱い)。
+        freeReadingStartCount = FreeReadingStartCount(
+            store: isStoredInMemoryOnly || isLaunchedAsUnitTestHost(environment: ProcessInfo.processInfo.environment)
+                ? makeInMemoryFreeReadingStartCountStore()
+                : makeKeychainFreeReadingStartCountStore(service: "app.bannzai.doquiz.freeReadingStartCount")
+        )
         do {
             modelContainer = try makeModelContainer(isStoredInMemoryOnly: isStoredInMemoryOnly)
         } catch {
@@ -43,6 +52,7 @@ struct DoquizApp: App {
         WindowGroup {
             ContentView()
                 .defaultAppStorage(userDefaults)
+                .environment(freeReadingStartCount)
         }
         .modelContainer(modelContainer)
     }

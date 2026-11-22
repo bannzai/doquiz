@@ -5,33 +5,40 @@ import SwiftData
 /// 読書を始める。画面の取り込みを始め、始められた時だけ読書の記録を 1 件作って保存する。
 ///
 /// 「読書を始める」を押してから取り込みを始めるまでの処理は、この関数だけに置く (始める前の判定を後から足す場所を 1 か所にするため)。
-/// - 取り込みを始める前に、`purchaseService` から購入の状態を取り、無料で始められる読書の判定 (`countsAsFreeReadingStart`) を通す。
+/// - 取り込みを始める前に、`purchaseService` から購入の状態を取り (`fetchPurchaseStateRetrying` で取得をやり直す)、
+///   無料で始められる読書の判定 (`countsAsFreeReadingStart`) を通す。
 ///   使い切っていてトライアル中でも購入済みでもない時は、取り込みを始めずに `FreeReadingsUsedUpError` を投げ、読書の記録を残さない
+/// - 取得をやり直しても購入の状態を取得できなかった時は、取り込みを始めずに `PurchaseStateUnavailableError` を投げ、読書の記録を残さない
+///   (購入していない・購入済みのどちらかに写さない。owner の決定 https://github.com/bannzai/doquiz/pull/84#issuecomment-7071830203 )
 /// - 取り込みを始められなかった時は、`screenCapture.start()` の error をそのまま投げ、読書の記録を残さない
 /// - 読書の記録の保存に失敗した時は、足した読書の記録を取り除き、取り込みを止めてから `save` の error を投げる
-/// - 読書の記録を保存できて、その読書を無料の回数に数える時だけ、`countFreeReadingStart` を 1 回呼ぶ
+/// - 読書の記録を保存できて、その読書を無料の回数に数える時だけ、`countFreeReadingStart` を 1 回呼ぶ。回数を保存できなかった時は、
+///   読書の記録を取り除いて保存し直し、取り込みを止めてから `countFreeReadingStart` の error を投げる (数えずに無料の読書を始めさせないため)
 ///
 /// 保存先への書き込みは `save` で行う (アプリは `modelContext.save` を渡す。保存の失敗をテストで起こせるよう引数にしている)。
 /// 冪等ではない: 読書 1 回ごとに読書の記録を 1 件作るため、呼ぶたびに取り込みを始め直して読書の記録が 1 件増え、無料の回数に数える時は回数も 1 増える。
 /// - Parameters:
 ///   - freeReadingStartCount: これまでに無料で始めた読書の回数
-///   - countFreeReadingStart: 無料で始めた読書の回数を 1 増やす操作
+///   - countFreeReadingStart: 無料で始めた読書の回数を 1 増やして保存する操作。保存できない時は error を投げる
+///   - retryDelays: 購入の状態の取得をやり直す前に待つ時間 (`fetchPurchaseStateRetrying` に渡す)
+///   - sleep: 待つ操作 (アプリは `Task.sleep(for:)`。テストで待たずに済むよう引数にしている)
 ///   - currentDateTime: 今の日時を返す。取り込みが始まった時に 1 回呼び、読書を始めた日時にする
 /// - Returns: 作った読書の記録と、取り込んだ画面の画像が順に届く流れ
 func startReading(
     book: Book,
     purchaseService: any PurchaseService,
     freeReadingStartCount: Int,
-    countFreeReadingStart: () -> Void,
+    countFreeReadingStart: () throws -> Void,
+    retryDelays: [Duration] = purchaseStateRetryDelays,
+    sleep: (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
     screenCapture: any ScreenCapture,
     modelContext: ModelContext,
     currentDateTime: () -> Date,
     save: () throws -> Void
 ) async throws -> (readingSession: ReadingSession, capturedImages: AsyncThrowingStream<CGImage, any Error>) {
-    // 購入の状態を取得できない時は nil にして、購入していない利用者と同じに扱う (扱いの理由は `countsAsFreeReadingStart` に書く)。
-    // 判定は取り込みを始める前に行う (使い切った時に、取り込みを始めずに投げるため)。結果を使うのは読書の記録を保存できた後なので、変数に持つ。
+    // 判定は取り込みを始める前に行う (使い切った時と取得できない時に、取り込みを始めずに投げるため)。結果を使うのは読書の記録を保存できた後なので、変数に持つ。
     let countsAsFreeReading = try countsAsFreeReadingStart(
-        purchaseState: try? await purchaseService.state(),
+        purchaseState: try await fetchPurchaseStateRetrying(purchaseService: purchaseService, retryDelays: retryDelays, sleep: sleep),
         freeReadingStartCount: freeReadingStartCount
     )
     let capturedImages = try await screenCapture.start()
@@ -45,7 +52,15 @@ func startReading(
         throw error
     }
     if countsAsFreeReading {
-        countFreeReadingStart()
+        do {
+            try countFreeReadingStart()
+        } catch {
+            modelContext.delete(readingSession)
+            // 取り除いた読書の記録の保存に失敗しても、回数を保存できなかった error を投げる (利用者に知らせる理由は回数の方のため)。
+            try? save()
+            await screenCapture.stop()
+            throw error
+        }
     }
     return (readingSession, capturedImages)
 }
@@ -173,6 +188,10 @@ func readingStartFailureGuide(error: any Error) -> String? {
         nil
     case is FreeReadingsUsedUpError:
         "無料で始められる読書を使い切りました\n続けて読むには購入のプランを選んでください"
+    case is PurchaseStateUnavailableError:
+        "購入の状態を確かめられませんでした\n通信できる所でもう一度「読書を始める」を押してください"
+    case is FreeReadingStartCountUnavailableError, is FreeReadingStartCountKeychainError:
+        "無料で始めた読書の回数を読み書きできませんでした\nもう一度「読書を始める」を押してください"
     case let startError as ScreenCaptureStartError:
         switch startError {
         case .selectionCancelled:

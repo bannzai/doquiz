@@ -52,8 +52,7 @@
         /// 値が無い時 (切り替えていない時) は、実物 (RevenueCat の SDK) で購入する。
         @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
         /// これまでに無料で始めた読書の回数。本の一覧と本の画面が同じ値を読む。
-        /// 既定を 0 にしているのは、保存した値が無い利用者は、まだ無料の読書を 1 回も始めていないため (本の一覧と同じ)。
-        @AppStorage(freeReadingStartCountKey) private var freeReadingStartCount = 0
+        @Environment(FreeReadingStartCount.self) private var freeReadingStartCount
 
         var body: some View {
             List {
@@ -190,7 +189,12 @@
                 // 購入の section の下に置いているのは、上の行の位置を変えず、既存の UI テストの画面の送り方を変えないため。
                 Section {
                     Button {
-                        freeReadingStartCount = nextDeveloperMenuFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount)
+                        failureDescription = developerMenuFailureDescription(operation: {
+                            // 回数を読み出せなかった時は 0 回から切り替え始める (開発者メニューで境界の状態を作り直せるようにするため)。
+                            try freeReadingStartCount.replace(
+                                newCount: nextDeveloperMenuFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount.count ?? 0)
+                            )
+                        })
                     } label: {
                         Text(verbatim: "無料で始めた読書の回数を 0 回 19 回 20 回の順に切り替える")
                     }
@@ -198,7 +202,7 @@
                     HStack {
                         Text(verbatim: "無料で始めた読書の回数")
                         Spacer()
-                        Text(verbatim: "\(freeReadingStartCount) 回")
+                        Text(verbatim: freeReadingStartCount.count.map { "\($0) 回" } ?? "読み出せない")
                             .accessibilityIdentifier("developer_menu_free_reading_start_count_state")
                     }
                 } header: {

@@ -34,13 +34,12 @@ struct BookView: View {
     /// (CodeQL のビルド https://github.com/bannzai/doquiz/actions/runs/44919831595 で「BookView initializer is inaccessible due to private protection level」になった)。
     private let purchaseServiceSource = PurchaseServiceSource()
     /// これまでに無料で始めた読書の回数。購入もトライアルもしていない状態で読書が始まった時に 1 増やす。
-    /// 既定を 0 にしているのは、保存した値が無い利用者は、まだ無料の読書を 1 回も始めていないため。
-    @AppStorage(freeReadingStartCountKey) private var freeReadingStartCount = 0
+    @Environment(FreeReadingStartCount.self) private var freeReadingStartCount
     /// 無料の回数を使い切った利用者が「読書を始める」を押した時に出している購入の画面。出していない間は nil。
     @State private var presentedPurchase: PresentedPurchase?
-    /// 無料の回数を使い切って出した購入の画面が使った購入の境界。画面を閉じた時に、この境界の購入の状態で読書を始めるかを決め、決めたら nil に戻す。
+    /// 無料の回数を使い切って出した購入の画面が使った購入の境界。画面を閉じた時に、この境界の購入の状態で案内を消すかを決め、決めたら nil に戻す。
     /// `presentedPurchase` と別に持つのは、画面を閉じた時の処理が呼ばれる時には `presentedPurchase` が nil に戻っているため。
-    @State private var purchaseServiceForResumingReading: (any PurchaseService)?
+    @State private var purchaseServiceInPurchaseSheet: (any PurchaseService)?
     /// 出題の設定の画面を出しているか。
     @State private var isEditingQuestionSettings = false
     /// 履歴の画面を出しているか。
@@ -204,11 +203,11 @@ struct BookView: View {
                 isShowingScreenCaptureConsent = false
             }
         }
-        // 購入の画面を閉じ切ってから読書を始める (閉じている途中に画面共有の選択画面を重ねないため。同意の説明と同じ)。
+        // 無料の回数を使い切った時に出す購入の画面。閉じた時に、購入が済んでいれば使い切ったことの案内を消す。
         .sheet(
             item: $presentedPurchase,
             onDismiss: {
-                resumeReadingAfterPurchase()
+                clearFreeReadingsUsedUpGuideAfterPurchase()
             },
             content: { presentedPurchase in
                 PurchaseView(purchaseService: presentedPurchase.purchaseService)
@@ -263,33 +262,27 @@ struct BookView: View {
         return VisionPageTextExtractor()
     }
 
-    /// 無料の回数を使い切って出した購入の画面を閉じた時に、トライアル中か購入済みになっていれば、その画面が使った購入の境界で読書を始める。
+    /// 無料の回数を使い切って出した購入の画面を閉じた時に、トライアル中か購入済みになっていれば、使い切ったことの案内を消す。
     ///
-    /// 購入していないまま閉じた時と、購入の状態を取得できなかった時は、読書を始めない (「読書を始める」の下の案内はそのまま残す)。
+    /// 読書は自動では始めず、利用者がもう一度「読書を始める」を押して始める (owner の決定「もう一度押させても良さそう。違う操作だし」
+    /// https://github.com/bannzai/doquiz/pull/84#issuecomment-7071830203 )。
+    /// 購入していないまま閉じた時と、購入の状態を取得し直しても取得できなかった時は、案内をそのまま残す。
     /// 購入の画面を閉じた後に 1 回だけ呼ぶ前提で、呼んだ後は境界を持たない。
-    ///
-    /// 購入の画面を出した時から、購入の状態を確かめ終えるまでは `isStartingReading` を true のままにしておく
-    /// (確かめている間に「読書を始める」を押す・履歴を開いて本を消す・この画面を戻ると、読書が 2 つ重なって始まるか、消した本や閉じた画面で読書が始まるため)。
-    /// 確かめ終えたら false に戻し、待たずに同じ処理の中で `beginReading` を呼ぶ (戻した後に別の操作が割り込まないようにするため)。
-    private func resumeReadingAfterPurchase() {
-        guard let purchaseService = purchaseServiceForResumingReading else {
+    private func clearFreeReadingsUsedUpGuideAfterPurchase() {
+        guard let purchaseService = purchaseServiceInPurchaseSheet else {
             return
         }
-        purchaseServiceForResumingReading = nil
+        purchaseServiceInPurchaseSheet = nil
         Task {
-            let purchaseState = try? await purchaseService.state()
-            isStartingReading = false
-            guard resumesReadingAfterPurchase(purchaseState: purchaseState) else {
+            guard let purchaseState = try? await fetchPurchaseStateRetrying(purchaseService: purchaseService) else {
                 return
             }
-            // 購入の画面を出している間に端末内のモデルが使えなくなった時は、読書を始めない
-            // (「読書を始める」を押せなくしているのと同じく、クイズを作れないのに画面を取り込まないため)。
-            // 購入は済んでいるので、使い切ったことの案内は消し、使えないことの案内 (`quizUnavailableGuide`) だけを残す。
-            guard quizUnavailableGuide == nil else {
+            switch purchaseState {
+            case .inTrial, .purchased:
                 readingGuide = nil
-                return
+            case .notPurchased:
+                break
             }
-            beginReading(purchaseService: purchaseService)
         }
     }
 
@@ -298,25 +291,21 @@ struct BookView: View {
     /// 始められなかった時は、読書の記録を残さず、この画面に案内を出す。取り込みが途中で止まった時は、読書を終えて案内を出す。
     /// 無料の回数を使い切っていてトライアル中でも購入済みでもない時は、取り込みを始めずに購入の画面を出す。
     /// 始めている途中にもう一度呼ばれた時は何もしない。
-    /// - Parameter purchaseService: 読書を始めるかを決める購入の境界。購入の画面で購入した後に始める時は、その画面が使った境界を渡す。
-    ///   既定の nil の時は新しく作る (「読書を始める」を押した時は、押した時点の購入の状態で決めるため)
-    private func beginReading(purchaseService: (any PurchaseService)? = nil) {
+    private func beginReading() {
         guard !isStartingReading else {
             return
         }
         isStartingReading = true
         readingGuide = nil
         let screenCapture = makeScreenCaptureForReading()
-        let purchaseService = purchaseService ?? purchaseServiceSource.makePurchaseService()
+        let purchaseService = purchaseServiceSource.makePurchaseService()
         Task {
             do {
                 let startedReading = try await startReading(
                     book: book,
                     purchaseService: purchaseService,
-                    freeReadingStartCount: freeReadingStartCount,
-                    countFreeReadingStart: {
-                        freeReadingStartCount += 1
-                    },
+                    freeReadingStartCount: try freeReadingStartCount.loadedCount(),
+                    countFreeReadingStart: freeReadingStartCount.increment,
                     screenCapture: screenCapture,
                     modelContext: modelContext,
                     currentDateTime: { Date() },
@@ -345,12 +334,10 @@ struct BookView: View {
                 }
             } catch {
                 readingGuide = readingStartFailureGuide(error: error)
+                isStartingReading = false
                 if error is FreeReadingsUsedUpError {
-                    // 購入の画面を閉じて購入の状態を確かめ終えるまで、isStartingReading を true のままにする (理由は resumeReadingAfterPurchase に書く)。
-                    purchaseServiceForResumingReading = purchaseService
+                    purchaseServiceInPurchaseSheet = purchaseService
                     presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseService)
-                } else {
-                    isStartingReading = false
                 }
             }
         }

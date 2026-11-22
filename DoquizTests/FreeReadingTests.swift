@@ -5,21 +5,16 @@ import Testing
 /// 無料で始められる読書の回数の判定と、ホームに出す残りの文を確かめる。
 struct FreeReadingTests {
     /// 購入していない利用者は、無料で始めた回数が 0 回から 19 回の間は読書を始められ、その読書を無料の回数に数える。
-    /// 購入の状態を取得できなかった時 (nil) も同じ。
     @Test(arguments: [0, 1, 19])
     func 購入していない時は20回目までは始められて数える(freeReadingStartCount: Int) throws {
         #expect(try countsAsFreeReadingStart(purchaseState: .notPurchased, freeReadingStartCount: freeReadingStartCount))
-        #expect(try countsAsFreeReadingStart(purchaseState: nil, freeReadingStartCount: freeReadingStartCount))
     }
 
-    /// 購入していない利用者は、無料で 20 回始めた後 (21 回目) から先は読書を始められない。購入の状態を取得できなかった時 (nil) も同じ。
+    /// 購入していない利用者は、無料で 20 回始めた後 (21 回目) から先は読書を始められない。
     @Test(arguments: [20, 21, 100])
     func 購入していない時は21回目から始められない(freeReadingStartCount: Int) {
         #expect(throws: FreeReadingsUsedUpError.self) {
             try countsAsFreeReadingStart(purchaseState: .notPurchased, freeReadingStartCount: freeReadingStartCount)
-        }
-        #expect(throws: FreeReadingsUsedUpError.self) {
-            try countsAsFreeReadingStart(purchaseState: nil, freeReadingStartCount: freeReadingStartCount)
         }
     }
 
@@ -33,18 +28,6 @@ struct FreeReadingTests {
     @Test(arguments: [(0, 20), (1, 19), (19, 1), (20, 0), (21, 0)])
     func 残りの回数は20回から始めた回数を引いた数で0回より減らない(freeReadingStartCount: Int, expectedRemainingCount: Int) {
         #expect(remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount) == expectedRemainingCount)
-    }
-
-    /// 無料の回数を使い切って出した購入の画面を閉じた時、トライアル中か購入済みなら読書を始め、
-    /// 購入していない時と購入の状態を取得できなかった時 (nil) は始めない。
-    @Test(arguments: [
-        (PurchaseState?.some(.inTrial), true),
-        (PurchaseState?.some(.purchased), true),
-        (PurchaseState?.some(.notPurchased), false),
-        (PurchaseState?.none, false),
-    ])
-    func 購入の画面を閉じた時はトライアル中か購入済みの時だけ読書を始める(purchaseState: PurchaseState?, expectedResumes: Bool) {
-        #expect(resumesReadingAfterPurchase(purchaseState: purchaseState) == expectedResumes)
     }
 
     /// 購入の状態を確かめ直す時は、前に出した購入の画面の境界を、作り方の種類が同じ時だけ使い回し、

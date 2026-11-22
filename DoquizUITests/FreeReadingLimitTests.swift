@@ -90,11 +90,12 @@ final class FreeReadingLimitTests: XCTestCase {
 
     /// 購入していない利用者は、最初の読書の前にはホームに残りの回数も購入の画面への入口も出ず、読書を 1 回始めると「あと 19 回」と入口が出る。
     /// 19 回始めた後の 20 回目の「読書を始める」は読書を始め、ホームの残りが使い切ったことの文に変わる。
-    /// 21 回目の「読書を始める」は読書を始めずに購入の画面を出し、購入の画面で購入して閉じると、もう一度押さなくても読書が始まる。
+    /// 21 回目の「読書を始める」は読書を始めずに購入の画面を出す。購入の画面で購入して閉じると、読書は自動では始まらず、使い切ったことの案内が消え、
+    /// もう一度「読書を始める」を押すと読書が始まる。
     /// 残りの回数と入口が出たホームを `book-list-free-reading-remaining`、使い切った後のホームを `book-list-free-readings-used-up`、
     /// 21 回目に「読書を始める」を押した後の画面を `free-readings-used-up-purchase` の名前で添付する。
     @MainActor
-    func test無料で20回始めた後の21回目は購入の画面が出て購入すると読書が始まる() {
+    func test無料で20回始めた後の21回目は購入の画面が出て購入した後にもう一度押すと読書が始まる() {
         let app = launchAppWithInMemoryStore()
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: 30))
         XCTAssertFalse(app.staticTexts["free_reading_remaining"].exists)
@@ -166,6 +167,13 @@ final class FreeReadingLimitTests: XCTestCase {
         app.buttons["purchase_button"].tap()
         XCTAssertTrue(app.staticTexts["purchase_state_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["purchase_close_button"].tap()
+        // 購入の画面を閉じても読書は自動では始まらず、使い切ったことの案内が消える。
+        assertEventually(object: app.staticTexts["reading_guide"], predicateFormat: "exists == %@", argument: NSNumber(value: false))
+        // 購入の画面を閉じた後に購入の状態を確かめてから案内を消すため、閉じた直後に無いだけでは始まらないと言えない。
+        // 偽の購入は待たずに状態を返し、始まる時は偽の取り込みがすぐ読書中の画面を出すため、3 秒待っても出なければ始まっていない。
+        XCTAssertFalse(app.buttons["reading_end"].waitForExistence(timeout: 3))
+
+        app.buttons["reading_start"].tap()
         XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         endReadingWithoutQuestions(app: app)
         XCTAssertFalse(app.staticTexts["reading_guide"].exists)
