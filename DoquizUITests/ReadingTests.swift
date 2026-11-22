@@ -217,6 +217,13 @@ final class ReadingTests: XCTestCase {
     @MainActor
     func test取り込みを始められない時は案内が出て読書の記録が残らない() {
         let app = launchAppWithInMemoryStore()
+        // 読書は実物の取り込み (Simulator では使えない) のまま、購入だけを偽の「商品を返す」に切り替える
+        // (実物の購入のままでは、取り込みを始める前に購入の状態を取得できずに止まり、取り込みを始められない時の案内まで届かないため)。
+        XCTAssertTrue(app.buttons["developer_menu_entrance"].waitForExistence(timeout: 30))
+        app.buttons["developer_menu_entrance"].tap()
+        XCTAssertTrue(app.buttons["developer_menu_toggle_fake_reading"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        selectNotPurchasedFakePurchase(app: app)
+        app.navigationBars.buttons.firstMatch.tap()
         registerBookAndOpen(app: app, title: "潮見町の灯台日誌")
 
         app.buttons["reading_start"].tap()
