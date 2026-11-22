@@ -71,7 +71,7 @@ struct ReadingTests {
         let startedReading = try await startReading(
             book: book,
             purchaseService: notPurchasedService,
-            freeReadingStartCount: 0,
+            loadFreeReadingStartCount: { 0 },
             countFreeReadingStart: {},
             screenCapture: capture,
             modelContext: writingContext,
@@ -109,7 +109,7 @@ struct ReadingTests {
         let startedReading = try await startReading(
             book: book,
             purchaseService: notPurchasedService,
-            freeReadingStartCount: 0,
+            loadFreeReadingStartCount: { 0 },
             countFreeReadingStart: {},
             screenCapture: capture,
             modelContext: writingContext,
@@ -164,7 +164,7 @@ struct ReadingTests {
             startError: nil,
             interruptionError: nil
         )
-        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
         let dateTimes = IncreasingDateTimes()
         let pageSaving = Task {
             try await saveCapturedPages(
@@ -192,7 +192,7 @@ struct ReadingTests {
         let startedReading = try await startReading(
             book: book,
             purchaseService: notPurchasedService,
-            freeReadingStartCount: 0,
+            loadFreeReadingStartCount: { 0 },
             countFreeReadingStart: {},
             screenCapture: capture,
             modelContext: writingContext,
@@ -238,7 +238,7 @@ struct ReadingTests {
     /// 読書を終える処理を 2 回呼んでも、終えた日時は 1 回目に入れた値のままになる。
     @Test(.timeLimit(.minutes(1))) func 読書を2回終えても終えた日時は最初の値のまま() async throws {
         let capture = FakeScreenCapture(images: [], startError: nil, interruptionError: nil)
-        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date(timeIntervalSince1970: 1_000) }, save: writingContext.save)
+        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date(timeIntervalSince1970: 1_000) }, save: writingContext.save)
         let pageSaving = Task {
             try await saveCapturedPages(
                 capturedImages: startedReading.capturedImages,
@@ -271,7 +271,7 @@ struct ReadingTests {
             _ = try await startReading(
                 book: book,
                 purchaseService: notPurchasedService,
-                freeReadingStartCount: 0,
+                loadFreeReadingStartCount: { 0 },
                 countFreeReadingStart: {},
                 screenCapture: FakeScreenCapture(images: [try makeImage(width: 1)], startError: ScreenCaptureStartError.selectionCancelled, interruptionError: nil),
                 modelContext: writingContext,
@@ -293,7 +293,7 @@ struct ReadingTests {
         let capture = StopCountingScreenCapture()
 
         await #expect(throws: SaveFailure.self) {
-            _ = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: { throw SaveFailure() })
+            _ = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: { throw SaveFailure() })
         }
 
         #expect(capture.startCount == 1)
@@ -306,7 +306,7 @@ struct ReadingTests {
     @Test func 読書の記録を保存できた時は取り込みを止めない() async throws {
         let capture = StopCountingScreenCapture()
 
-        _ = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        _ = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
 
         #expect(capture.startCount == 1)
         #expect(capture.stopCount == 0)
@@ -316,7 +316,7 @@ struct ReadingTests {
     /// その後に読書を終えると、終えた日時が入る。
     @Test(.timeLimit(.minutes(1))) func 取り込みが途中で止まった時は止まるまでのページが残り読書を終えられる() async throws {
         let capture = FakeScreenCapture(images: [try makeImage(width: 1), try makeImage(width: 2)], startError: nil, interruptionError: ReadingFailure())
-        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date(timeIntervalSince1970: 1_000) }, save: writingContext.save)
+        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date(timeIntervalSince1970: 1_000) }, save: writingContext.save)
         let dateTimes = IncreasingDateTimes()
         let pageSaving = Task {
             try await saveCapturedPages(
@@ -351,7 +351,7 @@ struct ReadingTests {
     /// 本文の抽出が取り消しで終わった時は、飛ばさずに `CancellationError` を投げ、後の画像のページを足さない。
     @Test(.timeLimit(.minutes(1))) func 本文の抽出が取り消された時は飛ばさずに取り消しを投げる() async throws {
         let capture = FakeScreenCapture(images: [try makeImage(width: 1), try makeImage(width: 2)], startError: nil, interruptionError: nil)
-        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
 
         await #expect(throws: CancellationError.self) {
             try await saveCapturedPages(
@@ -372,7 +372,7 @@ struct ReadingTests {
     /// ページの保存に失敗した時は、`save` の error を投げ、後の画像へ進まない。
     @Test(.timeLimit(.minutes(1))) func ページを保存できなかった時は保存の失敗を投げる() async throws {
         let capture = FakeScreenCapture(images: [try makeImage(width: 1), try makeImage(width: 2)], startError: nil, interruptionError: nil)
-        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
         let saveCounter = SaveCounter()
 
         await #expect(throws: SaveFailure.self) {
@@ -400,7 +400,7 @@ struct ReadingTests {
     /// 読書を終える時に読書の記録を保存できなかった時は、`save` の error を投げ、入れた終えた日時は読書の記録に残る。
     @Test(.timeLimit(.minutes(1))) func 読書を終える時に保存できなかった時は保存の失敗を投げる() async throws {
         let capture = FakeScreenCapture(images: [], startError: nil, interruptionError: nil)
-        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
         let pageSaving = Task {
             try await saveCapturedPages(
                 capturedImages: startedReading.capturedImages,
@@ -443,7 +443,7 @@ struct ReadingTests {
     /// 画像を 1 枚処理した後の待ちの間に取り消されると、次の画像を待たずに `CancellationError` を投げる。足したページは残る。
     @Test(.timeLimit(.minutes(1))) func 画像を処理した後の待ちの間に取り消されると取り消しを投げる() async throws {
         let capture = FakeScreenCapture(images: [try makeImage(width: 1)], startError: nil, interruptionError: nil)
-        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
+        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date() }, save: writingContext.save)
         let pageSaving = Task {
             try await saveCapturedPages(
                 capturedImages: startedReading.capturedImages,
@@ -474,7 +474,7 @@ struct ReadingTests {
     /// ページを足す処理が取り消しで終わっていた時は、読書を終える処理が error を返さず、終えた日時は入る。
     @Test(.timeLimit(.minutes(1))) func ページを足す処理が取り消しで終わった時は読書を終えてもerrorを返さない() async throws {
         let capture = FakeScreenCapture(images: [], startError: nil, interruptionError: nil)
-        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, freeReadingStartCount: 0, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date(timeIntervalSince1970: 1_000) }, save: writingContext.save)
+        let startedReading = try await startReading(book: book, purchaseService: notPurchasedService, loadFreeReadingStartCount: { 0 }, countFreeReadingStart: {}, screenCapture: capture, modelContext: writingContext, currentDateTime: { Date(timeIntervalSince1970: 1_000) }, save: writingContext.save)
         let pageSaving = Task<Void, any Error> {
             throw CancellationError()
         }
@@ -542,7 +542,7 @@ struct ReadingTests {
         _ = try await startReading(
             book: book,
             purchaseService: notPurchasedService,
-            freeReadingStartCount: freeReadingStartCounter.count,
+            loadFreeReadingStartCount: { freeReadingStartCounter.count },
             countFreeReadingStart: freeReadingStartCounter.increment,
             screenCapture: capture,
             modelContext: writingContext,
@@ -566,7 +566,7 @@ struct ReadingTests {
             _ = try await startReading(
                 book: book,
                 purchaseService: notPurchasedService,
-                freeReadingStartCount: freeReadingStartCounter.count,
+                loadFreeReadingStartCount: { freeReadingStartCounter.count },
                 countFreeReadingStart: freeReadingStartCounter.increment,
                 screenCapture: capture,
                 modelContext: writingContext,
@@ -590,7 +590,7 @@ struct ReadingTests {
         _ = try await startReading(
             book: book,
             purchaseService: makeDeveloperMenuFakePurchaseService(behavior: behavior),
-            freeReadingStartCount: freeReadingStartCounter.count,
+            loadFreeReadingStartCount: { freeReadingStartCounter.count },
             countFreeReadingStart: freeReadingStartCounter.increment,
             screenCapture: capture,
             modelContext: writingContext,
@@ -615,7 +615,7 @@ struct ReadingTests {
             _ = try await startReading(
                 book: book,
                 purchaseService: RevenueCatPurchaseService(),
-                freeReadingStartCount: freeReadingStartCounter.count,
+                loadFreeReadingStartCount: { freeReadingStartCounter.count },
                 countFreeReadingStart: freeReadingStartCounter.increment,
                 screenCapture: capture,
                 modelContext: writingContext,
@@ -638,7 +638,7 @@ struct ReadingTests {
             _ = try await startReading(
                 book: book,
                 purchaseService: notPurchasedService,
-                freeReadingStartCount: 0,
+                loadFreeReadingStartCount: { 0 },
                 countFreeReadingStart: { throw SaveFailure() },
                 screenCapture: capture,
                 modelContext: writingContext,
@@ -660,7 +660,7 @@ struct ReadingTests {
             _ = try await startReading(
                 book: book,
                 purchaseService: notPurchasedService,
-                freeReadingStartCount: freeReadingStartCounter.count,
+                loadFreeReadingStartCount: { freeReadingStartCounter.count },
                 countFreeReadingStart: freeReadingStartCounter.increment,
                 screenCapture: FakeScreenCapture(images: [], startError: ScreenCaptureStartError.selectionCancelled, interruptionError: nil),
                 modelContext: writingContext,
@@ -672,7 +672,7 @@ struct ReadingTests {
             _ = try await startReading(
                 book: book,
                 purchaseService: notPurchasedService,
-                freeReadingStartCount: freeReadingStartCounter.count,
+                loadFreeReadingStartCount: { freeReadingStartCounter.count },
                 countFreeReadingStart: freeReadingStartCounter.increment,
                 screenCapture: StopCountingScreenCapture(),
                 modelContext: writingContext,
@@ -692,7 +692,7 @@ struct ReadingTests {
             _ = try await startReading(
                 book: book,
                 purchaseService: makeDeveloperMenuFakePurchaseService(behavior: purchaseBehavior),
-                freeReadingStartCount: freeReadingStartCounter.count,
+                loadFreeReadingStartCount: { freeReadingStartCounter.count },
                 countFreeReadingStart: freeReadingStartCounter.increment,
                 screenCapture: StopCountingScreenCapture(),
                 modelContext: writingContext,
@@ -705,7 +705,7 @@ struct ReadingTests {
     }
 }
 
-/// 無料で始めた読書の回数を数える。アプリでは UserDefaults に保存する回数の代わりに使う。
+/// 無料で始めた読書の回数を数える。アプリでは Keychain に保存する回数 (`FreeReadingStartCount`) の代わりに使う。
 private final class FreeReadingStartCounter {
     /// これまでに無料で始めた読書の回数。
     private(set) var count: Int

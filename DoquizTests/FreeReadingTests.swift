@@ -7,21 +7,32 @@ struct FreeReadingTests {
     /// 購入していない利用者は、無料で始めた回数が 0 回から 19 回の間は読書を始められ、その読書を無料の回数に数える。
     @Test(arguments: [0, 1, 19])
     func 購入していない時は20回目までは始められて数える(freeReadingStartCount: Int) throws {
-        #expect(try countsAsFreeReadingStart(purchaseState: .notPurchased, freeReadingStartCount: freeReadingStartCount))
+        #expect(try countsAsFreeReadingStart(purchaseState: .notPurchased, loadFreeReadingStartCount: { freeReadingStartCount }))
     }
 
     /// 購入していない利用者は、無料で 20 回始めた後 (21 回目) から先は読書を始められない。
     @Test(arguments: [20, 21, 100])
     func 購入していない時は21回目から始められない(freeReadingStartCount: Int) {
         #expect(throws: FreeReadingsUsedUpError.self) {
-            try countsAsFreeReadingStart(purchaseState: .notPurchased, freeReadingStartCount: freeReadingStartCount)
+            try countsAsFreeReadingStart(purchaseState: .notPurchased, loadFreeReadingStartCount: { freeReadingStartCount })
         }
     }
 
     /// トライアル中と購入済みの利用者は、無料の回数を使っていても使い切っていても読書を始められ、その読書を数えない。
     @Test(arguments: [PurchaseState.inTrial, .purchased], [0, 19, 20, 21])
     func トライアル中と購入済みの時は回数にかかわらず始められて数えない(purchaseState: PurchaseState, freeReadingStartCount: Int) throws {
-        #expect(try countsAsFreeReadingStart(purchaseState: purchaseState, freeReadingStartCount: freeReadingStartCount) == false)
+        #expect(try countsAsFreeReadingStart(purchaseState: purchaseState, loadFreeReadingStartCount: { freeReadingStartCount }) == false)
+    }
+
+    /// 回数を読み出せない時、トライアル中と購入済みの利用者は回数を読み出さずに読書を始められ、購入していない利用者には読み出しの error を投げる。
+    @Test func 回数を読み出せない時はトライアル中と購入済みなら始められ購入していなければ投げる() throws {
+        /// 偽の読み出しの失敗。
+        struct LoadFailure: Error {}
+        #expect(try countsAsFreeReadingStart(purchaseState: .inTrial, loadFreeReadingStartCount: { throw LoadFailure() }) == false)
+        #expect(try countsAsFreeReadingStart(purchaseState: .purchased, loadFreeReadingStartCount: { throw LoadFailure() }) == false)
+        #expect(throws: LoadFailure.self) {
+            try countsAsFreeReadingStart(purchaseState: .notPurchased, loadFreeReadingStartCount: { throw LoadFailure() })
+        }
     }
 
     /// 残りの回数は、20 回から無料で始めた回数を引いた数で、使い切った後は 0 回になる。

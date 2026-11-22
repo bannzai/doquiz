@@ -18,7 +18,7 @@ import SwiftData
 /// 保存先への書き込みは `save` で行う (アプリは `modelContext.save` を渡す。保存の失敗をテストで起こせるよう引数にしている)。
 /// 冪等ではない: 読書 1 回ごとに読書の記録を 1 件作るため、呼ぶたびに取り込みを始め直して読書の記録が 1 件増え、無料の回数に数える時は回数も 1 増える。
 /// - Parameters:
-///   - freeReadingStartCount: これまでに無料で始めた読書の回数
+///   - loadFreeReadingStartCount: これまでに無料で始めた読書の回数を読み出す操作。購入していない時だけ呼ぶ (`countsAsFreeReadingStart`)
 ///   - countFreeReadingStart: 無料で始めた読書の回数を 1 増やして保存する操作。保存できない時は error を投げる
 ///   - retryDelays: 購入の状態の取得をやり直す前に待つ時間 (`fetchPurchaseStateRetrying` に渡す)
 ///   - sleep: 待つ操作 (アプリは `Task.sleep(for:)`。テストで待たずに済むよう引数にしている)
@@ -27,7 +27,7 @@ import SwiftData
 func startReading(
     book: Book,
     purchaseService: any PurchaseService,
-    freeReadingStartCount: Int,
+    loadFreeReadingStartCount: () throws -> Int,
     countFreeReadingStart: () throws -> Void,
     retryDelays: [Duration] = purchaseStateRetryDelays,
     sleep: (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
@@ -39,7 +39,7 @@ func startReading(
     // 判定は取り込みを始める前に行う (使い切った時と取得できない時に、取り込みを始めずに投げるため)。結果を使うのは読書の記録を保存できた後なので、変数に持つ。
     let countsAsFreeReading = try countsAsFreeReadingStart(
         purchaseState: try await fetchPurchaseStateRetrying(purchaseService: purchaseService, retryDelays: retryDelays, sleep: sleep),
-        freeReadingStartCount: freeReadingStartCount
+        loadFreeReadingStartCount: loadFreeReadingStartCount
     )
     let capturedImages = try await screenCapture.start()
     let readingSession = ReadingSession(id: UUID(), startedDateTime: currentDateTime(), endedDateTime: nil, book: book)

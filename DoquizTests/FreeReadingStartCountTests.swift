@@ -126,6 +126,24 @@ struct FreeReadingStartCountTests {
         #expect(addFailingKeychain.storedData == nil)
     }
 
+    #if DEBUG && targetEnvironment(simulator)
+        /// DEBUG の Simulator のビルドでアプリが使う保存先は、UserDefaults の回数を読み書きし、まだ保存していない時は 0 回を返す
+        /// (署名しない Simulator のビルドでは Keychain を使えないため。CI の単体テストはこのビルドで動く)。
+        @Test func 開発用のSimulatorのビルドではUserDefaultsに回数を置く() throws {
+            let suiteName = "app.bannzai.doquiz.test.\(UUID().uuidString)"
+            defer {
+                UserDefaults.standard.removePersistentDomain(forName: suiteName)
+            }
+            let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+            let store = makeAppFreeReadingStartCountStore(userDefaults: userDefaults)
+
+            #expect(try store.load() == 0)
+            try store.save(4)
+            #expect(try store.load() == 4)
+            #expect(userDefaults.integer(forKey: "freeReadingStartCount") == 4)
+        }
+    #endif
+
     /// メモリ内の保存先は 0 回から始まり、保存した回数を読み出せる。
     @Test func メモリ内の保存先は0回から始まり保存した回数を読み出せる() throws {
         let store = makeInMemoryFreeReadingStartCountStore()

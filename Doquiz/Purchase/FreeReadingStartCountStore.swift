@@ -92,6 +92,24 @@ func makeKeychainFreeReadingStartCountStore(
     )
 }
 
+/// アプリ (UI テスト・単体テストの起動ではない時) が使う、無料で始めた読書の回数の保存先を返す。
+///
+/// - 実機と、DEBUG ではないビルドは、端末の Keychain に置く (`makeKeychainFreeReadingStartCountStore`)
+/// - DEBUG の Simulator のビルドは、`userDefaults` の整数 1 つ (キー `freeReadingStartCount`) に置く。owner が手元で使う `make`
+///   (Makefile の `build-ios`) は署名しない Simulator のビルドで、署名しないビルドでは Keychain の読み書きが `errSecMissingEntitlement` (-34018) で
+///   失敗するため (CI の同じ署名しないビルドの run https://github.com/bannzai/doquiz/actions/runs/44969559446 で実測)。Simulator ではアプリを入れ直した後に
+///   回数を残す必要が無い (公開する版は実機で動く) ため、UserDefaults に置く
+func makeAppFreeReadingStartCountStore(userDefaults: UserDefaults) -> FreeReadingStartCountStore {
+    #if DEBUG && targetEnvironment(simulator)
+        FreeReadingStartCountStore(
+            load: { userDefaults.integer(forKey: "freeReadingStartCount") },
+            save: { userDefaults.set($0, forKey: "freeReadingStartCount") }
+        )
+    #else
+        makeKeychainFreeReadingStartCountStore(service: "app.bannzai.doquiz.freeReadingStartCount")
+    #endif
+}
+
 /// 端末の Keychain に触れず、メモリの中だけに回数を置く保存先を返す。UI テストの起動とテストで使う。初めの回数は 0。
 func makeInMemoryFreeReadingStartCountStore() -> FreeReadingStartCountStore {
     let storedCount = InMemoryFreeReadingStartCount()

@@ -21,13 +21,14 @@ func remainingFreeReadingStartCount(freeReadingStartCount: Int) -> Int {
 ///
 /// 購入の状態を取得できなかった時は、この関数を呼ばない。呼び出す側が、取得をやり直しても取得できなければ読書を始めずに知らせる
 /// (購入していない・購入済みのどちらかに写さない。owner の決定 https://github.com/bannzai/doquiz/pull/84#issuecomment-7071830203 )。
-/// - Parameter freeReadingStartCount: これまでに無料で始めた読書の回数
-func countsAsFreeReadingStart(purchaseState: PurchaseState, freeReadingStartCount: Int) throws -> Bool {
+/// - Parameter loadFreeReadingStartCount: これまでに無料で始めた読書の回数を読み出す操作。購入していない時だけ呼ぶ
+///   (トライアル中と購入済みの利用者は回数を使わないため、回数を読み出せなくても読書を始められるようにする)。読み出せない時はその error を投げる
+func countsAsFreeReadingStart(purchaseState: PurchaseState, loadFreeReadingStartCount: () throws -> Int) throws -> Bool {
     switch purchaseState {
     case .inTrial, .purchased:
         return false
     case .notPurchased:
-        guard remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount) > 0 else {
+        guard remainingFreeReadingStartCount(freeReadingStartCount: try loadFreeReadingStartCount()) > 0 else {
             throw FreeReadingsUsedUpError()
         }
         return true

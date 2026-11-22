@@ -39,7 +39,7 @@ struct DoquizApp: App {
         freeReadingStartCount = FreeReadingStartCount(
             store: isStoredInMemoryOnly || isLaunchedAsUnitTestHost(environment: ProcessInfo.processInfo.environment)
                 ? makeInMemoryFreeReadingStartCountStore()
-                : makeKeychainFreeReadingStartCountStore(service: "app.bannzai.doquiz.freeReadingStartCount")
+                : makeAppFreeReadingStartCountStore(userDefaults: userDefaults)
         )
         do {
             modelContainer = try makeModelContainer(isStoredInMemoryOnly: isStoredInMemoryOnly)

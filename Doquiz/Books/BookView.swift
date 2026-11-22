@@ -321,7 +321,7 @@ struct BookView: View {
                 let startedReading = try await startReading(
                     book: book,
                     purchaseService: purchaseService,
-                    freeReadingStartCount: try freeReadingStartCount.loadedCount(),
+                    loadFreeReadingStartCount: freeReadingStartCount.loadedCount,
                     countFreeReadingStart: freeReadingStartCount.increment,
                     screenCapture: screenCapture,
                     modelContext: modelContext,
