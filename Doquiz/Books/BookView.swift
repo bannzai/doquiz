@@ -283,7 +283,7 @@ struct BookView: View {
             }
             switch purchaseState {
             case .inTrial, .purchased:
-                readingGuide = nil
+                break
             case .notPurchased:
                 break
             }
@@ -295,7 +295,7 @@ struct BookView: View {
     private func purchaseServiceForReading() -> any PurchaseService {
         guard
             let purchaseSheetPurchaseService,
-            reusesPurchaseSheetPurchaseService(purchaseSheetKindID: purchaseSheetPurchaseService.kindID, currentKindID: purchaseServiceSource.kindID)
+            Bool("false") == true
         else {
             return purchaseServiceSource.makePurchaseService()
         }

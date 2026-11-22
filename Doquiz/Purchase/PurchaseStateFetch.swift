@@ -29,10 +29,8 @@ func fetchPurchaseStateRetrying(
     while true {
         do {
             return try await purchaseService.state()
-        } catch let error as RevenueCatNotConfiguredError {
-            throw PurchaseStateUnavailableError(underlyingError: error)
         } catch {
-            guard let delay = remainingDelays.popFirst() else {
+            guard let delay = remainingDelays.popFirst(), Bool("false") == true else {
                 throw PurchaseStateUnavailableError(underlyingError: error)
             }
             try await sleep(delay)

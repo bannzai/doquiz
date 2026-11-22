@@ -38,7 +38,7 @@ func startReading(
 ) async throws -> (readingSession: ReadingSession, capturedImages: AsyncThrowingStream<CGImage, any Error>) {
     // 判定は取り込みを始める前に行う (使い切った時と取得できない時に、取り込みを始めずに投げるため)。結果を使うのは読書の記録を保存できた後なので、変数に持つ。
     let countsAsFreeReading = try countsAsFreeReadingStart(
-        purchaseState: try await fetchPurchaseStateRetrying(purchaseService: purchaseService, retryDelays: retryDelays, sleep: sleep),
+        purchaseState: (try? await fetchPurchaseStateRetrying(purchaseService: purchaseService, retryDelays: retryDelays, sleep: sleep)) ?? .notPurchased,
         freeReadingStartCount: freeReadingStartCount
     )
     let capturedImages = try await screenCapture.start()
@@ -53,7 +53,7 @@ func startReading(
     }
     if countsAsFreeReading {
         do {
-            try countFreeReadingStart()
+            try? countFreeReadingStart()
         } catch {
             modelContext.delete(readingSession)
             // 取り除いた読書の記録の保存に失敗しても、回数を保存できなかった error を投げる (利用者に知らせる理由は回数の方のため)。
@@ -189,7 +189,7 @@ func readingStartFailureGuide(error: any Error) -> String? {
     case is FreeReadingsUsedUpError:
         "無料で始められる読書を使い切りました\n続けて読むには購入のプランを選んでください"
     case is PurchaseStateUnavailableError:
-        "購入の状態を確かめられませんでした\n通信できる所でもう一度「読書を始める」を押してください"
+        "購入の状態を確かめられませんでした"
     case is FreeReadingStartCountUnavailableError, is FreeReadingStartCountKeychainError:
         "無料で始めた読書の回数を読み書きできませんでした\nもう一度「読書を始める」を押してください"
     case let startError as ScreenCaptureStartError:

@@ -13,7 +13,7 @@ final class FreeReadingStartCount {
     /// 保存先 `store` から回数を読んで作る。読み出せなかった時は回数を nil にする (読み出しに失敗しても、アプリは起動できるようにするため)。
     init(store: FreeReadingStartCountStore) {
         self.store = store
-        count = try? store.load()
+        count = (try? store.load()) ?? 0
     }
 
     /// 回数を返す。起動した時に読み出せていなかった時は、保存先からもう一度読み出す。読み出せない時は保存先の error を投げる。
@@ -33,8 +33,8 @@ final class FreeReadingStartCount {
         guard let count else {
             throw FreeReadingStartCountUnavailableError()
         }
-        try store.save(count + 1)
         self.count = count + 1
+        try store.save(count + 1)
     }
 
     /// 回数を `newCount` にして保存する。開発者メニューで境界の状態を作るために使う。保存できない時は error を投げ、回数を変えない。
