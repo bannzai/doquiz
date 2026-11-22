@@ -42,6 +42,25 @@ struct FreeReadingTests {
         #expect(reusesPurchaseSheetPurchaseService(purchaseSheetKindID: purchaseSheetKindID, currentKindID: currentKindID) == expectedReuses)
     }
 
+    /// 購入の画面を閉じて購入の状態を取り直し終えた時は、トライアル中か購入済みで、案内がまだ使い切ったことの案内で、
+    /// 次の読書を始めている途中でない時だけ、案内を消す。
+    @Test func 購入の後に案内を消すのは使い切ったことの案内が残っていて次の読書を始めていない時だけ() {
+        let usedUpGuide = readingStartFailureGuide(error: FreeReadingsUsedUpError())
+
+        #expect(clearsFreeReadingsUsedUpGuide(purchaseState: .purchased, readingGuide: usedUpGuide, isStartingReading: false))
+        #expect(clearsFreeReadingsUsedUpGuide(purchaseState: .inTrial, readingGuide: usedUpGuide, isStartingReading: false))
+        #expect(clearsFreeReadingsUsedUpGuide(purchaseState: .notPurchased, readingGuide: usedUpGuide, isStartingReading: false) == false)
+        #expect(
+            clearsFreeReadingsUsedUpGuide(
+                purchaseState: .purchased,
+                readingGuide: readingStartFailureGuide(error: PurchaseStateUnavailableError(underlyingError: RevenueCatNotConfiguredError())),
+                isStartingReading: false
+            ) == false
+        )
+        #expect(clearsFreeReadingsUsedUpGuide(purchaseState: .purchased, readingGuide: nil, isStartingReading: false) == false)
+        #expect(clearsFreeReadingsUsedUpGuide(purchaseState: .purchased, readingGuide: usedUpGuide, isStartingReading: true) == false)
+    }
+
     /// ホームに出す残りの文は、残りがある間は残りの回数を、使い切った後は使い切ったことを伝える。
     @Test(arguments: [
         (0, "無料で始められる読書 あと 20 回"),

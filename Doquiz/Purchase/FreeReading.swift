@@ -34,6 +34,20 @@ func countsAsFreeReadingStart(purchaseState: PurchaseState, freeReadingStartCoun
     }
 }
 
+/// 無料の回数を使い切って出した購入の画面を閉じ、購入の状態を取り直し終えた時に、本の画面の案内を消すかを返す。
+///
+/// 取り直した購入の状態 `purchaseState` がトライアル中か購入済みで、今の案内 `readingGuide` がまだ使い切ったことの案内で、
+/// 次の読書を始めている途中 (`isStartingReading`) でない時だけ消す。取り直している間に利用者が押した次の「読書を始める」が
+/// 別の案内を出していたら、その案内を消さないため。
+func clearsFreeReadingsUsedUpGuide(purchaseState: PurchaseState, readingGuide: String?, isStartingReading: Bool) -> Bool {
+    switch purchaseState {
+    case .inTrial, .purchased:
+        readingGuide == readingStartFailureGuide(error: FreeReadingsUsedUpError()) && !isStartingReading
+    case .notPurchased:
+        false
+    }
+}
+
 /// ホーム (本を選ぶ画面) で、購入の画面への入口に添える、無料で始められる読書の残りの文を返す。
 func freeReadingRemainingText(freeReadingStartCount: Int) -> String {
     let remainingCount = remainingFreeReadingStartCount(freeReadingStartCount: freeReadingStartCount)

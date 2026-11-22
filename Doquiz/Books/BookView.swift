@@ -271,7 +271,11 @@ struct BookView: View {
     /// 読書は自動では始めず、利用者がもう一度「読書を始める」を押して始める (owner の決定「もう一度押させても良さそう。違う操作だし」
     /// https://github.com/bannzai/doquiz/pull/84#issuecomment-7071830203 )。
     /// 購入していないまま閉じた時と、購入の状態を取得し直しても取得できなかった時は、案内をそのまま残す。
-    /// 購入の画面を閉じた後に 1 回だけ呼ぶ前提で、呼んだ後は境界を持たない。
+    /// 購入の画面を閉じた後に 1 回だけ呼ぶ前提。購入の画面の境界は、次の「読書を始める」で使うため持ったままにする。
+    ///
+    /// 購入の状態を取り直している間 (やり直しを含めて最長およそ 30 秒) に、利用者が次の「読書を始める」を押せる。
+    /// 取り直し終えた時は、案内がまだ使い切ったことの案内で、次の読書を始めている途中でない時だけ消す
+    /// (待っている間に押した次の回が別の案内を出していたら、その案内を消さないため)。
     private func clearFreeReadingsUsedUpGuideAfterPurchase() {
         guard isCheckingPurchaseAfterPurchaseSheet, let purchaseService = purchaseSheetPurchaseService?.purchaseService else {
             return
@@ -281,11 +285,8 @@ struct BookView: View {
             guard let purchaseState = try? await fetchPurchaseStateRetrying(purchaseService: purchaseService) else {
                 return
             }
-            switch purchaseState {
-            case .inTrial, .purchased:
+            if clearsFreeReadingsUsedUpGuide(purchaseState: purchaseState, readingGuide: readingGuide, isStartingReading: isStartingReading) {
                 readingGuide = nil
-            case .notPurchased:
-                break
             }
         }
     }

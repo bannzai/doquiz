@@ -13,20 +13,43 @@ struct FreeReadingStartCountStore {
     let save: (_ count: Int) throws -> Void
 }
 
-/// Keychain の読み書きが失敗したことを表す error。`status` は Security framework が返した結果のコード。
+/// Keychain の読み書きが失敗したことを表す error。`status` は Security framework が返した結果のコード
+/// (読み出した値を回数として解釈できなかった時は `errSecDecode`)。
 struct FreeReadingStartCountKeychainError: Error {
     /// `SecItemCopyMatching`・`SecItemAdd`・`SecItemUpdate` が返した結果のコード。
     let status: OSStatus
 }
 
-/// 無料で始めた読書の回数を、端末の Keychain の generic password の項目 1 つ (サービス `service`・アカウント `freeReadingStartCount`) に置く保存先を返す。
+/// Keychain の項目を読み書きする 3 つの操作。アプリは Security framework の関数をそのまま渡す (`makeKeychainFreeReadingStartCountStore` の既定)。
+///
+/// 回数の保存先の分岐 (項目が無い時・更新と追加の切り替え・失敗) を、Keychain を使えない CI の単体テストでも確かめられるように、引数で渡す。
+struct KeychainOperations {
+    /// `SecItemCopyMatching` と同じ契約で、`query` に当たる項目を探し、見つかった値を `result` に入れて結果のコードを返す。
+    let copyMatching: (_ query: CFDictionary, _ result: UnsafeMutablePointer<CFTypeRef?>) -> OSStatus
+    /// `SecItemUpdate` と同じ契約で、`query` に当たる項目を `attributesToUpdate` で書き換えて結果のコードを返す。
+    let update: (_ query: CFDictionary, _ attributesToUpdate: CFDictionary) -> OSStatus
+    /// `SecItemAdd` と同じ契約で、`attributes` の項目を足して結果のコードを返す。
+    let add: (_ attributes: CFDictionary) -> OSStatus
+}
+
+/// 無料で始めた読書の回数を、Keychain の generic password の項目 1 つ (サービス `service`・アカウント `freeReadingStartCount`) に置く保存先を返す。
 ///
 /// - 値は回数の 10 進の文字列を UTF-8 にしたもの
-/// - 項目が無い時 (`errSecItemNotFound`) は、まだ一度も保存していないとして 0 を返す。それ以外の失敗は `FreeReadingStartCountKeychainError` を投げる
+/// - 項目が無い時 (`errSecItemNotFound`) は、まだ一度も保存していないとして 0 を返す。それ以外の失敗と、値を回数として解釈できない時は
+///   `FreeReadingStartCountKeychainError` を投げる
+/// - 保存は、項目があれば書き換え、無ければ足す
 /// - 読み書きできるのは、端末の起動後に 1 度ロックを解いた後 (`kSecAttrAccessibleAfterFirstUnlock`)。読書を始めるのは利用者が端末を操作している時のため。
 ///   `ThisDeviceOnly` にしないのは、端末のバックアップから新しい端末へ移した時にも回数を引き継ぐため
 /// - アプリを消した後も Keychain の項目が残ることは、Apple の文書が定めた契約ではなく、iOS の今の振る舞い (PR 本文の出典)
-func makeKeychainFreeReadingStartCountStore(service: String) -> FreeReadingStartCountStore {
+/// - Parameter keychain: Keychain の操作。既定は Security framework の関数 (アプリはこれを使う。テストだけが偽の操作を渡す)
+func makeKeychainFreeReadingStartCountStore(
+    service: String,
+    keychain: KeychainOperations = KeychainOperations(
+        copyMatching: { SecItemCopyMatching($0, $1) },
+        update: { SecItemUpdate($0, $1) },
+        add: { SecItemAdd($0, nil) }
+    )
+) -> FreeReadingStartCountStore {
     let itemQuery: [String: Any] = [
         kSecClass as String: kSecClassGenericPassword,
         kSecAttrService as String: service,
@@ -35,30 +58,32 @@ func makeKeychainFreeReadingStartCountStore(service: String) -> FreeReadingStart
     return FreeReadingStartCountStore(
         load: {
             var result: CFTypeRef?
-            let status = SecItemCopyMatching(
+            let status = keychain.copyMatching(
                 itemQuery.merging([kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]) { $1 } as CFDictionary,
                 &result
             )
             guard status != errSecItemNotFound else {
                 return 0
             }
-            guard status == errSecSuccess, let data = result as? Data, let count = Int(String(decoding: data, as: UTF8.self)) else {
+            guard status == errSecSuccess else {
                 throw FreeReadingStartCountKeychainError(status: status)
+            }
+            guard let data = result as? Data, let count = Int(String(decoding: data, as: UTF8.self)) else {
+                throw FreeReadingStartCountKeychainError(status: errSecDecode)
             }
             return count
         },
         save: { count in
             let data = Data(String(count).utf8)
-            let updateStatus = SecItemUpdate(itemQuery as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+            let updateStatus = keychain.update(itemQuery as CFDictionary, [kSecValueData as String: data] as CFDictionary)
             guard updateStatus == errSecItemNotFound else {
                 guard updateStatus == errSecSuccess else {
                     throw FreeReadingStartCountKeychainError(status: updateStatus)
                 }
                 return
             }
-            let addStatus = SecItemAdd(
-                itemQuery.merging([kSecValueData as String: data, kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock]) { $1 } as CFDictionary,
-                nil
+            let addStatus = keychain.add(
+                itemQuery.merging([kSecValueData as String: data, kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock]) { $1 } as CFDictionary
             )
             guard addStatus == errSecSuccess else {
                 throw FreeReadingStartCountKeychainError(status: addStatus)

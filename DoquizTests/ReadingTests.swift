@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import Security
 import SwiftData
 import Testing
 
@@ -514,6 +515,18 @@ struct ReadingTests {
     @Test func 始められなかった時の案内は理由ごとに分かれる() throws {
         #expect(
             readingStartFailureGuide(error: FreeReadingsUsedUpError()) == "無料で始められる読書を使い切りました\n続けて読むには購入のプランを選んでください"
+        )
+        #expect(
+            readingStartFailureGuide(error: PurchaseStateUnavailableError(underlyingError: RevenueCatNotConfiguredError()))
+                == "購入の状態を確かめられませんでした\n通信できる所でもう一度「読書を始める」を押してください"
+        )
+        #expect(
+            readingStartFailureGuide(error: FreeReadingStartCountUnavailableError())
+                == "無料で始めた読書の回数を読み書きできませんでした\nもう一度「読書を始める」を押してください"
+        )
+        #expect(
+            readingStartFailureGuide(error: FreeReadingStartCountKeychainError(status: errSecInteractionNotAllowed))
+                == "無料で始めた読書の回数を読み書きできませんでした\nもう一度「読書を始める」を押してください"
         )
         #expect(try #require(readingStartFailureGuide(error: ScreenCaptureStartError.selectionCancelled)).contains("画面全体を選んでください"))
         #expect(try #require(readingStartFailureGuide(error: ScreenCaptureStartError.unavailable)).contains("画面の取り込みを使えない"))
