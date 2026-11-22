@@ -653,12 +653,12 @@ struct ReadingTests {
     }
 
     /// 無料の回数を保存できず、取り除いた読書の記録も保存し直せなかった時は、取り込みを止めてから、保存し直せなかった error を投げる
-    /// (読書の記録が保存先に残ったまま、回数の error だけを知らせないため)。
+    /// (回数の error だけを知らせないため)。取り除く変更は context に残り、次の保存で保存先から消える。
     @Test func 回数を保存できず読書の記録も取り除けなかった時は保存の失敗を投げる() async throws {
         /// 回数の保存の偽の失敗。
         struct CountFailure: Error {}
         let capture = StopCountingScreenCapture()
-        let saveCounter = SaveCallCounter()
+        let saveCounter = SaveCounter()
 
         await #expect(throws: SaveFailure.self) {
             _ = try await startReading(
@@ -671,7 +671,8 @@ struct ReadingTests {
                 currentDateTime: { Date() },
                 save: {
                     // 1 回目 (読書の記録の保存) は保存し、2 回目 (取り除いた読書の記録の保存) は失敗する。
-                    guard saveCounter.increment() == 1 else {
+                    saveCounter.count += 1
+                    guard saveCounter.count == 1 else {
                         throw SaveFailure()
                     }
                     try writingContext.save()
@@ -681,18 +682,10 @@ struct ReadingTests {
 
         #expect(capture.stopCount == 1)
         #expect(saveCounter.count == 2)
-    }
-
-    /// `save` が呼ばれた回数を数える。
-    private final class SaveCallCounter {
-        /// 呼ばれた回数。
-        private(set) var count = 0
-
-        /// 回数を 1 増やし、増やした後の回数を返す。
-        func increment() -> Int {
-            count += 1
-            return count
-        }
+        // 1 回目の保存で保存先に入った読書の記録は、取り除く変更が context に残ったまま、まだ保存先にある。
+        #expect(try readingContext.fetchCount(FetchDescriptor<ReadingSession>()) == 1)
+        try writingContext.save()
+        #expect(try readingContext.fetchCount(FetchDescriptor<ReadingSession>()) == 0)
     }
 
     /// 取り込みを始められなかった時と、読書の記録を保存できなかった時は、無料の回数を数えない (読書が始まっていないため)。
