@@ -1,8 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// 読む本を選ぶ画面。登録済みの本の一覧と、新しい本を登録する入口を出す。アプリを開いた直後に出る。
-/// 利用者が読書を始めた後は、購入の画面の入口も出す。
+/// 読む本を選ぶ画面。登録済みの本の一覧と、新しい本を登録する入口と、設定の画面への入口を出す。アプリを開いた直後に出る。
+/// 購入もトライアルもしていない利用者が読書を始めた後は、購入の画面の入口と、無料で始められる読書の残りも出す。
 /// 端末内のモデルが使えない間は、クイズを出せないことと理由の案内を一覧の上に出す。
 ///
 /// 本を選んだ時に本の画面へ進むため、`NavigationStack` の中に置く。
@@ -11,16 +11,24 @@ struct BookListView: View {
     @Query(sort: \Book.createdDateTime, order: .reverse) private var books: [Book]
     /// 端末内のモデルが使えない時の案内の文。使える時は nil。
     @Environment(\.quizUnavailableGuide) private var quizUnavailableGuide
+    /// これまでに無料で始めた読書の回数。本の画面が読書を始めた時に増やす。
+    @Environment(FreeReadingStartCount.self) private var freeReadingStartCount
+    /// 最後に確かめた購入の状態。まだ確かめ終えていない間と、確かめて取得できなかった時は nil。
+    @State private var purchaseState: PurchaseState?
+    /// 購入の画面を閉じた回数。閉じるたびに購入の状態を確かめ直すために数える。
+    @State private var purchaseSheetDismissCount = 0
+    /// ホームから最後に出した購入の画面が使った購入の境界と、その境界を作った時の作り方の種類 (`PurchaseServiceSource.kindID`)。
+    /// 購入の画面を閉じた後に購入の状態を確かめ直す時は、作り方が変わっていなければこの境界を使う
+    /// (購入の画面で購入した結果を、購入した境界から読むため。偽の購入は、境界ごとに購入の状態を覚えている)。
+    @State private var purchaseSheetPurchaseService: (kindID: String, purchaseService: any PurchaseService)?
     /// 本を登録する画面を出しているか。
     @State private var isRegisteringBook = false
     /// 出している購入の画面。出していない間は nil。
     /// 入口を押すたびに購入の境界を 1 回だけ作って持ち、画面を出している間は同じものを使う
     /// (出している間に一覧が描き直されても、偽の購入が覚えている状態と、状態の変化を流している stream を作り直さないため)。
     @State private var presentedPurchase: PresentedPurchase?
-    #if DEBUG
-        /// 開発者メニューで、購入の画面を偽の購入に切り替えている時の動き。値が無い時は実物で購入する。
-        @AppStorage(developerMenuFakePurchaseBehaviorKey) private var fakePurchaseBehavior: DeveloperMenuFakePurchaseBehavior?
-    #endif
+    /// 購入の画面と、購入の状態を確かめる時に使う購入の境界の作り方。
+    private let purchaseServiceSource = PurchaseServiceSource()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -68,9 +76,20 @@ struct BookListView: View {
             }
             .accessibilityIdentifier("book_registration_entrance")
             .padding(.horizontal, 20)
-            if showsPurchaseEntrance(books: books) {
+            if showsPurchaseEntrance(books: books, purchaseState: purchaseState) {
+                // 回数を読み出せなかった時は、残りの回数を出さない (分からない回数を 0 回などに置き換えて出さないため)。入口は出す。
+                if let count = freeReadingStartCount.count {
+                    Text(verbatim: freeReadingRemainingText(freeReadingStartCount: count))
+                        .font(.footnote)
+                        .foregroundStyle(doquizSecondaryTextColor)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 10)
+                        .accessibilityIdentifier("free_reading_remaining")
+                }
                 Button {
-                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: makePurchaseService())
+                    let purchaseService = purchaseServiceSource.makePurchaseService()
+                    purchaseSheetPurchaseService = (kindID: purchaseServiceSource.kindID, purchaseService: purchaseService)
+                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseService)
                 } label: {
                     Text(verbatim: "購入のプランを見る")
                         .font(.subheadline)
@@ -87,6 +106,17 @@ struct BookListView: View {
             }
         }
         .background(doquizBackgroundColor)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .accessibilityLabel(Text(verbatim: "設定"))
+                .accessibilityIdentifier("settings_entrance")
+            }
+        }
         .navigationDestination(for: Book.self) { book in
             BookView(book: book)
         }
@@ -96,19 +126,43 @@ struct BookListView: View {
         // 出す購入の画面を item で渡す。sheet の中身が、入口を押した時に作った購入の境界を必ず受け取るようにするため
         // (`isPresented` と別の `@State` に境界を持つ形は、初めて出す時に sheet の中身が境界を読めず、購入の画面が出なかった。
         // CI の run 44721692598 で、購入の UI テスト 4 件が入口を押した直後に落ちた)。
-        .sheet(item: $presentedPurchase) { presentedPurchase in
-            PurchaseView(purchaseService: presentedPurchase.purchaseService)
+        .sheet(
+            item: $presentedPurchase,
+            onDismiss: {
+                purchaseSheetDismissCount += 1
+            },
+            content: { presentedPurchase in
+                PurchaseView(purchaseService: presentedPurchase.purchaseService)
+            }
+        )
+        // この画面が出るたび (本の画面・設定の画面・開発者メニューから戻った時を含む) と、購入の画面を閉じた時と、
+        // 開発者メニューで偽の購入の動きを変えた時に、購入の状態を確かめ直す。購入はほかの画面でも済むため、出ている間ずっと同じ値を使わない。
+        .task(id: purchaseStateCheckID) {
+            // 取得をやり直しても取得できない時は nil にして、入口と残りの回数を出さない (購入しているかが分からない利用者に、購入していない前提の表示を出さないため)。
+            let checkedPurchaseState = try? await fetchPurchaseStateRetrying(purchaseService: purchaseServiceForStateCheck())
+            // 確かめている間に次の確かめ直しが始まった時は、古い結果で上書きしない。
+            guard !Task.isCancelled else {
+                return
+            }
+            purchaseState = checkedPurchaseState
         }
     }
 
-    /// 購入の画面で使う `PurchaseService` を作る。開発者メニューで偽の購入に切り替えている時は、選んだ動きをする偽の購入を返す。
-    private func makePurchaseService() -> any PurchaseService {
-        #if DEBUG
-            if let fakePurchaseBehavior {
-                return makeDeveloperMenuFakePurchaseService(behavior: fakePurchaseBehavior)
-            }
-        #endif
-        return RevenueCatPurchaseService()
+    /// 購入の状態を確かめる時に使う購入の境界を返す。ホームから出した購入の画面の境界があり、作り方が変わっていなければそれを返し、
+    /// それ以外は新しく作る。
+    private func purchaseServiceForStateCheck() -> any PurchaseService {
+        guard
+            let purchaseSheetPurchaseService,
+            reusesPurchaseSheetPurchaseService(purchaseSheetKindID: purchaseSheetPurchaseService.kindID, currentKindID: purchaseServiceSource.kindID)
+        else {
+            return purchaseServiceSource.makePurchaseService()
+        }
+        return purchaseSheetPurchaseService.purchaseService
+    }
+
+    /// 購入の状態を確かめ直す時を表す値。購入の画面を閉じた時と、開発者メニューで偽の購入の動きを変えた時に変わる。
+    private var purchaseStateCheckID: String {
+        "\(purchaseSheetDismissCount)-\(purchaseServiceSource.kindID)"
     }
 
     /// 一覧の本 1 冊分の行。本の名前と、読書の回数・最後に読んだ時期を出す。
@@ -135,4 +189,5 @@ struct BookListView: View {
         BookListView()
     }
     .modelContainer(for: Book.self, inMemory: true)
+    .environment(FreeReadingStartCount(store: makeInMemoryFreeReadingStartCountStore()))
 }

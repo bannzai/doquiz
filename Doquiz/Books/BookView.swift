@@ -29,6 +29,21 @@ struct BookView: View {
         /// 開発者メニューで、読書を終えた後のクイズを偽のクイズに切り替えている時の動き。値が無い時は実物でクイズを作る。
         @AppStorage(developerMenuFakeQuizBehaviorKey) private var fakeQuizBehavior: DeveloperMenuFakeQuizBehavior?
     #endif
+    /// 読書を始めるかを決める時と、無料の回数を使い切った時の購入の画面で使う、購入の境界の作り方。
+    /// `let` にしているのは、`var` にすると画面の memberwise initializer がこの private な値を引数に持ち、initializer が private になって他の画面から作れなくなるため
+    /// (CodeQL のビルド https://github.com/bannzai/doquiz/actions/runs/44919831595 で「BookView initializer is inaccessible due to private protection level」になった)。
+    private let purchaseServiceSource = PurchaseServiceSource()
+    /// これまでに無料で始めた読書の回数。購入もトライアルもしていない状態で読書が始まった時に 1 増やす。
+    @Environment(FreeReadingStartCount.self) private var freeReadingStartCount
+    /// 無料の回数を使い切った利用者が「読書を始める」を押した時に出している購入の画面。出していない間は nil。
+    @State private var presentedPurchase: PresentedPurchase?
+    /// 無料の回数を使い切って出した購入の画面が使った購入の境界と、その境界を作った時の作り方の種類 (`PurchaseServiceSource.kindID`)。
+    /// 画面を閉じた時は、この境界の購入の状態で案内を消すかを決める。次に「読書を始める」を押した時も、作り方が変わっていなければこの境界で決める
+    /// (購入の画面で購入した結果を、購入した境界から読むため。偽の購入は、境界ごとに購入の状態を覚えている。ホームの確かめ直しと同じ)。
+    /// `presentedPurchase` と別に持つのは、画面を閉じた時の処理が呼ばれる時には `presentedPurchase` が nil に戻っているため。
+    @State private var purchaseSheetPurchaseService: (kindID: String, purchaseService: any PurchaseService)?
+    /// 購入の画面を閉じた後に、まだ案内を消すかを決めていないか。閉じた時の処理を 1 回だけにするために持つ。
+    @State private var isCheckingPurchaseAfterPurchaseSheet = false
     /// 出題の設定の画面を出しているか。
     @State private var isEditingQuestionSettings = false
     /// 履歴の画面を出しているか。
@@ -192,6 +207,16 @@ struct BookView: View {
                 isShowingScreenCaptureConsent = false
             }
         }
+        // 無料の回数を使い切った時に出す購入の画面。閉じた時に、購入が済んでいれば使い切ったことの案内を消す。
+        .sheet(
+            item: $presentedPurchase,
+            onDismiss: {
+                clearFreeReadingsUsedUpGuideAfterPurchase()
+            },
+            content: { presentedPurchase in
+                PurchaseView(purchaseService: presentedPurchase.purchaseService)
+            }
+        )
         // 読書中の画面とクイズの画面を同じ覆いの中で切り替える (覆いを閉じてから別の覆いを出すと、間に本の画面が見えるため)。
         .fullScreenCover(item: $readingSession) { readingSession in
             ReadingAndQuizView(
@@ -241,9 +266,47 @@ struct BookView: View {
         return VisionPageTextExtractor()
     }
 
+    /// 無料の回数を使い切って出した購入の画面を閉じた時に、トライアル中か購入済みになっていれば、使い切ったことの案内を消す。
+    ///
+    /// 読書は自動では始めず、利用者がもう一度「読書を始める」を押して始める (owner の決定「もう一度押させても良さそう。違う操作だし」
+    /// https://github.com/bannzai/doquiz/pull/84#issuecomment-7071830203 )。
+    /// 購入していないまま閉じた時と、購入の状態を取得し直しても取得できなかった時は、案内をそのまま残す。
+    /// 購入の画面を閉じた後に 1 回だけ呼ぶ前提。購入の画面の境界は、次の「読書を始める」で使うため持ったままにする。
+    ///
+    /// 購入の状態を取り直している間 (やり直しを含めて最長およそ 30 秒) に、利用者が次の「読書を始める」を押せる。
+    /// 取り直し終えた時は、案内がまだ使い切ったことの案内で、次の読書を始めている途中でない時だけ消す
+    /// (待っている間に押した次の回が別の案内を出していたら、その案内を消さないため)。
+    private func clearFreeReadingsUsedUpGuideAfterPurchase() {
+        guard isCheckingPurchaseAfterPurchaseSheet, let purchaseService = purchaseSheetPurchaseService?.purchaseService else {
+            return
+        }
+        isCheckingPurchaseAfterPurchaseSheet = false
+        Task {
+            guard let purchaseState = try? await fetchPurchaseStateRetrying(purchaseService: purchaseService) else {
+                return
+            }
+            if clearsFreeReadingsUsedUpGuide(purchaseState: purchaseState, readingGuide: readingGuide, isStartingReading: isStartingReading) {
+                readingGuide = nil
+            }
+        }
+    }
+
+    /// 読書を始めるかを決める購入の境界を返す。無料の回数を使い切って出した購入の画面の境界があり、作り方が変わっていなければそれを返し、
+    /// それ以外は新しく作る。
+    private func purchaseServiceForReading() -> any PurchaseService {
+        guard
+            let purchaseSheetPurchaseService,
+            reusesPurchaseSheetPurchaseService(purchaseSheetKindID: purchaseSheetPurchaseService.kindID, currentKindID: purchaseServiceSource.kindID)
+        else {
+            return purchaseServiceSource.makePurchaseService()
+        }
+        return purchaseSheetPurchaseService.purchaseService
+    }
+
     /// 読書を始める。取り込みが始まったら読書中の画面を出し、ページを足す処理を動かす。
     ///
     /// 始められなかった時は、読書の記録を残さず、この画面に案内を出す。取り込みが途中で止まった時は、読書を終えて案内を出す。
+    /// 無料の回数を使い切っていてトライアル中でも購入済みでもない時は、取り込みを始めずに購入の画面を出す。
     /// 始めている途中にもう一度呼ばれた時は何もしない。
     private func beginReading() {
         guard !isStartingReading else {
@@ -252,10 +315,14 @@ struct BookView: View {
         isStartingReading = true
         readingGuide = nil
         let screenCapture = makeScreenCaptureForReading()
+        let purchaseService = purchaseServiceForReading()
         Task {
             do {
                 let startedReading = try await startReading(
                     book: book,
+                    purchaseService: purchaseService,
+                    loadFreeReadingStartCount: freeReadingStartCount.loadedCount,
+                    countFreeReadingStart: freeReadingStartCount.increment,
                     screenCapture: screenCapture,
                     modelContext: modelContext,
                     currentDateTime: { Date() },
@@ -285,6 +352,11 @@ struct BookView: View {
             } catch {
                 readingGuide = readingStartFailureGuide(error: error)
                 isStartingReading = false
+                if error is FreeReadingsUsedUpError {
+                    purchaseSheetPurchaseService = (kindID: purchaseServiceSource.kindID, purchaseService: purchaseService)
+                    isCheckingPurchaseAfterPurchaseSheet = true
+                    presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseService)
+                }
             }
         }
     }

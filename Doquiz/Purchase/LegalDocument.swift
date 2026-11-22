@@ -1,6 +1,6 @@
 import Foundation
 
-/// 購入の画面から開く、公開済みの法務の文書。文書の中身はアプリに持たず、公開ページを開く。
+/// 購入の画面と設定の画面から開く、公開済みの法務の文書。文書の中身はアプリに持たず、公開ページを開く。
 enum LegalDocument: CaseIterable {
     /// 利用規約。
     case termsOfUse
@@ -30,7 +30,7 @@ func legalDocumentURL(legalDocument: LegalDocument) -> URL {
     }
 }
 
-/// 文書 `legalDocument` の入口の accessibility identifier を返す。
+/// 購入の画面で、文書 `legalDocument` の入口の accessibility identifier を返す。
 func legalDocumentAccessibilityIdentifier(legalDocument: LegalDocument) -> String {
     switch legalDocument {
     case .termsOfUse:

@@ -46,9 +46,9 @@ final class PurchaseTests: XCTestCase {
         assertEventuallyLabel(element: app.staticTexts["developer_menu_answer_count"], expectedLabel: "7")
         let cycleButton = app.buttons["developer_menu_cycle_fake_purchase_behavior"]
         let behaviorState = app.staticTexts["developer_menu_fake_purchase_behavior_state"]
-        // 切り替えのボタンと今の動きの行はメニューのいちばん下に並んでいて、画面に入っていない間は要素が無い。
+        // 切り替えのボタンと今の動きの行はメニューの上から 6 つ目の section に並んでいて、画面に入っていない間は要素が無い。
         // ボタンのすぐ下の「今の動き」の行が画面に入るまで上へ送る (ボタンだけが画面に入った位置で止めると、押した後の動きを読めない)。
-        // 上限の 6 回は、メニューの 6 つの section を 1 回に 1 つずつしか送れなくても、いちばん下まで届く回数。
+        // 上限の 6 回は、1 回に 1 つずつしか section を送れなくても上から 6 つ目の section に届く 5 回に、1 回の余裕を足した回数。
         for _ in 0..<6 where !(behaviorState.exists && behaviorState.isHittable) {
             app.swipeUp()
         }
@@ -88,7 +88,8 @@ final class PurchaseTests: XCTestCase {
     /// 買い切りを選ぶと、ボタンが「購入する」に変わり、自動で更新される説明が消える。購入すると、商品が消えて購入済みの表示になる。
     /// 3 つの商品が出ている画面を `purchase-packages`、購入済みの画面を `purchase-purchased` の名前で添付する。
     /// 読書の記録が無い間 (起動した直後の、保存データが空の一覧) は、購入の画面への入口が本の一覧に出ない。
-    /// 読書の記録がある本ができると、入口が出る。入口が出ている一覧を `book-list-purchase-entrance` の名前で添付する。
+    /// 読書の記録がある本ができると、入口が出る。購入して購入の画面を閉じると、購入した境界で購入の状態を確かめ直し、入口と無料の残りの回数が消える。
+    /// 購入の画面を閉じた後の一覧を `book-list-after-purchase` の名前で添付する。
     @MainActor
     func test商品を取得できた時は3つの商品が出て購入すると購入済みになる() {
         let app = launchAppWithInMemoryStore()
@@ -130,9 +131,17 @@ final class PurchaseTests: XCTestCase {
         attachScreenshot(app: app, name: "purchase-purchased")
 
         app.buttons["purchase_close_button"].tap()
-        XCTAssertTrue(app.buttons["purchase_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        XCTAssertEqual(app.buttons["purchase_entrance"].label, "購入のプランを見る")
-        attachScreenshot(app: app, name: "book-list-purchase-entrance")
+        XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertEqual(
+            XCTWaiter().wait(
+                for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["purchase_entrance"])],
+                timeout: sameScreenChangeWaitTimeout
+            ),
+            .completed,
+            "購入した後もホームに購入の画面への入口が残った"
+        )
+        XCTAssertFalse(app.staticTexts["free_reading_remaining"].exists)
+        attachScreenshot(app: app, name: "book-list-after-purchase")
     }
 
     /// 利用者が購入を取り消した時は、失敗の文を出さず、3 つの商品が出たままである。
@@ -224,7 +233,11 @@ final class PurchaseTests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(identifier: "purchase_package_row").count, 0)
         XCTAssertFalse(app.buttons["purchase_button"].exists)
         XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "¥")).count, 0)
-        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "無料")).count, 0)
+        // 購入の画面の下にあるホームの「無料で始められる読書 あと N 回」(`free_reading_remaining`) は、トライアルの文ではないため数えない。
+        XCTAssertEqual(
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@ AND identifier != %@", "無料", "free_reading_remaining")).count,
+            0
+        )
         assertLegalDocumentLinksExist(app: app)
         attachScreenshot(app: app, name: "purchase-unavailable")
 
