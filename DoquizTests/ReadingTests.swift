@@ -652,6 +652,49 @@ struct ReadingTests {
         #expect(try readingContext.fetchCount(FetchDescriptor<ReadingSession>()) == 0)
     }
 
+    /// 無料の回数を保存できず、取り除いた読書の記録も保存し直せなかった時は、取り込みを止めてから、保存し直せなかった error を投げる
+    /// (読書の記録が保存先に残ったまま、回数の error だけを知らせないため)。
+    @Test func 回数を保存できず読書の記録も取り除けなかった時は保存の失敗を投げる() async throws {
+        /// 回数の保存の偽の失敗。
+        struct CountFailure: Error {}
+        let capture = StopCountingScreenCapture()
+        let saveCounter = SaveCallCounter()
+
+        await #expect(throws: SaveFailure.self) {
+            _ = try await startReading(
+                book: book,
+                purchaseService: notPurchasedService,
+                loadFreeReadingStartCount: { 0 },
+                countFreeReadingStart: { throw CountFailure() },
+                screenCapture: capture,
+                modelContext: writingContext,
+                currentDateTime: { Date() },
+                save: {
+                    // 1 回目 (読書の記録の保存) は保存し、2 回目 (取り除いた読書の記録の保存) は失敗する。
+                    guard saveCounter.increment() == 1 else {
+                        throw SaveFailure()
+                    }
+                    try writingContext.save()
+                }
+            )
+        }
+
+        #expect(capture.stopCount == 1)
+        #expect(saveCounter.count == 2)
+    }
+
+    /// `save` が呼ばれた回数を数える。
+    private final class SaveCallCounter {
+        /// 呼ばれた回数。
+        private(set) var count = 0
+
+        /// 回数を 1 増やし、増やした後の回数を返す。
+        func increment() -> Int {
+            count += 1
+            return count
+        }
+    }
+
     /// 取り込みを始められなかった時と、読書の記録を保存できなかった時は、無料の回数を数えない (読書が始まっていないため)。
     @Test func 読書が始まらなかった時は無料の回数を数えない() async throws {
         let freeReadingStartCounter = FreeReadingStartCounter(count: 0)

@@ -13,7 +13,8 @@ import SwiftData
 /// - 取り込みを始められなかった時は、`screenCapture.start()` の error をそのまま投げ、読書の記録を残さない
 /// - 読書の記録の保存に失敗した時は、足した読書の記録を取り除き、取り込みを止めてから `save` の error を投げる
 /// - 読書の記録を保存できて、その読書を無料の回数に数える時だけ、`countFreeReadingStart` を 1 回呼ぶ。回数を保存できなかった時は、
-///   読書の記録を取り除いて保存し直し、取り込みを止めてから `countFreeReadingStart` の error を投げる (数えずに無料の読書を始めさせないため)
+///   読書の記録を取り除き、取り込みを止めて保存し直してから `countFreeReadingStart` の error を投げる (数えずに無料の読書を始めさせないため)。
+///   取り除いた読書の記録を保存し直せなかった時は、`save` の error を投げる
 ///
 /// 保存先への書き込みは `save` で行う (アプリは `modelContext.save` を渡す。保存の失敗をテストで起こせるよう引数にしている)。
 /// 冪等ではない: 読書 1 回ごとに読書の記録を 1 件作るため、呼ぶたびに取り込みを始め直して読書の記録が 1 件増え、無料の回数に数える時は回数も 1 増える。
@@ -56,9 +57,9 @@ func startReading(
             try countFreeReadingStart()
         } catch {
             modelContext.delete(readingSession)
-            // 取り除いた読書の記録の保存に失敗しても、回数を保存できなかった error を投げる (利用者に知らせる理由は回数の方のため)。
-            try? save()
             await screenCapture.stop()
+            // 取り除いた読書の記録を保存できなかった時は、その error を投げる (読書の記録が保存先に残ったまま、始まらなかったと知らせないため)。
+            try save()
             throw error
         }
     }
