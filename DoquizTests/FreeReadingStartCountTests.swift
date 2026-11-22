@@ -4,9 +4,11 @@ import Testing
 
 @testable import Doquiz
 
-/// 無料で始めた読書の回数の保存先 (Keychain とメモリ内) と、回数を持つ `FreeReadingStartCount` を確かめる。
+/// 無料で始めた読書の回数のメモリ内の保存先と、回数を持つ `FreeReadingStartCount` を確かめる。
 ///
-/// Keychain のテストは、アプリが使うサービス名と別の、テストごとに作るサービス名を使い、終わったら項目を消す (端末の回数に触れないため)。
+/// Keychain の保存先 (`makeKeychainFreeReadingStartCountStore`) はここでは確かめない。CI の署名しないビルドの単体テストでは、
+/// Keychain の読み書きが `errSecMissingEntitlement` (-34018) で失敗するため (run https://github.com/bannzai/doquiz/actions/runs/44969559446 で実測)。
+/// 実機での確認は https://github.com/bannzai/doquiz/issues/22 に足した。
 struct FreeReadingStartCountTests {
     /// 回数の読み書きが失敗する、偽の保存先を作る。`loadFails` が true なら読み出しで、`saveFails` が true なら書き込みで投げる。
     private func makeFailingStore(loadFails: Bool, saveFails: Bool, initialCount: Int) -> FreeReadingStartCountStore {
@@ -23,23 +25,6 @@ struct FreeReadingStartCountTests {
                 }
             }
         )
-    }
-
-    /// Keychain に一度も保存していない時は 0 回を返し、保存した回数を読み出せ、上書きした後は新しい回数を読み出せる。
-    /// 別のサービス名で作った保存先 (アプリを入れ直した後に作る保存先の代わり) からも、同じ回数を読み出せる。
-    @Test func 端末のKeychainに保存した回数を読み出せて上書きできる() throws {
-        let service = "app.bannzai.doquiz.test.\(UUID().uuidString)"
-        defer {
-            SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service] as CFDictionary)
-        }
-        let store = makeKeychainFreeReadingStartCountStore(service: service)
-
-        #expect(try store.load() == 0)
-        try store.save(3)
-        #expect(try store.load() == 3)
-        try store.save(20)
-        #expect(try store.load() == 20)
-        #expect(try makeKeychainFreeReadingStartCountStore(service: service).load() == 20)
     }
 
     /// メモリ内の保存先は 0 回から始まり、保存した回数を読み出せる。

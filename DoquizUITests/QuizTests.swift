@@ -46,6 +46,7 @@ final class QuizTests: XCTestCase {
             app.buttons["developer_menu_cycle_fake_quiz_behavior"].tap()
         }
         assertEventually(element: app.staticTexts["developer_menu_fake_quiz_behavior_state"], predicateFormat: "label == %@", argument: fakeQuizBehaviorLabel)
+        selectNotPurchasedFakePurchase(app: app)
         app.navigationBars.buttons.firstMatch.tap()
 
         XCTAssertTrue(app.buttons["book_registration_entrance"].waitForExistence(timeout: sameScreenChangeWaitTimeout))

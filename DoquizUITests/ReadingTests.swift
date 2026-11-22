@@ -58,6 +58,7 @@ final class ReadingTests: XCTestCase {
         assertEventually(element: app.staticTexts["developer_menu_fake_quiz_behavior_state"], predicateFormat: "label == %@", argument: "問いを返す")
         app.buttons["developer_menu_cycle_fake_quiz_behavior"].tap()
         assertEventually(element: app.staticTexts["developer_menu_fake_quiz_behavior_state"], predicateFormat: "label == %@", argument: "問いを返さない")
+        selectNotPurchasedFakePurchase(app: app)
         app.navigationBars.buttons.firstMatch.tap()
     }
 
@@ -88,6 +89,7 @@ final class ReadingTests: XCTestCase {
         XCTAssertTrue(interruptToggleButton.waitForExistence(timeout: sameScreenChangeWaitTimeout))
         interruptToggleButton.tap()
         assertEventually(element: app.staticTexts["developer_menu_interrupts_fake_reading_state"], predicateFormat: "label == %@", argument: "オン")
+        selectNotPurchasedFakePurchase(app: app)
         app.navigationBars.buttons.firstMatch.tap()
     }
 

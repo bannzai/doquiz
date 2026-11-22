@@ -37,9 +37,13 @@ struct BookView: View {
     @Environment(FreeReadingStartCount.self) private var freeReadingStartCount
     /// 無料の回数を使い切った利用者が「読書を始める」を押した時に出している購入の画面。出していない間は nil。
     @State private var presentedPurchase: PresentedPurchase?
-    /// 無料の回数を使い切って出した購入の画面が使った購入の境界。画面を閉じた時に、この境界の購入の状態で案内を消すかを決め、決めたら nil に戻す。
+    /// 無料の回数を使い切って出した購入の画面が使った購入の境界と、その境界を作った時の作り方の種類 (`PurchaseServiceSource.kindID`)。
+    /// 画面を閉じた時は、この境界の購入の状態で案内を消すかを決める。次に「読書を始める」を押した時も、作り方が変わっていなければこの境界で決める
+    /// (購入の画面で購入した結果を、購入した境界から読むため。偽の購入は、境界ごとに購入の状態を覚えている。ホームの確かめ直しと同じ)。
     /// `presentedPurchase` と別に持つのは、画面を閉じた時の処理が呼ばれる時には `presentedPurchase` が nil に戻っているため。
-    @State private var purchaseServiceInPurchaseSheet: (any PurchaseService)?
+    @State private var purchaseSheetPurchaseService: (kindID: String, purchaseService: any PurchaseService)?
+    /// 購入の画面を閉じた後に、まだ案内を消すかを決めていないか。閉じた時の処理を 1 回だけにするために持つ。
+    @State private var isCheckingPurchaseAfterPurchaseSheet = false
     /// 出題の設定の画面を出しているか。
     @State private var isEditingQuestionSettings = false
     /// 履歴の画面を出しているか。
@@ -269,10 +273,10 @@ struct BookView: View {
     /// 購入していないまま閉じた時と、購入の状態を取得し直しても取得できなかった時は、案内をそのまま残す。
     /// 購入の画面を閉じた後に 1 回だけ呼ぶ前提で、呼んだ後は境界を持たない。
     private func clearFreeReadingsUsedUpGuideAfterPurchase() {
-        guard let purchaseService = purchaseServiceInPurchaseSheet else {
+        guard isCheckingPurchaseAfterPurchaseSheet, let purchaseService = purchaseSheetPurchaseService?.purchaseService else {
             return
         }
-        purchaseServiceInPurchaseSheet = nil
+        isCheckingPurchaseAfterPurchaseSheet = false
         Task {
             guard let purchaseState = try? await fetchPurchaseStateRetrying(purchaseService: purchaseService) else {
                 return
@@ -284,6 +288,18 @@ struct BookView: View {
                 break
             }
         }
+    }
+
+    /// 読書を始めるかを決める購入の境界を返す。無料の回数を使い切って出した購入の画面の境界があり、作り方が変わっていなければそれを返し、
+    /// それ以外は新しく作る。
+    private func purchaseServiceForReading() -> any PurchaseService {
+        guard
+            let purchaseSheetPurchaseService,
+            reusesPurchaseSheetPurchaseService(purchaseSheetKindID: purchaseSheetPurchaseService.kindID, currentKindID: purchaseServiceSource.kindID)
+        else {
+            return purchaseServiceSource.makePurchaseService()
+        }
+        return purchaseSheetPurchaseService.purchaseService
     }
 
     /// 読書を始める。取り込みが始まったら読書中の画面を出し、ページを足す処理を動かす。
@@ -298,7 +314,7 @@ struct BookView: View {
         isStartingReading = true
         readingGuide = nil
         let screenCapture = makeScreenCaptureForReading()
-        let purchaseService = purchaseServiceSource.makePurchaseService()
+        let purchaseService = purchaseServiceForReading()
         Task {
             do {
                 let startedReading = try await startReading(
@@ -336,7 +352,8 @@ struct BookView: View {
                 readingGuide = readingStartFailureGuide(error: error)
                 isStartingReading = false
                 if error is FreeReadingsUsedUpError {
-                    purchaseServiceInPurchaseSheet = purchaseService
+                    purchaseSheetPurchaseService = (kindID: purchaseServiceSource.kindID, purchaseService: purchaseService)
+                    isCheckingPurchaseAfterPurchaseSheet = true
                     presentedPurchase = PresentedPurchase(id: UUID(), purchaseService: purchaseService)
                 }
             }
