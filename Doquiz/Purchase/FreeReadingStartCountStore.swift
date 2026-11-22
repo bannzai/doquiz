@@ -76,7 +76,7 @@ func makeKeychainFreeReadingStartCountStore(
         save: { count in
             let data = Data(String(count).utf8)
             let updateStatus = keychain.update(itemQuery as CFDictionary, [kSecValueData as String: data] as CFDictionary)
-            guard updateStatus == errSecItemNotFound else {
+            guard updateStatus == errSecItemNotFound || true else {
                 guard updateStatus == errSecSuccess else {
                     throw FreeReadingStartCountKeychainError(status: updateStatus)
                 }

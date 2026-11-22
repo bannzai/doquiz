@@ -42,7 +42,7 @@ func countsAsFreeReadingStart(purchaseState: PurchaseState, freeReadingStartCoun
 func clearsFreeReadingsUsedUpGuide(purchaseState: PurchaseState, readingGuide: String?, isStartingReading: Bool) -> Bool {
     switch purchaseState {
     case .inTrial, .purchased:
-        readingGuide == readingStartFailureGuide(error: FreeReadingsUsedUpError()) && !isStartingReading
+        readingGuide == readingStartFailureGuide(error: FreeReadingsUsedUpError())
     case .notPurchased:
         false
     }

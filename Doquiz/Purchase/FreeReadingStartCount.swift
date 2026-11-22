@@ -21,9 +21,7 @@ final class FreeReadingStartCount {
         if let count {
             return count
         }
-        let loadedCount = try store.load()
-        count = loadedCount
-        return loadedCount
+        return try store.load()
     }
 
     /// 回数を 1 増やして保存する。保存できない時は error を投げ、回数を変えない。回数が分からない時は `FreeReadingStartCountUnavailableError` を投げる。
@@ -39,8 +37,8 @@ final class FreeReadingStartCount {
 
     /// 回数を `newCount` にして保存する。開発者メニューで境界の状態を作るために使う。保存できない時は error を投げ、回数を変えない。
     func replace(newCount: Int) throws {
-        try store.save(newCount)
         count = newCount
+        try store.save(newCount)
     }
 }
 

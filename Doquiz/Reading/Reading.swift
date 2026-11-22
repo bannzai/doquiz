@@ -189,7 +189,7 @@ func readingStartFailureGuide(error: any Error) -> String? {
     case is FreeReadingsUsedUpError:
         "無料で始められる読書を使い切りました\n続けて読むには購入のプランを選んでください"
     case is PurchaseStateUnavailableError:
-        "購入の状態を確かめられませんでした\n通信できる所でもう一度「読書を始める」を押してください"
+        "購入の状態を確かめられませんでした"
     case is FreeReadingStartCountUnavailableError, is FreeReadingStartCountKeychainError:
         "無料で始めた読書の回数を読み書きできませんでした\nもう一度「読書を始める」を押してください"
     case let startError as ScreenCaptureStartError:
