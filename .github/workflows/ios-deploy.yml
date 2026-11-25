@@ -69,8 +69,12 @@ jobs:
           # earlier=0 を算出して並行実行を通してしまう (判定不能を「並行なし」と誤って扱わない)
           # --limit 100: この step が多重起動を拒むため、同じ status の未完了の run は通常 0〜2 件。
           # 100 件はその上に十分な余りを持たせた値で、超えるのは拒まれた run が 100 件以上並んだ時だけ
+          # status は、run が進む順 (requested → waiting (environment の承認待ち)・pending (concurrency の待ち) → queued → in_progress)
+          # に取得する。取得の間に先行 run が次の status へ進んでも、進んだ先の status をこの後に取得するため見落とさない
+          # (逆の順だと、取得済みの status へ進んだ run がどの応答にも入らない)。進む順は status の意味から読んだもので、
+          # GitHub の文書で順を確かめてはいない (未確認)
           runs=""
-          for status in requested pending queued in_progress waiting; do
+          for status in requested waiting pending queued in_progress; do
             status_runs=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow 'ios-deploy.yml' \
               --status "$status" --limit 100 --json databaseId) || {
               echo "::error::run 一覧の取得に失敗しました (status=${status})。並行実行を判定できないため中止します"
