@@ -69,3 +69,30 @@ jobs:
           name: pages-screenshots
           path: screenshots
           if-no-files-found: error
+
+  # documents/design の資料は owner が Mac で開いて見る。資料が指定する macOS の書体 (ヒラギノ) は
+  # Linux の runner に無いため、書体を含めた見た目は macOS の runner で開いた画像で確かめる
+  design-screenshot-macos:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ブラウザを入れる
+        run: npx --yes playwright@1.65.1 install chromium
+      - name: documents/design の資料を PC の幅で開いた画像を撮る
+        run: |
+          mkdir -p screenshots
+          python3 -m http.server 8001 --directory documents/design >/dev/null 2>&1 &
+          sleep 2
+          for directory in documents/design/*/; do
+            name="$(basename "$directory")"
+            npx --yes playwright@1.65.1 screenshot --full-page --viewport-size=1360,900 --wait-for-timeout=3000 "http://localhost:8001/${name}/index.html" "screenshots/design-${name}-desktop-macos.png"
+          done
+      - name: 画像を artifact に残す
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: design-screenshots-macos
+          path: screenshots
+          if-no-files-found: error
