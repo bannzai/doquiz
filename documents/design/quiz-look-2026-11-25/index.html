@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>doquiz クイズらしく楽しい見た目の案</title>
+<style>
+body{margin:0;padding:32px 16px 64px;background:#E6E9ED;color:#15181C;font-family:'Hiragino Sans','Noto Sans JP',sans-serif;line-height:1.7}
+.page{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:48px}
+h1{margin:0 0 12px;font-size:26px;line-height:1.4}
+h2{margin:0 0 8px;font-size:22px;line-height:1.4}
+h3{margin:0 0 8px;font-size:15px}
+p{margin:0 0 8px;font-size:15px}
+blockquote.owner{margin:8px 0;padding:12px 16px;border-left:4px solid #0F6B5C;background:#FFFFFF;font-size:15px}
+section.block{padding:24px;border-radius:12px;background:#F7F8FA;border:1px solid #C3C9D2}
+table{width:100%;border-collapse:collapse;font-size:14px;background:#FFFFFF}
+th,td{padding:8px 12px;border:1px solid #C3C9D2;text-align:left;vertical-align:top}
+th{background:#EEF1F4;font-weight:700;white-space:nowrap}
+.tablewrap{overflow-x:auto;margin:12px 0 20px}
+.frames{display:flex;flex-wrap:wrap;gap:24px}
+.frames figure{margin:0;width:390px;max-width:100%}
+.frames figcaption{margin:0 0 8px;font-size:14px;font-weight:700}
+.replay{margin:0 0 16px;min-height:44px;padding:0 16px;border:1.5px solid #15181C;border-radius:10px;background:#FFFFFF;color:#15181C;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+
+/* 画面の枠。色は案ごとに変数で差し替える。初期値は今の見た目 (Doquiz/Design/DoquizColor.swift と同じ値) */
+.phone{--bg:#FFFFFF;--text:#15181C;--sub:#4A5260;--accent:#0F6B5C;--on-accent:#FFFFFF;--border:#D5D9E0;--panel:#F1F4F6;--right:#1D4ED8;--right-bg:#EEF3FE;--wrong:#B45309;--wrong-bg:#FBF1E6;
+position:relative;overflow:hidden;box-sizing:border-box;width:390px;max-width:100%;min-height:740px;padding:28px 20px 20px;display:flex;flex-direction:column;gap:16px;border:1px solid #C3C9D2;background:var(--bg);color:var(--text);font-family:'Hiragino Sans','Noto Sans JP',sans-serif}
+.meta{display:flex;justify-content:space-between;font-size:14px;font-weight:500;color:var(--sub)}
+.progress{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.progress span{height:4px;border-radius:2px;background:var(--border)}
+.progress span.on{background:var(--accent)}
+.q{margin:0;font-size:20px;font-weight:700;line-height:1.6}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choice{display:flex;align-items:center;gap:10px;min-height:48px;box-sizing:border-box;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--sub);font-size:15px;line-height:1.5}
+.choice .mark{display:none}
+.choice.pick{border-width:2px;color:var(--text);font-weight:700}
+.right .choice.pick{border-color:var(--right);background:var(--right-bg)}
+.wrong .choice.pick{border-color:var(--wrong);background:var(--wrong-bg)}
+.result{position:relative;display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:12px;background:var(--panel)}
+.judge{margin:0;font-size:17px;font-weight:700;line-height:1.4}
+.right .judge{color:var(--right)}
+.wrong .judge{color:var(--wrong)}
+.judge .sign{display:none}
+.pair{display:flex;flex-direction:column;gap:4px}
+.pair .label{font-size:13px;color:var(--sub)}
+.pair .model{font-size:15px;line-height:1.6}
+.pair .quote{margin:0;font-family:'Hiragino Mincho ProN','Noto Serif JP',serif;font-size:15px;font-weight:600;line-height:1.8}
+.next{margin-top:auto;display:flex;align-items:center;justify-content:center;height:54px;border-radius:12px;background:var(--accent);color:var(--on-accent);font-size:17px;font-weight:700}
+.confetti{display:none}
+
+/* 案 A: 色と文字は今のまま 動きと判定の印を足す */
+.plan-a .judge{font-size:22px}
+.plan-a .judge .sign{display:inline-block;margin-right:8px}
+.plan-a .right .confetti{display:block;position:absolute;top:0;width:8px;height:12px;border-radius:2px;opacity:0}
+.plan-a .confetti:nth-child(1){left:8%;background:#0F6B5C}
+.plan-a .confetti:nth-child(2){left:22%;background:#1D4ED8}
+.plan-a .confetti:nth-child(3){left:36%;background:#F2B705}
+.plan-a .confetti:nth-child(4){left:50%;background:#C2410C}
+.plan-a .confetti:nth-child(5){left:64%;background:#0F6B5C}
+.plan-a .confetti:nth-child(6){left:78%;background:#1D4ED8}
+.plan-a .confetti:nth-child(7){left:90%;background:#F2B705}
+.plan-a.play .right .confetti{animation:fall 1.4s ease-in 0.25s 1}
+.plan-a.play .confetti:nth-child(even){animation-delay:0.45s}
+.plan-a.play .right .result{animation:pop 0.45s cubic-bezier(.2,1.6,.4,1) 1}
+.plan-a.play .wrong .choice.pick{animation:shake 0.4s ease-in-out 1}
+.plan-a.play .right .choice.pick{animation:pop 0.35s cubic-bezier(.2,1.6,.4,1) 1}
+.plan-a.play .progress span.last{transform-origin:left;animation:grow 0.5s ease-out 1}
+
+/* 案 B: 選択肢を 4 色の札にする 丸い文字 */
+.plan-b .phone{--accent:#15181C;--border:#C9CED6;--panel:#F1F4F6;font-family:'Hiragino Maru Gothic ProN','Hiragino Sans',sans-serif}
+.plan-b .progress span{height:8px;border-radius:4px}
+.plan-b .progress span.on{background:#F2B705}
+.plan-b .q{font-size:22px;font-weight:800}
+.plan-b .choice{min-height:60px;padding:10px 12px;border-width:2px;color:var(--text);font-size:16px;font-weight:700}
+.plan-b .choice .mark{display:flex;flex:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;color:#FFFFFF;font-size:18px;font-weight:800}
+.plan-b .choice:nth-child(1){--tile:#D6363B;--tile-bg:#FDECEC}
+.plan-b .choice:nth-child(2){--tile:#2563D9;--tile-bg:#EAF1FE}
+.plan-b .choice:nth-child(3){--tile:#F2B705;--tile-bg:#FEF6D9}
+.plan-b .choice:nth-child(4){--tile:#7446C9;--tile-bg:#F1EBFC}
+.plan-b .choice .mark{background:var(--tile)}
+.plan-b .choice:nth-child(3) .mark{color:#15181C}
+.plan-b .choice.pick,.plan-b .right .choice.pick,.plan-b .wrong .choice.pick{border-color:var(--tile);background:var(--tile-bg)}
+.plan-b .right .choice:not(.pick),.plan-b .wrong .choice:not(.pick){opacity:0.45}
+.plan-b .judge{padding:10px 14px;border-radius:10px;color:#FFFFFF;font-size:20px;font-weight:800}
+.plan-b .right .judge{background:#0F6B5C;color:#FFFFFF}
+.plan-b .wrong .judge{background:#3A414D;color:#FFFFFF}
+.plan-b .judge .sign{display:inline-block;margin-right:8px}
+.plan-b.play .ask .choice{animation:slide 0.4s ease-out 1 backwards}
+.plan-b.play .ask .choice:nth-child(2){animation-delay:0.08s}
+.plan-b.play .ask .choice:nth-child(3){animation-delay:0.16s}
+.plan-b.play .ask .choice:nth-child(4){animation-delay:0.24s}
+.plan-b.play .choice.pick .mark{animation:flip 0.5s ease-out 1}
+.plan-b.play .judge{animation:pop 0.4s cubic-bezier(.2,1.6,.4,1) 0.2s 1 backwards}
+
+/* 案 C: 濃い紺の地に黄色 番組の舞台 */
+.plan-c .phone{--bg:#15173D;--text:#FFFFFF;--sub:#C2C6E4;--accent:#FFD23F;--on-accent:#15173D;--border:#474B8C;--panel:#23265C;--right:#FFD23F;--right-bg:#2E3168;--wrong:#FF9A8A;--wrong-bg:#2E3168}
+.plan-c .progress{display:flex;gap:10px}
+.plan-c .progress span{width:14px;height:14px;border-radius:7px}
+.plan-c .q{padding:18px 16px;border:2px solid var(--accent);border-radius:14px;background:var(--panel);font-size:20px;font-weight:800}
+.plan-c .choice{min-height:56px;border-width:2px;background:var(--panel);color:var(--text);font-size:16px;font-weight:600}
+.plan-c .judge{font-size:26px;font-weight:800}
+.plan-c .judge .sign{display:inline-block;margin-right:10px}
+.plan-c .result{border:2px solid var(--border)}
+.plan-c.play .progress span.on{animation:blink 0.9s steps(2,jump-none) 2}
+.plan-c.play .progress span.on:nth-child(2){animation-delay:0.15s}
+.plan-c.play .progress span.on:nth-child(3){animation-delay:0.3s}
+.plan-c.play .result{animation:rise 0.5s ease-out 0.5s 1 backwards}
+.plan-c.play .right .judge{animation:blink 0.5s steps(2,jump-none) 1s 3}
+.plan-c.play .choice.pick{animation:hold 0.5s ease-in-out 1}
+
+@keyframes pop{0%{transform:scale(0.92)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes fall{0%{opacity:1;transform:translateY(-12px) rotate(0)}100%{opacity:0;transform:translateY(150px) rotate(300deg)}}
+@keyframes grow{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+@keyframes slide{0%{opacity:0;transform:translateX(40px)}100%{opacity:1;transform:translateX(0)}}
+@keyframes flip{0%{transform:rotateY(180deg)}100%{transform:rotateY(0)}}
+@keyframes blink{0%{opacity:0.25}100%{opacity:1}}
+@keyframes rise{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes hold{0%,100%{transform:scale(1)}50%{transform:scale(0.97)}}
+@media (prefers-reduced-motion: reduce){.phone *{animation:none !important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+<h1>doquiz クイズらしく楽しい見た目の案</h1>
+<aside class="session-origin" style="font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid #d0d7de;border-radius:6px;padding:8px 12px;margin:0 0 16px">
+<div>tmux window: issue-44 (doquiz:15)</div>
+<div>セッション再開:</div>
+<pre style="margin:4px 0 0;white-space:pre-wrap">cd /Users/bannzai/worktrees/bannzai/doquiz/issue-44
+claude --resume 9cb446e9-92e8-4c78-b41a-d284ba644e48</pre>
+</aside>
+<p>クイズに答える場面と判定が出る場面の見た目を 3 つの案で描いた資料です。案を選ぶのは bannzai で、この資料はアプリの画面を変えません ( https://github.com/bannzai/doquiz/issues/44 )。</p>
+<blockquote class="owner">見た目: 構成はモックみたいな感じで良い。強いていうならクイズ感があるようなUIだと良いかも。ちょっと楽しい感じ。バラエティ色があるというか。</blockquote>
+<p>どの案も画面の構成 (置く要素と並び順と画面のつながり) は今の実装のままで、判定は色に頼らず文でも書いています。3 つの案は、今の見た目から変える量が小さい順に並べています。</p>
+<p>描いたのは四択の問いです。要約の正誤は同じ選択肢の形になり、穴埋めと記述は選択肢の代わりに入力欄が同じ色と文字で入ります (判定の文は今と同じ「合っていそうです」「合っていないかもしれません」)。動きは「もう一度動かす」で見直せます。</p>
+</header>
+
+<section class="block" id="now">
+<h2>今の見た目</h2>
+<p>実装済みのクイズの画面 (Doquiz/Quiz/QuizQuestionView.swift) と同じ色と文字です。白の地に濃い文字、強調は深い緑の 1 色、判定は青と橙で、動きはありません。</p>
+<div class="frames" data-plan="now"></div>
+</section>
+
+<section class="block plan-a play" id="plan-a">
+<h2>案 A 動きで盛り上げる</h2>
+<p>形にした言葉は「ちょっと楽しい感じ」です。色と文字は今のままにして、答えた瞬間の動きと判定の印だけで、答える楽しさを足します。</p>
+<button type="button" class="replay">もう一度動かす</button>
+<div class="tablewrap"><table>
+<tr><th></th><th>今</th><th>案 A</th></tr>
+<tr><th>色</th><td>白の地 深い緑 判定は青と橙</td><td>変えない (紙吹雪にだけ緑・青・黄・橙を使う)</td></tr>
+<tr><th>文字</th><td>判定の文は 17pt</td><td>判定の文だけ 22pt に大きくする ほかは変えない</td></tr>
+<tr><th>動き</th><td>なし</td><td>合っている時は選んだ選択肢と判定の面が弾み 紙吹雪が落ちる。合っていない時は選んだ選択肢が小さく左右に揺れる。問いが進むと進み具合の線が伸びる</td></tr>
+<tr><th>判定の出し方</th><td>文と色</td><td>文の前に ○ か × の印を足す (文は今と同じ)</td></tr>
+</table></div>
+<div class="frames" data-plan="a"></div>
+</section>
+
+<section class="block plan-b play" id="plan-b">
+<h2>案 B 4 色の札で答える</h2>
+<p>形にした言葉は「クイズ感があるようなUI」です。選択肢を A から D の 4 色の札にして、札を選んで答えるクイズの形を見た目で伝えます。地は白のままなので、ほかの画面とのつながりは保てます。</p>
+<button type="button" class="replay">もう一度動かす</button>
+<div class="tablewrap"><table>
+<tr><th></th><th>今</th><th>案 B</th></tr>
+<tr><th>色</th><td>白の地 深い緑 判定は青と橙</td><td>白の地はそのまま。選択肢に赤・青・黄・紫の 4 色の札を付ける。進み具合は黄 「次の問いへ」は濃い色。判定の帯は 合っている時が深い緑 合っていない時が濃い灰</td></tr>
+<tr><th>文字</th><td>角のあるゴシック 問いは 20pt</td><td>丸いゴシック (ヒラギノ丸ゴ) 問いは 22pt の太字 選択肢も太字</td></tr>
+<tr><th>動き</th><td>なし</td><td>問いが出る時に札が右から 1 枚ずつ入る。答えると選んだ札の A〜D の印がめくれて ○ か × に変わり 判定の帯が弾んで出る</td></tr>
+<tr><th>判定の出し方</th><td>文と色</td><td>選んだ札の印が ○ か × になり 選ばなかった札は薄くなる。判定の文は ○ か × の印つきの帯で出す (文は今と同じ)</td></tr>
+</table></div>
+<div class="frames" data-plan="b"></div>
+</section>
+
+<section class="block plan-c play" id="plan-c">
+<h2>案 C 番組の舞台にする</h2>
+<p>形にした言葉は「バラエティ色があるというか」です。クイズの間だけ濃い紺の地に黄色の舞台へ切り替え、読書の落ち着いた画面からクイズ番組が始まったように見せます。</p>
+<button type="button" class="replay">もう一度動かす</button>
+<div class="tablewrap"><table>
+<tr><th></th><th>今</th><th>案 C</th></tr>
+<tr><th>色</th><td>白の地 深い緑 判定は青と橙</td><td>濃い紺の地に白の文字 強調は黄。判定は 合っている時が黄 合っていない時が薄い赤。クイズの画面だけに使い ほかの画面は白の地のまま</td></tr>
+<tr><th>文字</th><td>問いは枠なしの 20pt</td><td>問いを黄色の枠の出題の板に入れて太くする。判定の文は 26pt</td></tr>
+<tr><th>動き</th><td>なし</td><td>進み具合の明かりが順に点滅する。答えると選んだ選択肢が押し込まれ 少し間を置いて判定の面が下から出る。合っている時は判定の文が点滅する</td></tr>
+<tr><th>判定の出し方</th><td>文と色</td><td>少し間を置いてから ○ か × の印つきの大きな文で出す (文は今と同じ)</td></tr>
+</table></div>
+<div class="frames" data-plan="c"></div>
+</section>
+
+<section class="block">
+<h2>見比べる時の目安</h2>
+<div class="tablewrap"><table>
+<tr><th></th><th>案 A 動きで盛り上げる</th><th>案 B 4 色の札で答える</th><th>案 C 番組の舞台にする</th></tr>
+<tr><th>今から変える量</th><td>小さい (動きと判定の印だけ)</td><td>中くらい (選択肢の形と文字と判定の帯)</td><td>大きい (クイズの画面の色を全部変える)</td></tr>
+<tr><th>ほかの画面への広がり</th><td>なし</td><td>丸いゴシックをほかの画面にも使うかを決める必要がある</td><td>クイズの画面と履歴の答え直しの画面だけ紺になる</td></tr>
+<tr><th>読書の後の落ち着きとの相性</th><td>今の落ち着きをいちばん残す</td><td>白の地は残り 選択肢だけがにぎやかになる</td><td>クイズに入ると雰囲気がはっきり切り替わる</td></tr>
+</table></div>
+<p>案は組み合わせられます。たとえば案 B の札に案 A の紙吹雪を足す、案 C の色で案 B の札を使う、といった選び方もできます。</p>
+</section>
+
+</div>
+<script>
+// 画面の例に出す問い。主要画面のモック (documents/design/mock-2026-11-18/) と同じ文を使う。
+const question = {
+  text: '覚えた直後に思い出す練習をすると記憶が残りやすいのはなぜですか',
+  choices: ['読む回数が増えるから', '思い出す負荷が記憶の経路を強めるから', '眠る前の時間を使えるから', '文字を目で追う速さが上がるから'],
+  modelAnswer: '思い出す負荷が記憶の経路を強めるから',
+  evidenceQuote: '思い出そうと努めること自体が、記憶をたどる道を太くする。読み返すだけでは、この道は使われない。'
+};
+
+// 1 つの場面の画面を HTML の文字列で返す。state は 'ask' (答える前)・'right' (合っている)・'wrong' (合っていない)。
+function phone(state) {
+  const pickedChoice = state === 'right' ? question.modelAnswer : state === 'wrong' ? question.choices[0] : null;
+  const sign = state === 'right' ? '○' : '×';
+  return `<div class="phone ${state}">
+<div class="meta"><span>問い 2 / 5</span><span>四択</span></div>
+<div class="progress" aria-hidden="true">${[0, 1, 2, 3, 4].map(index => `<span class="${index < 2 ? 'on' : ''}${index === 1 ? ' last' : ''}"></span>`).join('')}</div>
+<p class="q">${question.text}</p>
+<div class="choices">${question.choices.map((choice, index) => `<div class="choice${choice === pickedChoice ? ' pick' : ''}"><span class="mark">${choice === pickedChoice ? sign : 'ABCD'[index]}</span><span>${choice}</span></div>`).join('')}</div>
+${state === 'ask' ? '' : `<div class="result">
+${'<span class="confetti"></span>'.repeat(7)}
+<p class="judge"><span class="sign">${sign}</span>${state === 'right' ? '合っています' : '合っていません'}</p>
+<div class="pair"><span class="label">模範の答え</span><span class="model">${question.modelAnswer}</span></div>
+<div class="pair"><span class="label">根拠にした本文</span><p class="quote">${question.evidenceQuote}</p></div>
+</div>
+<div class="next">次の問いへ</div>`}
+</div>`;
+}
+
+const captions = { ask: '答える前', right: '答えた後 (合っている)', wrong: '答えた後 (合っていない)' };
+for (const frames of document.querySelectorAll('.frames')) {
+  frames.innerHTML = Object.keys(captions).map(state => `<figure><figcaption>${captions[state]}</figcaption>${phone(state)}</figure>`).join('');
+}
+for (const replay of document.querySelectorAll('.replay')) {
+  replay.addEventListener('click', () => {
+    const plan = replay.closest('section');
+    plan.classList.remove('play');
+    // 動きを最初からやり直すため、外した状態を一度描かせてから付け直す。
+    void plan.offsetWidth;
+    plan.classList.add('play');
+  });
+}
+</script>
+</body>
+</html>

@@ -2,11 +2,13 @@ name: Pages Preview
 
 # docs/ (GitHub Pages で配信する紹介のページと法務の文書) を、公開と同じ Jekyll でビルドし、
 # 外部マシンのブラウザで開いた画像を artifact に残す。agent は owner の作業用の Mac でブラウザを
-# 起動しない (documents/adr/0001-verify-on-external-machines.md) ため、見た目はこの画像で確かめる
+# 起動しない (documents/adr/0001-verify-on-external-machines.md) ため、見た目はこの画像で確かめる。
+# documents/design/ (owner に見せる資料の HTML) も、同じ理由で同じブラウザで開いた画像を残す
 on:
   pull_request:
     paths:
       - "docs/**"
+      - "documents/design/**"
       - ".github/workflows/pages-preview.yml"
   workflow_dispatch:
 
@@ -44,6 +46,16 @@ jobs:
           for page in index Terms-ja PrivacyPolicy-ja SpecifiedCommercialTransactionAct-ja; do
             npx --yes playwright@1.65.1 screenshot --full-page --viewport-size=390,844 "http://localhost:8000/${page}.html" "screenshots/${page}-mobile.png"
             npx --yes playwright@1.65.1 screenshot --full-page --viewport-size=1280,800 "http://localhost:8000/${page}.html" "screenshots/${page}-desktop.png"
+          done
+      - name: documents/design の資料をスマートフォンの幅と PC の幅で開いた画像を撮る
+        run: |
+          python3 -m http.server 8001 --directory documents/design >/dev/null 2>&1 &
+          sleep 2
+          for directory in documents/design/*/; do
+            name="$(basename "$directory")"
+            # 3 秒待つのは、資料の中の動き (長いもので 2.5 秒ほど) が終わった後の状態を撮るため
+            npx --yes playwright@1.65.1 screenshot --full-page --viewport-size=390,844 --wait-for-timeout=3000 "http://localhost:8001/${name}/index.html" "screenshots/design-${name}-mobile.png"
+            npx --yes playwright@1.65.1 screenshot --full-page --viewport-size=1360,900 --wait-for-timeout=3000 "http://localhost:8001/${name}/index.html" "screenshots/design-${name}-desktop.png"
           done
       - name: 画像を artifact に残す
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
