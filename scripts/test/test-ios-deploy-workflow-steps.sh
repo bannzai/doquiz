@@ -81,6 +81,18 @@ assert_exit_code() {
   fi
 }
 
+# 結果 (第 2 引数) が期待 (第 3 引数) と一致することを確かめる。
+assert_equal() {
+  local description="$1" actual="$2" expected="$3"
+  if [ "$actual" = "$expected" ]; then
+    echo "PASS: $description"
+    pass=$((pass + 1))
+  else
+    echo "FAIL: $description (expected '$expected', got '$actual')"
+    fail=$((fail + 1))
+  fi
+}
+
 # 自分の run ID を 200 として多重起動の判定の step を実行し、exit code を確かめる。
 # 引数: <説明> <期待する exit code> <in_progress (GH_STUB_RUNS_STATUS) の未完了 run の JSON> <GITHUB_RUN_ATTEMPT>
 #       [取得に失敗させる status] [GH_STUB_RUNS を返す status] [何も返さないなら 1] [別の status] [別の status の未完了 run の JSON]
@@ -155,8 +167,11 @@ actual=0; run_secret_step "Restore App Store Connect API key" ASC_API_KEY_ID=KEY
 assert_exit_code "ASC_API_KEY_ISSUER_ID が空なら API の鍵を置かずに止める" "$actual" 1
 actual=0; run_secret_step "Restore App Store Connect API key" ASC_API_KEY_ID=KEY ASC_API_KEY_ISSUER_ID=issuer ASC_API_KEY_P8_BASE64= || actual=$?
 assert_exit_code "ASC_API_KEY_P8_BASE64 が空なら API の鍵を置かずに止める" "$actual" 1
-actual=0; run_secret_step "Restore App Store Connect API key" ASC_API_KEY_ID=KEY ASC_API_KEY_ISSUER_ID=issuer ASC_API_KEY_P8_BASE64="$fake_base64" || actual=$?
+step_directory="$(mktemp -d "$work_directory/step.XXXXXX")"
+actual=0; run_step_in "$step_directory" "Restore App Store Connect API key" ASC_API_KEY_ID=KEY ASC_API_KEY_ISSUER_ID=issuer ASC_API_KEY_P8_BASE64="$fake_base64" || actual=$?
 assert_exit_code "API の鍵の 3 つが揃っていれば通す" "$actual" 0
+assert_equal "API の鍵を、altool が探す ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8 に復号して置く" \
+  "$(cat "$step_directory/home/.appstoreconnect/private_keys/AuthKey_KEY.p8" 2>/dev/null)" "dummy"
 
 actual=0; run_secret_step "Check code signing secrets" IOS_P12_CERTIFICATE_BASE64= IOS_P12_PASSWORD=password || actual=$?
 assert_exit_code "IOS_P12_CERTIFICATE_BASE64 が空なら止める" "$actual" 1
@@ -167,25 +182,21 @@ assert_exit_code "署名の証明書と password が揃っていれば通す" "$
 
 actual=0; run_secret_step "Install provisioning profiles" IOS_PROVISIONING_PROFILE_BASE64= || actual=$?
 assert_exit_code "IOS_PROVISIONING_PROFILE_BASE64 が空なら profile を置かずに止める" "$actual" 1
-actual=0; run_secret_step "Install provisioning profiles" IOS_PROVISIONING_PROFILE_BASE64="$fake_base64" || actual=$?
+step_directory="$(mktemp -d "$work_directory/step.XXXXXX")"
+actual=0; run_step_in "$step_directory" "Install provisioning profiles" IOS_PROVISIONING_PROFILE_BASE64="$fake_base64" || actual=$?
 assert_exit_code "provisioning profile があれば通す" "$actual" 0
+assert_equal "profile を MobileDevice の下に復号して置く" \
+  "$(cat "$step_directory/home/Library/MobileDevice/Provisioning Profiles/Doquiz_AppStore.mobileprovision" 2>/dev/null)" "dummy"
+assert_equal "profile を Xcode 16 以降が探す Developer/Xcode/UserData の下にも置く" \
+  "$(cat "$step_directory/home/Library/Developer/Xcode/UserData/Provisioning Profiles/Doquiz_AppStore.mobileprovision" 2>/dev/null)" "dummy"
 
 actual=0; run_secret_step "RevenueCat の公開 SDK キーを書き出す" REVENUECAT_PUBLIC_API_KEY_IOS= || actual=$?
 assert_exit_code "RevenueCat の公開 SDK キーが空なら、配布では止める" "$actual" 1
-actual=0; run_secret_step "RevenueCat の公開 SDK キーを書き出す" REVENUECAT_PUBLIC_API_KEY_IOS=appl_dummy || actual=$?
+step_directory="$(mktemp -d "$work_directory/step.XXXXXX")"
+actual=0; run_step_in "$step_directory" "RevenueCat の公開 SDK キーを書き出す" REVENUECAT_PUBLIC_API_KEY_IOS=appl_dummy || actual=$?
 assert_exit_code "RevenueCat の公開 SDK キーがあれば通す" "$actual" 0
-
-# 結果 (第 2 引数) が期待 (第 3 引数) と一致することを確かめる。
-assert_equal() {
-  local description="$1" actual="$2" expected="$3"
-  if [ "$actual" = "$expected" ]; then
-    echo "PASS: $description"
-    pass=$((pass + 1))
-  else
-    echo "FAIL: $description (expected '$expected', got '$actual')"
-    fail=$((fail + 1))
-  fi
-}
+assert_equal "RevenueCat の公開 SDK キーを Secrets.xcconfig に書き出す" \
+  "$(cat "$step_directory/repository/Secrets.xcconfig" 2>/dev/null)" "REVENUECAT_PUBLIC_API_KEY_IOS = appl_dummy"
 
 # ビルド番号は run の番号に offset を足した値を GITHUB_ENV に追記する
 step_directory="$(mktemp -d "$work_directory/step.XXXXXX")"
