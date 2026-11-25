@@ -40,6 +40,8 @@ jobs:
     # 未レビューの binary をアップロードできる経路をここで塞ぐ。
     # environment 自体の作成とブランチ制限は ios-deploy-actions skill の scripts/setup-environment.sh で行う
     environment: "ios-deploy"
+    # 配布の run の所要時間は、まだ 1 回も実行していないため実測が無い。ci.yml の build-and-test の実測 (18〜28 分。テストを含む) を
+    # Archive・Export・アップロードの目安にし、アップロードの待ちに余りを持たせて 60 分にした。初回の run の実測で見直す
     timeout-minutes: 60
     env:
       ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
@@ -65,14 +67,16 @@ jobs:
           fi
           # 取得に 1 つでも失敗したら判定せずに中止する。失敗を読み飛ばすと、残りの応答から
           # earlier=0 を算出して並行実行を通してしまう (判定不能を「並行なし」と誤って扱わない)
+          # --limit 100: この step が多重起動を拒むため、同じ status の未完了の run は通常 0〜2 件。
+          # 100 件はその上に十分な余りを持たせた値で、超えるのは拒まれた run が 100 件以上並んだ時だけ
           runs=""
           for status in requested pending queued in_progress waiting; do
-            out=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow 'ios-deploy.yml' \
+            status_runs=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow 'ios-deploy.yml' \
               --status "$status" --limit 100 --json databaseId) || {
               echo "::error::run 一覧の取得に失敗しました (status=${status})。並行実行を判定できないため中止します"
               exit 1
             }
-            runs="${runs}${out}"
+            runs="${runs}${status_runs}"
           done
           # 全 status が空応答で add が null になる等で jq が失敗した場合も、判定不能として中止する
           earlier=$(printf '%s' "$runs" | jq -s --argjson me "$GITHUB_RUN_ID" "add | $select_expr") || earlier=""

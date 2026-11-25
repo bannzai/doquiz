@@ -29,7 +29,7 @@ jobs:
           persist-credentials: false
       - run: bash scripts/test/test-select-physical-device.sh
       - run: bash scripts/test/test-write-secrets-xcconfig.sh
-      - run: bash scripts/test/test-ios-deploy-reject-concurrent-dispatch.sh
+      - run: bash scripts/test/test-ios-deploy-workflow-steps.sh
 
   # public リポジトリのため macOS runner は無料。
   # iOS 27 の SDK が要るため、Xcode 27 が入っている xcode-27 の image を使う (macos-26 の image は Xcode 26 まで)。
