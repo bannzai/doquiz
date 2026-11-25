@@ -10,6 +10,7 @@ on:
       - "docs/**"
       - "documents/design/**"
       - ".github/workflows/pages-preview.yml"
+      - ".github/scripts/check-design-motion.cjs"
   workflow_dispatch:
 
 permissions:
@@ -57,6 +58,11 @@ jobs:
             npx --yes playwright@1.65.1 screenshot --full-page --viewport-size=390,844 --wait-for-timeout=3000 "http://localhost:8001/${name}/index.html" "screenshots/design-${name}-mobile.png"
             npx --yes playwright@1.65.1 screenshot --full-page --viewport-size=1360,900 --wait-for-timeout=3000 "http://localhost:8001/${name}/index.html" "screenshots/design-${name}-desktop.png"
           done
+      - name: 見た目の案の資料の動きを確かめ 動きの途中の画像を撮る
+        run: |
+          # スクリプトが require する playwright を、リポジトリの外に入れる (ブラウザは上の step で入れたものを使う)
+          npm install --no-save --prefix "$RUNNER_TEMP/playwright" playwright@1.65.1
+          NODE_PATH="$RUNNER_TEMP/playwright/node_modules" node .github/scripts/check-design-motion.cjs http://localhost:8001/quiz-look-2026-11-25/index.html screenshots design-quiz-look-2026-11-25
       - name: 画像を artifact に残す
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
