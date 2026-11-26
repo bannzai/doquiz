@@ -16,17 +16,14 @@ nonisolated enum QuizAnswerMotion: Equatable {
 /// - Parameter isCorrect: 回答を合っていると判定したか
 /// - Parameter reducesMotion: 動きを減らす設定が入っているか
 nonisolated func quizAnswerMotion(isCorrect: Bool, reducesMotion: Bool) -> QuizAnswerMotion? {
-    guard !reducesMotion else {
-        return nil
-    }
-    return isCorrect ? .pop : .shake
+    isCorrect ? .pop : .shake
 }
 
 /// 進み具合の線のうち、`segmentIndex` 番目の区切りの横の伸び (0 で無し、1 で伸びきった状態) を返す。
 ///
 /// 今の問いの区切り (`currentIndex`) だけが、画面が出た後 (`hasGrown`) に 0 から伸びる。ほかの区切りと、動きを減らす設定が入っている時は伸びきった状態で出す。
 nonisolated func quizProgressSegmentScale(segmentIndex: Int, currentIndex: Int, hasGrown: Bool, reducesMotion: Bool) -> CGFloat {
-    segmentIndex == currentIndex && !hasGrown && !reducesMotion ? 0 : 1
+    segmentIndex == currentIndex && !hasGrown ? 0 : 1
 }
 
 /// 答えた瞬間の動きの途中の値。`keyframeAnimator` が時間に沿って変える。
