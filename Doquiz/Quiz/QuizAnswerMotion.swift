@@ -31,9 +31,9 @@ nonisolated func quizProgressSegmentScale(segmentIndex: Int, currentIndex: Int, 
 
 /// 答えた瞬間の動きの途中の値。`keyframeAnimator` が時間に沿って変える。
 nonisolated struct QuizAnswerMotionFrame {
-    /// 大きさの倍率。
+    /// 大きさの倍率。動いていない時は元の大きさのまま出すため 1 から始める。
     var scale: CGFloat = 1
-    /// 横にずらす量 (pt)。
+    /// 横にずらす量 (pt)。動いていない時は元の位置に出すため 0 から始める。
     var offsetX: CGFloat = 0
 }
 
