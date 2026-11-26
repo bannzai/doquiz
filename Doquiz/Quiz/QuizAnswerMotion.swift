@@ -103,7 +103,7 @@ struct QuizConfetti: View {
             ForEach(Array(pieces.enumerated()), id: \.offset) { pieceIndex, piece in
                 QuizConfettiPiece(
                     color: piece.color,
-                    // 案 A は 1 枚目から数えて偶数枚目だけを 0.45 秒、ほかを 0.25 秒遅らせて落とす (`.plan-a.play .confetti:nth-child(even)`)。
+                    // 遅れは案 A の `.plan-a.play .confetti` と `.confetti:nth-child(even)` の `animation-delay`。pieceIndex は 0 から数えるため、偶数の pieceIndex が CSS の奇数番目に当たる。
                     delay: pieceIndex.isMultiple(of: 2) ? 0.25 : 0.45
                 )
                 .position(x: geometryProxy.size.width * piece.horizontalRatio, y: 0)
@@ -114,13 +114,20 @@ struct QuizConfetti: View {
     }
 }
 
+/// 紙吹雪が落ち始める縦の位置 (pt)。案 A の `@keyframes fall` の始まり (`translateY(-12px)`)。
+nonisolated private let quizConfettiStartOffsetY: CGFloat = -12
+/// 紙吹雪が落ちきる縦の位置 (pt)。案 A の `@keyframes fall` の終わり (`translateY(150px)`)。
+nonisolated private let quizConfettiEndOffsetY: CGFloat = 150
+/// 紙吹雪が落ちるのにかかる秒数。案 A の `.plan-a.play .confetti` の `fall 1.4s ease-in`。
+nonisolated private let quizConfettiFallDuration: TimeInterval = 1.4
+
 /// 紙吹雪の 1 枚の、落ちる途中の値。
 nonisolated struct QuizConfettiPieceFrame {
-    /// 不透明度。落ち始める前は 0 (見えない)。
+    /// 不透明度。落ち始める前は見えないように 0 から始める。
     var opacity: Double = 0
-    /// 上から落ちた量 (pt)。
-    var offsetY: CGFloat = -12
-    /// 回った角度 (度)。
+    /// 縦にずらす量 (pt)。落ち始める位置から始める。
+    var offsetY: CGFloat = quizConfettiStartOffsetY
+    /// 回った角度 (度)。回る前の 0 から始める。
     var rotationDegrees: Double = 0
 }
 
@@ -134,7 +141,7 @@ struct QuizConfettiPiece: View {
     @State private var hasAppeared = false
 
     var body: some View {
-        // 案 A の `.confetti` の大きさ (幅 8px・高さ 12px・角の丸み 2px)。
+        // 大きさと角の丸みは案 A の `.confetti` の値。
         RoundedRectangle(cornerRadius: 2)
             .fill(color)
             .frame(width: 8, height: 12)
@@ -144,19 +151,19 @@ struct QuizConfettiPiece: View {
                     .offset(y: frame.offsetY)
                     .opacity(frame.opacity)
             } keyframes: { _ in
-                // 案 A の `@keyframes fall` (1.4 秒の ease-in で、不透明度 1 から 0、上へ 12px から下へ 150px、回転 0 度から 300 度)。
+                // 終わりの不透明度と回転は案 A の `@keyframes fall` の値。
                 KeyframeTrack(\.opacity) {
                     LinearKeyframe(0, duration: delay)
                     MoveKeyframe(1)
-                    LinearKeyframe(0, duration: 1.4, timingCurve: .easeIn)
+                    LinearKeyframe(0, duration: quizConfettiFallDuration, timingCurve: .easeIn)
                 }
                 KeyframeTrack(\.offsetY) {
-                    LinearKeyframe(-12, duration: delay)
-                    LinearKeyframe(150, duration: 1.4, timingCurve: .easeIn)
+                    LinearKeyframe(quizConfettiStartOffsetY, duration: delay)
+                    LinearKeyframe(quizConfettiEndOffsetY, duration: quizConfettiFallDuration, timingCurve: .easeIn)
                 }
                 KeyframeTrack(\.rotationDegrees) {
                     LinearKeyframe(0, duration: delay)
-                    LinearKeyframe(300, duration: 1.4, timingCurve: .easeIn)
+                    LinearKeyframe(300, duration: quizConfettiFallDuration, timingCurve: .easeIn)
                 }
             }
             .onAppear {
