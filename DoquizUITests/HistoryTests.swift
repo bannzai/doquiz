@@ -148,6 +148,7 @@ final class HistoryTests: XCTestCase {
         app.buttons["quiz_choice_0"].tap()
         XCTAssertTrue(app.staticTexts["quiz_judgement"].waitForExistence(timeout: 30))
         XCTAssertEqual(app.staticTexts["quiz_judgement"].label, "合っています")
+        XCTAssertEqual(app.staticTexts["quiz_judgement_sign"].label, "○")
         XCTAssertEqual(app.staticTexts["quiz_model_answer"].label, "予備の発電機")
         XCTAssertEqual(app.staticTexts["quiz_evidence_quote"].label, "三枝は予備の発電機を回し、朝まで灯りを絶やさなかった。")
         XCTAssertEqual(app.buttons["quiz_next"].label, "履歴に戻る")

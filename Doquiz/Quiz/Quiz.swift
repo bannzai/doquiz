@@ -149,6 +149,13 @@ func quizJudgementText(questionKind: QuestionKind, isCorrect: Bool) -> String {
     }
 }
 
+/// 判定の文の前に付ける印を返す。合っている時は ○、合っていない時は ×。
+///
+/// 穴埋めと記述でも同じ印を付ける (判定の文が言い切らないことで、間違うことがある旨を伝えるため)。
+func quizJudgementSign(isCorrect: Bool) -> String {
+    isCorrect ? "○" : "×"
+}
+
 /// 判定の下に添える、判定が間違うことがある旨の文を返す。添えない種類 (四択と要約の正誤) では nil。
 func quizJudgementCaution(questionKind: QuestionKind) -> String? {
     switch questionKind {

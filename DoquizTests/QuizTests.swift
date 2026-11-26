@@ -479,6 +479,38 @@ import Testing
         #expect(quizAnswerFailureGuide(error: QuizFailure()).hasPrefix("答えを判定して保存できませんでした\n"))
         #expect(quizAnswerFailureGuide(error: QuizFailure()).contains("QuizFailure"))
     }
+
+    /// 判定の文の前の印は、合っている時は ○、合っていない時は × になる。
+    @Test func 判定の印は合っている時は丸で合っていない時はバツになる() {
+        #expect(quizJudgementSign(isCorrect: true) == "○")
+        #expect(quizJudgementSign(isCorrect: false) == "×")
+    }
+
+    /// 動きを減らす設定が入っていない時は、合っている時に弾み (紙吹雪も落ちる)、合っていない時に揺れる。
+    @Test func 動きを減らす設定が無い時は合っていると弾み合っていないと揺れる() {
+        #expect(quizAnswerMotion(isCorrect: true, reducesMotion: false) == .pop)
+        #expect(quizAnswerMotion(isCorrect: false, reducesMotion: false) == .shake)
+    }
+
+    /// 動きを減らす設定が入っている時は、合っている時も合っていない時も動かさない (弾まず、紙吹雪も落ちず、揺れない)。
+    @Test func 動きを減らす設定がある時は答えても動かない() {
+        #expect(quizAnswerMotion(isCorrect: true, reducesMotion: true) == nil)
+        #expect(quizAnswerMotion(isCorrect: false, reducesMotion: true) == nil)
+    }
+
+    /// 進み具合の線は、動きを減らす設定が無い時だけ、今の問いの区切りが画面が出る前は 0 で、出た後に伸びきる。ほかの区切りは初めから伸びきっている。
+    @Test func 進み具合の線は今の問いの区切りだけが伸びる() {
+        #expect(quizProgressSegmentScale(segmentIndex: 1, currentIndex: 1, hasGrown: false, reducesMotion: false) == 0)
+        #expect(quizProgressSegmentScale(segmentIndex: 1, currentIndex: 1, hasGrown: true, reducesMotion: false) == 1)
+        #expect(quizProgressSegmentScale(segmentIndex: 0, currentIndex: 1, hasGrown: false, reducesMotion: false) == 1)
+        #expect(quizProgressSegmentScale(segmentIndex: 2, currentIndex: 1, hasGrown: false, reducesMotion: false) == 1)
+    }
+
+    /// 動きを減らす設定が入っている時は、今の問いの区切りも画面が出る前から伸びきっていて、伸びる動きが無い。
+    @Test func 動きを減らす設定がある時は進み具合の線が伸びる動きをしない() {
+        #expect(quizProgressSegmentScale(segmentIndex: 1, currentIndex: 1, hasGrown: false, reducesMotion: true) == 1)
+        #expect(quizProgressSegmentScale(segmentIndex: 1, currentIndex: 1, hasGrown: true, reducesMotion: true) == 1)
+    }
 }
 
 /// 渡された値を覚える、偽の `QuizEngine`。問いは 1 問も返さない。
