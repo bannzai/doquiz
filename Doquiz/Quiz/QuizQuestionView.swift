@@ -36,6 +36,10 @@ struct QuizQuestionView: View {
     @State private var answerFailureGuide: String?
     /// 答えの入力欄にキーボードの入力先があるか。答えた時にキーボードを閉じるのに使う。
     @FocusState private var isAnswerFieldFocused: Bool
+    /// 動きを減らす設定 (アクセシビリティの「視差効果を減らす」) が入っているか。入っている時は動かさず、判定の印と文だけを出す。
+    @Environment(\.accessibilityReduceMotion) private var reducesMotion
+    /// 進み具合の線の、今の問いの区切りが伸びたか。画面が出た時に伸ばす。
+    @State private var hasProgressGrown = false
 
     var body: some View {
         ScrollViewReader { scrollViewProxy in
@@ -58,9 +62,24 @@ struct QuizQuestionView: View {
                                 RoundedRectangle(cornerRadius: 2)
                                     .fill(index <= position.index ? doquizAccentColor : doquizBorderColor)
                                     .frame(height: 4)
+                                    .scaleEffect(
+                                        x: quizProgressSegmentScale(
+                                            segmentIndex: index,
+                                            currentIndex: position.index,
+                                            hasGrown: hasProgressGrown,
+                                            reducesMotion: reducesMotion
+                                        ),
+                                        anchor: .leading
+                                    )
                             }
                         }
                         .accessibilityHidden(true)
+                        .onAppear {
+                            // 案 A の `@keyframes grow` (0.5 秒の ease-out で左から伸びる。`documents/design/quiz-look-2026-11-25/index.html`)。
+                            withAnimation(.easeOut(duration: 0.5)) {
+                                hasProgressGrown = true
+                            }
+                        }
                     }
                     Text(verbatim: question.text)
                         .font(.title3.bold())
@@ -185,12 +204,18 @@ struct QuizQuestionView: View {
                         .contentShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
+                .quizAnswerMotionEffect(motion: answer?.text == choice ? answerMotion : nil)
                 // 押せなくする時に `disabled` を使うと選択肢の文字が薄くなって読みにくいため、押す操作だけを受け取らないようにする。
                 .allowsHitTesting(answer == nil && !isJudging)
                 .accessibilityAddTraits(answer?.text == choice ? .isSelected : [])
                 .accessibilityIdentifier("quiz_choice_\(choiceIndex)")
             }
         }
+    }
+
+    /// 答えた後にかける動き。答える前と、動きを減らす設定が入っている時は nil。
+    private var answerMotion: QuizAnswerMotion? {
+        answer.flatMap { quizAnswerMotion(isCorrect: $0.isCorrect, reducesMotion: reducesMotion) }
     }
 
     /// 選択肢の枠の色を返す。答えた後の選んだ選択肢は判定の色、それ以外は枠の線の色。
@@ -218,6 +243,7 @@ struct QuizQuestionView: View {
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(doquizBorderColor, lineWidth: 1))
             .focused($isAnswerFieldFocused)
             .disabled(answer != nil || isJudging)
+            .quizAnswerMotionEffect(motion: answerMotion)
             .accessibilityIdentifier("quiz_answer_field")
         }
     }
@@ -227,10 +253,15 @@ struct QuizQuestionView: View {
     /// 根拠にした本文の引用だけ明朝にする (アプリの文と本の文を見分けるため。`documents/DIRECTION.md`「デザインの方向」)。
     private func answerResult(answer: Answer) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(verbatim: quizJudgementText(questionKind: question.kind, isCorrect: answer.isCorrect))
-                .font(.headline)
-                .foregroundStyle(answer.isCorrect ? doquizCorrectColor : doquizIncorrectColor)
-                .accessibilityIdentifier("quiz_judgement")
+            // 案 A は判定の文を 22px の太字にする。title2 の既定の大きさが 22pt で、文字の大きさの設定にも合わせて変わるため title2 にする。
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: quizJudgementSign(isCorrect: answer.isCorrect))
+                    .accessibilityIdentifier("quiz_judgement_sign")
+                Text(verbatim: quizJudgementText(questionKind: question.kind, isCorrect: answer.isCorrect))
+                    .accessibilityIdentifier("quiz_judgement")
+            }
+            .font(.title2.bold())
+            .foregroundStyle(answer.isCorrect ? doquizCorrectColor : doquizIncorrectColor)
             if let judgementCaution = quizJudgementCaution(questionKind: question.kind) {
                 Text(verbatim: judgementCaution)
                     .font(.footnote)
@@ -264,6 +295,13 @@ struct QuizQuestionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(doquizPanelBackgroundColor, in: RoundedRectangle(cornerRadius: 12))
+        // 案 A は、合っている時だけ判定の面が弾み、紙吹雪が落ちる (合っていない時は選んだ選択肢だけが揺れる)。
+        .quizAnswerMotionEffect(motion: answerMotion == .pop ? .pop : nil)
+        .overlay(alignment: .top) {
+            if answerMotion == .pop {
+                QuizConfetti()
+            }
+        }
     }
 
     /// `answerText` で問いに答える。判定して回答を保存し、判定・模範の答え・根拠の引用を出す。
