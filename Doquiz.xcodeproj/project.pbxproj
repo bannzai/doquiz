@@ -371,6 +371,7 @@
 				CODE_SIGN_ENTITLEMENTS = Doquiz/Doquiz.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				"CODE_SIGN_STYLE[sdk=iphoneos*]" = Manual;
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = TQPN82UBBY;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
