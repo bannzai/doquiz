@@ -367,8 +367,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";
 				CODE_SIGN_ENTITLEMENTS = Doquiz/Doquiz.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_STYLE[sdk=iphoneos*]" = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -383,6 +385,7 @@
 				);
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.bannzai.doquiz;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = Doquiz.AppStore;
 				SDKROOT = iphoneos;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
