@@ -14,6 +14,7 @@ on:
       - Doquiz/AppStoreScreenshots/**
       - DoquizUITests/AppStoreScreenshotTests.swift
       - scripts/generate_screenshots/**
+      - scripts/test/test-check-appstore-screenshots.sh
       - .github/workflows/appstore-screenshots.yml
 
 permissions:
@@ -54,6 +55,9 @@ jobs:
         run: |
           xcrun xcresulttool export attachments --path tmp/AppStoreScreenshots.xcresult --output-path tmp/attachments
           bash scripts/generate_screenshots/organize_appstore_screenshots.sh tmp/attachments tmp/appstore-screenshots
+      # 大きさと alpha の検査は macOS の sips を使うため、ubuntu の script-tests (ci.yml) ではなく、ここで検査自身のテストを流す。
+      - name: 大きさと alpha の検査のテスト
+        run: bash scripts/test/test-check-appstore-screenshots.sh
       - name: 大きさと alpha を確かめる
         run: bash scripts/generate_screenshots/check_appstore_screenshots.sh tmp/appstore-screenshots
       - name: スクリーンショットを残す
