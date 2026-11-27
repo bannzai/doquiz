@@ -39,11 +39,14 @@ jobs:
         run: bash scripts/write-secrets-xcconfig.sh
       # 撮る端末は iPhone 17。Apple が申請に必須にしている「iPhone with Dynamic Island (medium display)」の大きさ (1206 x 2622 px) で撮れる
       # (https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications 。2026-11-28 に確認)。
+      # 単体テストを先に流すのは ci.yml の Test と同じ理由 (UI テストの最初の起動をアプリの 2 回目の起動にする)。
+      # 単体テストを流さなかった run 46082741232 は、UI テストの runner が「The test runner crashed while preparing to run tests」で落ちた。
       - name: スクリーンショットを撮る
         run: |
           set -o pipefail
           xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
             -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -only-testing:DoquizTests \
             -only-testing:DoquizUITests/AppStoreScreenshotTests \
             -resultBundlePath tmp/AppStoreScreenshots.xcresult \
             CODE_SIGNING_ALLOWED=NO test
