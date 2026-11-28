@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// 画面の取り込みの同意の説明。初めて読書を始める時に 1 回だけ、sheet で出す。
+/// 同意の説明の前に、同じ sheet の中で取り込みの手順の案内 (`ScreenCaptureGuideView`) を出し、「次へ」で同意の説明に進む。
 ///
 /// 何を取り込み、何を保存し、どこへ送らないかを伝える。内容は `documents/adr/0002-on-device-only-infrastructure.md` の決定に合わせる
 /// (画像は保存しない・本文をサーバーへ送らない・本文が利用者自身の端末のバックアップに入ることは妨げない)。
@@ -9,8 +10,24 @@ struct ScreenCaptureConsentView: View {
     let agree: () -> Void
     /// 「やめる」を押した時に呼ぶ操作。
     let cancel: () -> Void
+    /// 取り込みの手順の案内を出しているか。sheet を出すたびに案内から始まる。
+    @State private var isShowingGuide = false
 
     var body: some View {
+        if isShowingGuide {
+            ScreenCaptureGuideView(
+                next: {
+                    isShowingGuide = false
+                },
+                cancel: cancel
+            )
+        } else {
+            consent
+        }
+    }
+
+    /// 同意の説明の画面。
+    private var consent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text(verbatim: "読書を始める前に")
