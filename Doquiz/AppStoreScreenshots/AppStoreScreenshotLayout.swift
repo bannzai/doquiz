@@ -42,9 +42,14 @@
         }
     }
 
+    /// 撮影に使う iPhone 17 の画面の幅 (pt)。枠の中の画面は、この幅で並べてから縮める。
+    ///
+    /// 1206 px の画像を 3 倍で描く iPhone 17 の画面の幅 (1206 / 3)。
+    private let appStoreScreenshotScreenWidth: CGFloat = 402
+
     /// 端末の枠に入れたアプリの画面。枠の下は画像の下の端で切れる。
     ///
-    /// 枠の中の幅は、本物の画面より狭い。画面は縮めずにこの幅で並べ直すため、文字は本物と同じ大きさで出る。
+    /// 枠の中の幅は本物の画面より狭いため、画面は本物の幅で並べてから縮めて出す。
     struct AppStoreScreenshotDevice<Screen: View>: View {
         /// 枠の中に出すアプリの画面。
         @ViewBuilder let screen: Screen
@@ -56,15 +61,24 @@
                     .fill(doquizTextColor)
                     .frame(width: 96, height: 28)
                     .frame(maxWidth: .infinity, minHeight: 50)
-                screen
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .clipped()
+                // 画面は本物の画面の幅で並べてから、枠の中の幅に縮める。枠の中の幅で並べ直すと、本物では 1 行に収まる文が途中で切れる
+                // (run 46084666530 の読書中の画面で、案内の文が「…」で切れた)。
+                GeometryReader { proxy in
+                    screen
+                        .frame(
+                            width: appStoreScreenshotScreenWidth,
+                            height: proxy.size.height * appStoreScreenshotScreenWidth / proxy.size.width,
+                            alignment: .top
+                        )
+                        .scaleEffect(proxy.size.width / appStoreScreenshotScreenWidth, anchor: .topLeading)
+                }
+                .clipped()
             }
             .background(doquizBackgroundColor)
             .clipShape(UnevenRoundedRectangle(topLeadingRadius: 46, topTrailingRadius: 46))
             .padding([.top, .horizontal], 10)
             .background(doquizTextColor, in: UnevenRoundedRectangle(topLeadingRadius: 56, topTrailingRadius: 56))
-            // 枠の左右に地の色を残して端末に見えるようにしつつ、中の画面の幅をなるべく本物 (402pt) に近づける幅。
+            // 枠の左右に地の色を残して端末に見えるようにしつつ、中の画面を縮める割合をなるべく小さくする幅。
             .frame(width: 344)
         }
     }
