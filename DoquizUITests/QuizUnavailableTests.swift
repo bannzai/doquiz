@@ -110,7 +110,7 @@ final class QuizUnavailableTests: XCTestCase {
         XCTAssertTrue(app.buttons["question_settings_entrance"].isEnabled)
         attachScreenshot(app: app, name: "book-quiz-unavailable")
         app.buttons["reading_start"].tap()
-        XCTAssertFalse(app.staticTexts["screen_capture_consent_title"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts["screen_capture_guide_title"].waitForExistence(timeout: 3))
         app.navigationBars.buttons.firstMatch.tap()
 
         switchQuizAvailability(app: app, quizAvailability: "available")
@@ -121,7 +121,7 @@ final class QuizUnavailableTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["quiz_unavailable_guide"].exists)
         XCTAssertTrue(app.buttons["reading_start"].isEnabled)
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.staticTexts["screen_capture_consent_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertTrue(app.staticTexts["screen_capture_guide_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 
     /// 使えない理由が違うと、本の一覧と本の画面に出る案内の文が変わり、どの理由でも「読書を始める」を押せない。
@@ -161,6 +161,8 @@ final class QuizUnavailableTests: XCTestCase {
         XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.buttons["reading_start"].isEnabled)
         app.buttons["reading_start"].tap()
+        XCTAssertTrue(app.buttons["screen_capture_guide_next"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        app.buttons["screen_capture_guide_next"].tap()
         XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
 
         leaveAndReturn(app: app)

@@ -125,8 +125,7 @@ final class FreeReadingLimitTests: XCTestCase {
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
         XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        app.buttons["screen_capture_consent_agree"].tap()
+        agreeToScreenCaptureAfterGuide(app: app)
         XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         endReadingWithoutQuestions(app: app)
         app.navigationBars.buttons.firstMatch.tap()
@@ -207,8 +206,7 @@ final class FreeReadingLimitTests: XCTestCase {
         XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["reading_start"].tap()
         // 初めての読書のため、購入の画面より先に同意の説明が出る。
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        app.buttons["screen_capture_consent_agree"].tap()
+        agreeToScreenCaptureAfterGuide(app: app)
         XCTAssertTrue(app.buttons["purchase_close_button"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertFalse(app.buttons["reading_end"].exists)
 
@@ -250,8 +248,7 @@ final class FreeReadingLimitTests: XCTestCase {
         bookRow(app: app, title: "潮見町の灯台日誌").tap()
         XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        app.buttons["screen_capture_consent_agree"].tap()
+        agreeToScreenCaptureAfterGuide(app: app)
         XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         endReadingWithoutQuestions(app: app)
         app.navigationBars.buttons.firstMatch.tap()
@@ -368,8 +365,7 @@ final class FreeReadingLimitTests: XCTestCase {
         XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["reading_start"].tap()
         // 初めての読書のため、購入の画面より先に同意の説明が出る。
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        app.buttons["screen_capture_consent_agree"].tap()
+        agreeToScreenCaptureAfterGuide(app: app)
         XCTAssertTrue(app.buttons["purchase_close_button"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
     }
 }
