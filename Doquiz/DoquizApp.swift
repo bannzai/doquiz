@@ -50,10 +50,25 @@ struct DoquizApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .defaultAppStorage(userDefaults)
-                .environment(freeReadingStartCount)
+            #if DEBUG
+                // App Store のスクリーンショットを撮る起動では、アプリの画面の代わりにスクリーンショットの画面を出す。
+                // 開発者メニューではなく起動の引数で切り替えるのは、起動した直後の最初の画面をスクリーンショットの画面にするため。
+                if let page = appStoreScreenshotPage(launchArguments: ProcessInfo.processInfo.arguments) {
+                    AppStoreScreenshotView(page: page)
+                } else {
+                    appContent
+                }
+            #else
+                appContent
+            #endif
         }
         .modelContainer(modelContainer)
+    }
+
+    /// アプリの画面。アプリの設定と無料で始めた読書の回数を渡した `ContentView`。
+    private var appContent: some View {
+        ContentView()
+            .defaultAppStorage(userDefaults)
+            .environment(freeReadingStartCount)
     }
 }

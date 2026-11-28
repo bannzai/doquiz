@@ -1,0 +1,67 @@
+name: appstore-screenshots
+
+# App Store の製品ページに出す日本語のスクリーンショットを作り、artifact `appstore-screenshots` に残す。
+# 撮るのは DoquizUITests/AppStoreScreenshotTests.swift、画面を描くのは Doquiz/AppStoreScreenshots/。
+# artifact は fastlane の deliver の形 (<言語>/iPhone_<掲載順>_<値>.png) で、取り出すと fastlane/screenshots/ にそのまま置ける:
+#   gh run download <run ID> -n appstore-screenshots -D fastlane/screenshots
+#
+# 起動: 申請の前に `gh workflow run appstore-screenshots.yml` で作る。撮影に関わるファイルを変えた PR でも動き、変えた画面を PR で確かめられる
+# (アプリの画面の部品だけを変えた時は動かないため、申請の前に workflow_dispatch で作り直す)。
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - Doquiz/AppStoreScreenshots/**
+      - DoquizUITests/AppStoreScreenshotTests.swift
+      - scripts/generate_screenshots/**
+      - scripts/test/test-check-appstore-screenshots.sh
+      - .github/workflows/appstore-screenshots.yml
+
+permissions:
+  contents: read # checkout のみ
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    # iOS 27 の SDK が要るため、ci.yml と同じく Xcode 27 が入っている xcode-27 の image を使う。
+    runs-on: xcode-27
+    # ci.yml の build-and-test と同じく、ビルドと Simulator の起動を含めて 45 分で止める (撮影は UI テスト 1 本だけで、それより短い)。
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: xcodebuild -version
+      # Doquiz.xcconfig が読み込む Secrets.xcconfig を空の値で書き出す。撮影は RevenueCat の SDK を初期化しない起動のため、キーは要らない。
+      - name: Secrets.xcconfig を書き出す
+        run: bash scripts/write-secrets-xcconfig.sh
+      # 撮る端末は iPhone 17。画像の大きさが、check_appstore_screenshots.sh が確かめる App Store の必須の大きさと同じになる。
+      # 単体テストを先に流すのは ci.yml の Test と同じ理由 (UI テストの最初の起動をアプリの 2 回目の起動にする)。
+      # 単体テストを流さなかった run 46082741232 は、UI テストの runner が「The test runner crashed while preparing to run tests」で落ちた。
+      - name: スクリーンショットを撮る
+        run: |
+          set -o pipefail
+          xcodebuild -project Doquiz.xcodeproj -scheme Doquiz \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -only-testing:DoquizTests \
+            -only-testing:DoquizUITests/AppStoreScreenshotTests \
+            -resultBundlePath tmp/AppStoreScreenshots.xcresult \
+            CODE_SIGNING_ALLOWED=NO test
+      - name: 掲載順のファイル名に並べ直す
+        run: |
+          xcrun xcresulttool export attachments --path tmp/AppStoreScreenshots.xcresult --output-path tmp/attachments
+          bash scripts/generate_screenshots/organize_appstore_screenshots.sh tmp/attachments tmp/appstore-screenshots
+      # 大きさと alpha の検査は macOS の sips を使うため、ubuntu の script-tests (ci.yml) ではなく、ここで検査自身のテストを流す。
+      - name: 大きさと alpha の検査のテスト
+        run: bash scripts/test/test-check-appstore-screenshots.sh
+      - name: 大きさと alpha を確かめる
+        run: bash scripts/generate_screenshots/check_appstore_screenshots.sh tmp/appstore-screenshots
+      - name: スクリーンショットを残す
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: appstore-screenshots
+          path: tmp/appstore-screenshots
+          if-no-files-found: error
