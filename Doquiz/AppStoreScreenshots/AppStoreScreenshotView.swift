@@ -56,6 +56,7 @@
                             ReadingView(
                                 book: sampleBook,
                                 // 読んだ時間が 0 分に見えないよう、少し前に始めた読書にする。保存先には入れない。
+                                // 23 分は、読んでいる途中に見える長さとして、見本の終えた読書の長さ (`DeveloperMenuSampleData.swift` の 600 秒から 4,200 秒までの 60 分) より短くした。10 秒は、撮影までに分の表示が繰り上がって見た目が変わらないよう、分の切れ目から離すための余り。
                                 readingSession: ReadingSession(
                                     id: UUID(),
                                     startedDateTime: Date().addingTimeInterval(-23 * 60 - 10),
@@ -88,7 +89,7 @@
                         AppStoreScreenshotDevice {
                             HistoryView(
                                 book: sampleBook,
-                                makeQuizEngine: { FixedQuizEngine(availability: .available, questions: [], modelJudgement: true) },
+                                makeQuizEngine: { appStoreScreenshotQuizEngine },
                                 close: {},
                                 leaveDeletedBook: {}
                             )
@@ -112,7 +113,7 @@
             return QuizQuestionView(
                 question: sampleQuestions[questionIndex],
                 position: (index: questionIndex, count: sampleQuestions.count),
-                quizEngine: FixedQuizEngine(availability: .available, questions: [], modelJudgement: true),
+                quizEngine: appStoreScreenshotQuizEngine,
                 nextButtonTitle: "次の問いへ",
                 goNext: {},
                 // 離れるボタンは答える前に出さない (canLeaveBeforeAnswering が false) ため写らないが、`QuizView` と同じ文言にしておく。
@@ -123,7 +124,14 @@
         }
     }
 
+    /// スクリーンショットの画面が使う、端末内のモデルを呼ばないクイズの生成器。
+    ///
+    /// 撮影では問いを作り直さず、見本のデータの問いに答えるだけのため、作る問いは空にする。判定は選択式の問いだけに使うため、モデルの判定の値は使われない。
+    private let appStoreScreenshotQuizEngine = FixedQuizEngine(availability: .available, questions: [], modelJudgement: true)
+
     /// 本文の扱いの 3 つの約束を並べた絵。文は紹介のページ (`docs/index.html`) の「本文をサーバーに送りません」の節と同じ。
+    ///
+    /// 余白・文字の大きさ・角の丸みの値は、3 枚の面が画像の中に収まり、文が途中で折れ過ぎないよう、CI で撮った画像 (run 46085769046) を目で見て決めた。
     struct AppStoreScreenshotPrivacyCards: View {
         var body: some View {
             VStack(spacing: 14) {

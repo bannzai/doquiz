@@ -56,6 +56,10 @@ make_png "$work_directory/height-off-by-one/ja/iPhone_01_quiz.png" 1206 2623
 bash "$script" "$work_directory/height-off-by-one" > /dev/null 2>&1
 assert_equal "高さが 1 px 違う (1206 x 2623) と exit 1" "$?" "1"
 
+make_png "$work_directory/width-off-by-one/ja/iPhone_01_quiz.png" 1207 2622
+bash "$script" "$work_directory/width-off-by-one" > /dev/null 2>&1
+assert_equal "幅が 1 px 違う (1207 x 2622) と exit 1" "$?" "1"
+
 make_png "$work_directory/alpha/ja/iPhone_01_quiz.png" 1206 2622 alpha
 bash "$script" "$work_directory/alpha" > /dev/null 2>&1
 assert_equal "1206 x 2622 でも alpha を持つと exit 1" "$?" "1"

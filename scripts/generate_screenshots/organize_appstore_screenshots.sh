@@ -30,8 +30,9 @@ while IFS=$'\t' read -r exported_file_name human_readable_name; do
   if [[ "$human_readable_name" =~ ^appstore-([a-z]{2}(-[A-Z]{2})?)-([0-9]{2})-([a-z-]+)_[0-9]+_ ]]; then
     locale=${BASH_REMATCH[1]}
     mkdir -p "$output_dir/$locale"
-    cp "$export_dir/$exported_file_name" "$output_dir/$locale/iPhone_${BASH_REMATCH[3]}_${BASH_REMATCH[4]}.png"
-    echo "$output_dir/$locale/iPhone_${BASH_REMATCH[3]}_${BASH_REMATCH[4]}.png"
+    output_path="$output_dir/$locale/iPhone_${BASH_REMATCH[3]}_${BASH_REMATCH[4]}.png"
+    cp "$export_dir/$exported_file_name" "$output_path"
+    echo "$output_path"
     copied=$((copied + 1))
   fi
 done < <(jq -r '.[].attachments[] | [.exportedFileName, .suggestedHumanReadableName] | @tsv' "$export_dir/manifest.json")

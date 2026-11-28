@@ -6,8 +6,9 @@ import XCTest
 /// 添付した画像を `scripts/generate_screenshots/organize_appstore_screenshots.sh` が掲載順のファイル名に直す。
 /// 画面の中身は、アプリの `Doquiz/AppStoreScreenshots/` が描く。
 final class AppStoreScreenshotTests: XCTestCase {
-    /// 撮るスクリーンショット。並びの順が製品ページに出す順で、値はアプリの `AppStoreScreenshotPage` の値と同じ
-    /// (UI テストはアプリの型を読めないため、値を書いている。同じであることは `AppStoreScreenshotPageTests` が確かめる)。
+    /// 撮るスクリーンショット。並びの順が製品ページに出す順で、値はアプリの `AppStoreScreenshotPage` の値と同じ。
+    /// UI テストはアプリの型を読めないため、値を書き写している。アプリ側の値を変えた時は、ここも手で合わせる
+    /// (合っていない値は、アプリが `nil` を返してアプリの画面のまま起動し、下のキャッチコピーの待ちで落ちる)。
     private let pages = ["quiz", "reading", "question-kinds", "evidence", "privacy", "history"]
 
     /// 各スクリーンショットの画面を開いて、`appstore-ja-<掲載順の 2 桁>-<値>` の名前で添付する。
