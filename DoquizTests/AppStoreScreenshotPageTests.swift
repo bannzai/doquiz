@@ -27,7 +27,7 @@ struct AppStoreScreenshotPageTests {
         #expect(appStoreScreenshotPage(launchArguments: launchArguments) == nil)
     }
 
-    /// 製品ページに出す順が、紹介の順 (クイズ・読書中・問いの種類・根拠・本文の扱い・履歴) であり、撮影のテストと書き出しのファイル名に使う値であることを確かめる。
+    /// 製品ページに出す順が DIRECTION.md に記録した順であり、撮影のテストと書き出しのファイル名に使う値であることを確かめる。
     @Test
     func 並びの順と値が撮影に使う値と同じ() {
         #expect(AppStoreScreenshotPage.allCases.map(\.rawValue) == ["quiz", "reading", "question-kinds", "evidence", "privacy", "history"])

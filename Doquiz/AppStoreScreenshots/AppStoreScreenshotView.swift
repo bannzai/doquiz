@@ -126,7 +126,7 @@
 
     /// スクリーンショットの画面が使う、端末内のモデルを呼ばないクイズの生成器。
     ///
-    /// 撮影では問いを作り直さず、見本のデータの問いに答えるだけのため、作る問いは空にする。判定は選択式の問いだけに使うため、モデルの判定の値は使われない。
+    /// 撮影では問いを作り直さず、見本のデータの問いに答えるだけのため、作る問いは空にする。`modelJudgement` の値は `quizQuestionView(questionKind:)` の前提により使われない。
     private let appStoreScreenshotQuizEngine = FixedQuizEngine(availability: .available, questions: [], modelJudgement: true)
 
     /// 本文の扱いの 3 つの約束を並べた絵。文は紹介のページ (`docs/index.html`) の「本文をサーバーに送りません」の節と同じ。

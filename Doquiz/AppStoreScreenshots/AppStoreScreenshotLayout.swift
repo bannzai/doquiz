@@ -44,14 +44,12 @@
         }
     }
 
-    /// 撮影に使う iPhone 17 の画面の幅 (pt)。枠の中の画面は、この幅で並べてから縮める。
+    /// 撮影に使う iPhone 17 の画面の幅 (pt)。
     ///
     /// 1206 px の画像を 3 倍で描く iPhone 17 の画面の幅 (1206 / 3)。
     private let appStoreScreenshotScreenWidth: CGFloat = 402
 
     /// 端末の枠に入れたアプリの画面。枠の下は画像の下の端で切れる。
-    ///
-    /// 枠の中の幅は本物の画面より狭いため、画面は本物の幅で並べてから縮めて出す。
     ///
     /// 枠の太さ・角の丸み・ダイナミックアイランドの大きさは、iPhone の外形に見える比率になるよう、CI で撮った画像 (run 46085769046) を目で見て決めた。
     struct AppStoreScreenshotDevice<Screen: View>: View {
