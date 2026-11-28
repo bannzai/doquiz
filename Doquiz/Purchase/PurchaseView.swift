@@ -308,7 +308,7 @@ struct PurchaseView: View {
                 Text(verbatim: purchaseButtonTitle(package: package, introEligibilityStatus: introEligibilityStatus))
                     .font(.headline)
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 54)
+                    .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                     .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
             }
             .disabled(isProcessing || isPurchasePending)
@@ -346,7 +346,7 @@ struct PurchaseView: View {
             Text(verbatim: legalDocumentTitle(legalDocument: legalDocument))
                 .font(.footnote)
                 .foregroundStyle(doquizAccentColor)
-                .frame(minHeight: 44)
+                .frame(minHeight: doquizTextButtonMinHeight)
         }
         .accessibilityIdentifier(legalDocumentAccessibilityIdentifier(legalDocument: legalDocument))
     }
@@ -361,7 +361,7 @@ struct PurchaseView: View {
             Text(verbatim: "購入を復元する")
                 .font(.footnote)
                 .foregroundStyle(doquizAccentColor)
-                .frame(minHeight: 44)
+                .frame(minHeight: doquizTextButtonMinHeight)
         }
         .disabled(isProcessing)
         .accessibilityIdentifier("purchase_restore_button")
@@ -391,7 +391,7 @@ struct PurchaseView: View {
                 Text(verbatim: "もう一度取得する")
                     .font(.headline)
                     .foregroundStyle(doquizAccentColor)
-                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizAccentColor, lineWidth: 1.5))
             }
             .disabled(isProcessing)

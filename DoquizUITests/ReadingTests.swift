@@ -120,6 +120,8 @@ final class ReadingTests: XCTestCase {
     /// 初めて「読書を始める」を押すと同意の説明が出て、同意すると取り込み中の表示・読んでいる本の名前・「読書を終える」が出る。
     /// 「読書を終える」を押すとクイズの画面に切り替わり、そこから本の画面に戻ると、読書の回数が 1 回になっている。
     /// 2 回目に「読書を始める」を押した時は、同意の説明が出ずに読書中の画面が出て、終えると読書の記録が 2 件保存されている。
+    /// 「読書を始める」「同意して始める」「読書を終える」は同じ役割のボタンのため同じ高さで、owner が小さいと指摘した以前の 54pt より高い
+    /// ( https://github.com/bannzai/doquiz/issues/107 )。
     /// 「読書を始める」のある本の画面を `book-reading-start`、同意の説明を `screen-capture-consent`、読書中の画面を `reading` の名前で添付する。
     @MainActor
     func test初回だけ同意の説明が出て読書を始めて終えると本の画面に戻る() {
@@ -129,10 +131,13 @@ final class ReadingTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["book_reading_summary"].label, "まだ読んでいません")
         XCTAssertFalse(app.staticTexts["reading_guide"].exists)
         attachScreenshot(app: app, name: "book-reading-start")
+        let readingStartButtonHeight = app.buttons["reading_start"].frame.height
+        XCTAssertGreaterThan(readingStartButtonHeight, 54)
 
         app.buttons["reading_start"].tap()
         XCTAssertTrue(app.staticTexts["screen_capture_consent_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertFalse(app.buttons["reading_end"].exists)
+        XCTAssertEqual(app.buttons["screen_capture_consent_agree"].frame.height, readingStartButtonHeight)
         attachScreenshot(app: app, name: "screen-capture-consent")
 
         app.buttons["screen_capture_consent_agree"].tap()
@@ -141,6 +146,7 @@ final class ReadingTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["reading_book_title"].label, "潮見町の灯台日誌")
         XCTAssertEqual(app.staticTexts["reading_elapsed_time"].label, "0 分")
         XCTAssertFalse(app.staticTexts["screen_capture_consent_title"].exists)
+        XCTAssertEqual(app.buttons["reading_end"].frame.height, readingStartButtonHeight)
         attachScreenshot(app: app, name: "reading")
 
         app.buttons["reading_end"].tap()

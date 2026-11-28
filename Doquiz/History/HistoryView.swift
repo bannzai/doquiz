@@ -87,7 +87,7 @@ struct HistoryView: View {
                     Text(verbatim: "この本と読書の記録を消す")
                         .font(.subheadline.bold())
                         .foregroundStyle(doquizDestructiveColor)
-                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizBorderColor, lineWidth: 1))
                 }
                 .accessibilityIdentifier("history_book_delete")
@@ -196,7 +196,7 @@ struct HistoryView: View {
                     Text(verbatim: historyReanswerButtonTitle(question: question))
                         .font(.footnote.bold())
                         .foregroundStyle(doquizAccentColor)
-                        .frame(minHeight: 44)
+                        .frame(minHeight: doquizTextButtonMinHeight)
                 }
                 .accessibilityIdentifier("history_reanswer")
             }

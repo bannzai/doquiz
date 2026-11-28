@@ -38,7 +38,7 @@ struct ScreenCaptureConsentView: View {
                     Text(verbatim: "同意して始める")
                         .font(.headline)
                         .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
                 .accessibilityIdentifier("screen_capture_consent_agree")
@@ -48,7 +48,7 @@ struct ScreenCaptureConsentView: View {
                     Text(verbatim: "やめる")
                         .font(.headline)
                         .foregroundStyle(doquizAccentColor)
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .frame(maxWidth: .infinity, minHeight: doquizTextButtonMinHeight)
                 }
                 .accessibilityIdentifier("screen_capture_consent_cancel")
             }

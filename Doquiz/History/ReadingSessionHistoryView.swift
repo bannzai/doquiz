@@ -73,7 +73,7 @@ struct ReadingSessionHistoryView: View {
                         Text(verbatim: "この読書の記録を消す")
                             .font(.subheadline.bold())
                             .foregroundStyle(doquizDestructiveColor)
-                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizBorderColor, lineWidth: 1))
                     }
                     .accessibilityIdentifier("reading_session_delete")

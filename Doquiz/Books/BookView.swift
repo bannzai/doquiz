@@ -89,7 +89,7 @@ struct BookView: View {
                         Text(verbatim: "出題の設定を変える")
                             .font(.headline)
                             .foregroundStyle(doquizAccentColor)
-                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizAccentColor, lineWidth: 1.5))
                     }
                     .accessibilityIdentifier("question_settings_entrance")
@@ -99,7 +99,7 @@ struct BookView: View {
                         Text(verbatim: "この本の履歴を見る")
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(doquizAccentColor)
-                            .frame(minHeight: 44)
+                            .frame(minHeight: doquizTextButtonMinHeight)
                     }
                     // 読書を始めている途中に履歴で本を消すと、消した本の読書が始まるため、その間は押せなくする。
                     .disabled(isStartingReading)
@@ -135,7 +135,7 @@ struct BookView: View {
                     Text(verbatim: "読書を始める")
                         .font(.headline)
                         .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
                 // 履歴で本を消した後は、この画面が閉じ終わるまでの間に、消した本の読書を始めないようにする。

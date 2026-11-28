@@ -71,7 +71,7 @@ struct ReadingView: View {
                     Text(verbatim: "読書を終える")
                         .font(.headline)
                         .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
                 .accessibilityIdentifier("reading_end")
