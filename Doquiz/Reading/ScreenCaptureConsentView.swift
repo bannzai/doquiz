@@ -11,7 +11,7 @@ struct ScreenCaptureConsentView: View {
     /// 「やめる」を押した時に呼ぶ操作。
     let cancel: () -> Void
     /// 取り込みの手順の案内を出しているか。sheet を出すたびに案内から始まる。
-    @State private var isShowingGuide = true
+    @State private var isShowingGuide = false
 
     var body: some View {
         if isShowingGuide {
