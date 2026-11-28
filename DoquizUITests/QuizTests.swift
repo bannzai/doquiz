@@ -59,8 +59,7 @@ final class QuizTests: XCTestCase {
         app.buttons["book_list_row"].tap()
         XCTAssertTrue(app.buttons["reading_start"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        app.buttons["screen_capture_consent_agree"].tap()
+        agreeToScreenCaptureAfterGuide(app: app)
         XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["reading_end"].tap()
     }

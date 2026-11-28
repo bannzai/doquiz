@@ -117,12 +117,14 @@ final class ReadingTests: XCTestCase {
         assertEventually(element: app.staticTexts["developer_menu_reading_session_count"], predicateFormat: "label == %@", argument: expectedCount)
     }
 
-    /// 初めて「読書を始める」を押すと同意の説明が出て、同意すると取り込み中の表示・読んでいる本の名前・「読書を終える」が出る。
+    /// 初めて「読書を始める」を押すと取り込みの 3 つの手順の案内が出て、「次へ」を押すと同意の説明の 4 項目が出る。
+    /// 同意すると取り込み中の表示・読んでいる本の名前・「読書を終える」が出る。
     /// 「読書を終える」を押すとクイズの画面に切り替わり、そこから本の画面に戻ると、読書の回数が 1 回になっている。
-    /// 2 回目に「読書を始める」を押した時は、同意の説明が出ずに読書中の画面が出て、終えると読書の記録が 2 件保存されている。
-    /// 「読書を始める」のある本の画面を `book-reading-start`、同意の説明を `screen-capture-consent`、読書中の画面を `reading` の名前で添付する。
+    /// 2 回目に「読書を始める」を押した時は、案内も同意の説明も出ずに読書中の画面が出て、終えると読書の記録が 2 件保存されている。
+    /// 「読書を始める」のある本の画面を `book-reading-start`、取り込みの手順の案内を `screen-capture-guide`、
+    /// 同意の説明を `screen-capture-consent`、読書中の画面を `reading` の名前で添付する。
     @MainActor
-    func test初回だけ同意の説明が出て読書を始めて終えると本の画面に戻る() {
+    func test初回だけ案内と同意の説明が出て読書を始めて終えると本の画面に戻る() {
         let app = launchAppWithInMemoryStore()
         switchToFakeReading(app: app)
         registerBookAndOpen(app: app, title: "潮見町の灯台日誌")
@@ -131,7 +133,25 @@ final class ReadingTests: XCTestCase {
         attachScreenshot(app: app, name: "book-reading-start")
 
         app.buttons["reading_start"].tap()
+        XCTAssertTrue(app.staticTexts["screen_capture_guide_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        for stepTitle in ["画面全体を選ぶ", "読書アプリで読む", "doquiz に戻って終える"] {
+            XCTAssertTrue(app.staticTexts[stepTitle].exists, stepTitle)
+        }
+        XCTAssertFalse(app.staticTexts["screen_capture_consent_title"].exists)
+        XCTAssertFalse(app.buttons["reading_end"].exists)
+        attachScreenshot(app: app, name: "screen-capture-guide")
+
+        app.buttons["screen_capture_guide_next"].tap()
         XCTAssertTrue(app.staticTexts["screen_capture_consent_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        for consentExplanation in [
+            "読書アプリを表示している間の画面全体を取り込みます。",
+            "読書中に出た通知や、途中で開いた別のアプリの画面も取り込みに入ります。",
+            "取り込んだ画像は保存しません。画像から抽出した本文だけを、この iPhone に保存します。",
+            "本文をサーバーに送りません。iPhone のバックアップを使っている場合は、保存した本文がバックアップに入ることがあります。",
+        ] {
+            XCTAssertTrue(app.staticTexts[consentExplanation].exists, consentExplanation)
+        }
+        XCTAssertFalse(app.staticTexts["screen_capture_guide_title"].exists)
         XCTAssertFalse(app.buttons["reading_end"].exists)
         attachScreenshot(app: app, name: "screen-capture-consent")
 
@@ -152,6 +172,7 @@ final class ReadingTests: XCTestCase {
 
         app.buttons["reading_start"].tap()
         XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertFalse(app.staticTexts["screen_capture_guide_title"].exists)
         XCTAssertFalse(app.staticTexts["screen_capture_consent_title"].exists)
         app.buttons["reading_end"].tap()
         assertDisappears(element: app.buttons["reading_end"])
@@ -161,14 +182,17 @@ final class ReadingTests: XCTestCase {
         assertSavedReadingSessionCount(app: app, expectedCount: "2")
     }
 
-    /// 同意の説明で「やめる」を押すと、読書中の画面が出ずに本の画面に戻り、次に「読書を始める」を押した時にもう一度同意の説明が出る。
+    /// 同意の説明で「やめる」を押すと、読書中の画面が出ずに本の画面に戻り、次に「読書を始める」を押した時にもう一度取り込みの手順の案内から出る。
+    /// 案内で「やめる」を押した時も、読書は始まらずに本の画面に戻る。
     @MainActor
-    func test同意の説明でやめると読書は始まらず次もまた説明が出る() {
+    func test同意の説明でやめると読書は始まらず次もまた案内から出る() {
         let app = launchAppWithInMemoryStore()
         switchToFakeReading(app: app)
         registerBookAndOpen(app: app, title: "はじめての堆肥づくり")
 
         app.buttons["reading_start"].tap()
+        XCTAssertTrue(app.buttons["screen_capture_guide_next"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        app.buttons["screen_capture_guide_next"].tap()
         XCTAssertTrue(app.buttons["screen_capture_consent_cancel"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         app.buttons["screen_capture_consent_cancel"].tap()
         assertDisappears(element: app.staticTexts["screen_capture_consent_title"])
@@ -176,9 +200,11 @@ final class ReadingTests: XCTestCase {
         XCTAssertEqual(app.staticTexts["book_reading_summary"].label, "まだ読んでいません")
 
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.staticTexts["screen_capture_consent_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        app.buttons["screen_capture_consent_cancel"].tap()
-        assertDisappears(element: app.staticTexts["screen_capture_consent_title"])
+        XCTAssertTrue(app.staticTexts["screen_capture_guide_title"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertFalse(app.staticTexts["screen_capture_consent_title"].exists)
+        app.buttons["screen_capture_guide_cancel"].tap()
+        assertDisappears(element: app.staticTexts["screen_capture_guide_title"])
+        XCTAssertFalse(app.buttons["reading_end"].exists)
 
         assertSavedReadingSessionCount(app: app, expectedCount: "0")
     }
@@ -193,8 +219,7 @@ final class ReadingTests: XCTestCase {
         registerBookAndOpen(app: app, title: "潮見町の灯台日誌")
 
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        app.buttons["screen_capture_consent_agree"].tap()
+        agreeToScreenCaptureAfterGuide(app: app)
         XCTAssertTrue(app.buttons["reading_end"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
 
         // 偽の取り込みは、画像 2 枚 (1 枚ごとに 1 秒待つ) を流した後に止まる。
@@ -227,8 +252,7 @@ final class ReadingTests: XCTestCase {
         registerBookAndOpen(app: app, title: "潮見町の灯台日誌")
 
         app.buttons["reading_start"].tap()
-        XCTAssertTrue(app.buttons["screen_capture_consent_agree"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
-        app.buttons["screen_capture_consent_agree"].tap()
+        agreeToScreenCaptureAfterGuide(app: app)
 
         XCTAssertTrue(app.staticTexts["reading_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
         XCTAssertTrue(app.staticTexts["reading_guide"].label.contains("画面の取り込みを使えない"))
@@ -239,6 +263,7 @@ final class ReadingTests: XCTestCase {
         // 同意は済んでいるため、もう一度押した時は同意の説明が出ずに、同じ案内が出る。
         app.buttons["reading_start"].tap()
         XCTAssertTrue(app.staticTexts["reading_guide"].waitForExistence(timeout: sameScreenChangeWaitTimeout))
+        XCTAssertFalse(app.staticTexts["screen_capture_guide_title"].exists)
         XCTAssertFalse(app.staticTexts["screen_capture_consent_title"].exists)
         XCTAssertFalse(app.buttons["reading_end"].exists)
 
