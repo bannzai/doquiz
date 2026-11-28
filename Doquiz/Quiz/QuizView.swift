@@ -102,7 +102,7 @@ struct QuizView: View {
                     Text(verbatim: "もう一度作る")
                         .font(.headline)
                         .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                         .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                 }
                 .accessibilityIdentifier("quiz_retry")
@@ -121,7 +121,7 @@ struct QuizView: View {
             Text(verbatim: "本の画面に戻る")
                 .font(.headline)
                 .foregroundStyle(doquizAccentColor)
-                .frame(maxWidth: .infinity, minHeight: 54)
+                .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizAccentColor, lineWidth: 1.5))
         }
         .accessibilityIdentifier("quiz_leave")

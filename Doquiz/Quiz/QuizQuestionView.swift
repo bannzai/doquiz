@@ -135,7 +135,7 @@ struct QuizQuestionView: View {
                         Text(verbatim: nextButtonTitle)
                             .font(.headline)
                             .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity, minHeight: 54)
+                            .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                             .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                     }
                     .accessibilityIdentifier("quiz_next")
@@ -147,7 +147,7 @@ struct QuizQuestionView: View {
                             Text(verbatim: "答える")
                                 .font(.headline)
                                 .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity, minHeight: 54)
+                                .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                                 .background(doquizAccentColor, in: RoundedRectangle(cornerRadius: 12))
                         }
                         .disabled(isJudging || draftAnswerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -165,7 +165,7 @@ struct QuizQuestionView: View {
                             Text(verbatim: leaveButtonTitle)
                                 .font(.headline)
                                 .foregroundStyle(doquizAccentColor)
-                                .frame(maxWidth: .infinity, minHeight: 54)
+                                .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizAccentColor, lineWidth: 1.5))
                         }
                         .accessibilityIdentifier("quiz_leave")

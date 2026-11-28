@@ -71,7 +71,7 @@ struct BookListView: View {
                 Text(verbatim: books.isEmpty ? "最初の本を登録する" : "新しい本を登録する")
                     .font(.headline)
                     .foregroundStyle(doquizAccentColor)
-                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .frame(maxWidth: .infinity, minHeight: doquizLargeButtonMinHeight)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(doquizAccentColor, lineWidth: 1.5))
             }
             .accessibilityIdentifier("book_registration_entrance")
@@ -94,7 +94,7 @@ struct BookListView: View {
                     Text(verbatim: "購入のプランを見る")
                         .font(.subheadline)
                         .foregroundStyle(doquizAccentColor)
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .frame(maxWidth: .infinity, minHeight: doquizTextButtonMinHeight)
                 }
                 .accessibilityIdentifier("purchase_entrance")
                 .padding(.horizontal, 20)
